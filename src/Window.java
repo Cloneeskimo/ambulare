@@ -23,8 +23,8 @@ public class Window {
     /**
      * Constructs this Window
      * @param title - the title to give to the window
-     * @param w - the width to make the window. If -1, will cover entire width of screen once init() is called
-     * @param h - the height to make the window. If -1, will cover entire height of screen once init() is called
+     * @param w - the width to make the window. If -1, will cover 80% of the width of the screen once init() is called
+     * @param h - the height to make the window. If -1, will cover 80% of the height of screen once init() is called
      * @param vSync - whether to enable vertical sync
      */
     public Window(String title, int w, int h, boolean vSync) {
@@ -51,7 +51,7 @@ public class Window {
 
         // setup error callback and initialize GLFW
         GLFWErrorCallback.createPrint(System.err).set(); // set an error callback. by default will print errors to System.err
-        if (!glfwInit()) throw new IllegalStateException("Unable to initialize GLFW"); // attempt to initialize GFLW
+        if (!glfwInit()) Utils.handleException(new IllegalStateException("Unable to initialize GLFW"), "Window.java", "init()", true); // throw error if cannot init GLFW
 
         // set window hints
         glfwDefaultWindowHints(); // set hints to the defaults
@@ -60,12 +60,12 @@ public class Window {
 
         // check window size
         GLFWVidMode vidmode = glfwGetVideoMode(glfwGetPrimaryMonitor()); // get resolution info for main monitor
-        if (this.w == -1) this.w = vidmode.width(); // if w is -1, use entire width of screen
-        if (this.h == -1) this.h = vidmode.height(); // if h is -1, use entire height of screen
+        if (this.w == -1) this.w = (int)(0.8 * vidmode.width()); // if w is -1, use 80% of width of screen
+        if (this.h == -1) this.h = (int)(0.8 * vidmode.height()); // if h is -1, use 80% of height of screen
 
         // create window
         this.handle = glfwCreateWindow(this.w, this.h, this.title, NULL, NULL); // create window with specified characteristics
-        if (this.handle == NULL) throw new RuntimeException("Failed to create the GLFW window"); // throw exception if failure
+        if (this.handle == NULL) Utils.handleException(new RuntimeException("Failed to create the GLFW window"), "Window.java", "init()", true); // throw error if cannot create window
 
         // setup resizing callback
         glfwSetFramebufferSizeCallback(this.handle, (window, w, h) -> {
