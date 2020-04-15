@@ -1,3 +1,5 @@
+import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
 import static org.lwjgl.opengl.GL11.*;
 
 /**
@@ -8,7 +10,8 @@ public class GameEngine {
     /**
      * Data
      */
-    private static final int MAX_FPS = 60; // target frames per second
+    private static boolean recordingFPS; // whether to record frames/loops per second
+    private static final int MAX_FPS = 60; // target frames per second (if v-sync is off)
     private final Window window; // the GLFW window
     private final Timer timer; // timer for smooth looping
 
@@ -18,6 +21,7 @@ public class GameEngine {
     public GameEngine() {
         this.window = new Window("Game", false); // create Window
         this.timer = new Timer(); // create Timer
+        recordingFPS = false; // disable FPS recording by default (can be enabled by pushing R)
     }
 
     /**
@@ -34,6 +38,11 @@ public class GameEngine {
     private void init() {
         this.window.init(); // initialize GLFW window
         this.timer.init(); // initialize Timer
+        this.window.registerKeyControl(new Window.KeyControl() { // register key to toggle FPS logging
+            public int action() { return GLFW_RELEASE; } // upon release
+            public int key() { return GLFW_KEY_F; } // for F key
+            public void reaction() { GameEngine.recordingFPS = !GameEngine.recordingFPS; } // toggle fps recording
+        });
     }
 
     /**
@@ -46,12 +55,14 @@ public class GameEngine {
         float elapsedTime; // how much time has passed since last loop
         float accumulator = 0f; // how much time is unaccounted for
         float interval = 1f / MAX_FPS; // how much time there should be between loops
+        float[] fpsInfo = new float[] { 0.0f, 0.0f, 0.0f }; // FPS info to be used for FPS recording (explained in FPSRecord())
 
+        // loop
         while (!this.window.shouldClose()) { // while the user hasn't exited
 
             // timekeeping
             elapsedTime = this.timer.getElapsedTime(); // get elapsed time since last loop
-            System.out.println("FPS: " + (1 / elapsedTime));
+            if (recordingFPS) FPSRecord(elapsedTime, fpsInfo); // record FPS if enabled
             accumulator += elapsedTime; // add elapsed time to an accumulator which keeps track of how much time has been unaccounted for
 
             // four phases of loop
@@ -66,10 +77,29 @@ public class GameEngine {
     }
 
     /**
+     * Records FPS if the setting is enabled
+     * @param elapsedTime the amount of time since the last loop
+     * @param fpsInfo info about the FPS recording
+     *  fpsInfo[0] - accumulator - how much time since last FPS recording
+     *  fpsInfo[1] - current sum of FPS since last record
+     *  fpsInfo[2] - amount of FPS values that have been added to the sum [1]
+     *  this data is useful so that the program can then calculate and report average FPS every second
+     */
+    private void FPSRecord(float elapsedTime, float[] fpsInfo) {
+        fpsInfo[0] += elapsedTime; // keep time between recordings
+        fpsInfo[1] += (1 / elapsedTime); // add to FPS sum
+        fpsInfo[2] += 1; // keep track of how many FPS values are in sum
+        if (fpsInfo[0] > 1f) { // if it has been a second since the last FPS recording
+            Utils.log("Average FPS of last second: " + (fpsInfo[1] / fpsInfo[2]), "GameEngine", "FPSRecord()", false); // record the FPS
+            fpsInfo[0] = fpsInfo[1] = fpsInfo[2] = 0.0f; // reset FPS info array
+        }
+    }
+
+    /**
      * Gathers input from user
      */
     private void input() {
-
+        this.window.pollEvents(); // poll for window events such as key press, resizes, etc.
     }
 
     /**
@@ -77,7 +107,7 @@ public class GameEngine {
      * @param interval the amount of time in seconds to account for
      */
     private void update(float interval) {
-        this.window.update(); // update the window
+
     }
 
     /**
@@ -85,6 +115,7 @@ public class GameEngine {
      */
     private void render() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the screen
+        this.window.swapBuffers(); // refresh the window
     }
 
     /**

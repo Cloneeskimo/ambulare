@@ -2,6 +2,9 @@ import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GL;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
@@ -19,6 +22,7 @@ public class Window {
     private long handle; // window handle
     private boolean resized; // whether or not the window has been resized
     private boolean vSync; // whether or not to use v-sync
+    private List<KeyControl> keyControls; // list of key controls to pay attention to on GLFW key callback
 
     /**
      * Constructs this Window
@@ -33,6 +37,7 @@ public class Window {
         this.h = h;
         this.vSync = vSync;
         this.resized = false;
+        this.keyControls = new ArrayList<>();
     }
 
     /**
@@ -74,9 +79,12 @@ public class Window {
            this.resized = true; // flag resize
         });
 
-        // setup key callback to close window when ESC is pressed
+        // setup key callback to close window when ESC is pressed and to look through registered key controls when other keys are pressed
         glfwSetKeyCallback(this.handle, (window, key, scancode, action, mods) -> {
-           if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) glfwSetWindowShouldClose(this.handle, true); // flag close when ESC release
+            if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) glfwSetWindowShouldClose(this.handle, true); // flag close when ESC release
+            for (KeyControl kc : this.keyControls) {
+                if (key == kc.key() && action == kc.action()) kc.reaction();
+            }
         });
 
         // finishing touches on window
@@ -91,12 +99,22 @@ public class Window {
     }
 
     /**
-     * Updates the window
+     * Registers a keyboard control to this Window.
+     * @param keyControl the keyboard control to register to the window (interface defined below)
      */
-    public void update() {
-        glfwSwapBuffers(this.handle);
-        glfwPollEvents();
+    public void registerKeyControl(KeyControl keyControl) {
+        this.keyControls.add(keyControl); // add key control to list of key controls
     }
+
+    /**
+     * Polls for any GLFW window events
+     */
+    public void pollEvents() { glfwPollEvents(); } // polls for events
+
+    /**
+     * Swaps the Window buffers
+     */
+    public void swapBuffers() { glfwSwapBuffers(this.handle); } // swap the buffers
 
     /**
      * @return whether this window should close
@@ -109,4 +127,13 @@ public class Window {
      * @return whether this Window has V-Sync enabled
      */
     public boolean usesVSync() { return this.vSync; }
+
+    /**
+     * Represents a possible keyboard control that can be registered to this window
+     */
+    public interface KeyControl {
+        int key(); // the key to trigger this control
+        int action(); // the action to trigger this control (key press, release, etc.)
+        void reaction(); // what do to when the control is used
+    }
 }
