@@ -9,7 +9,6 @@ public class Game {
      */
     public static void main(String[] args) {
         GameEngine g = new GameEngine(); // create engine
-        g.init(); // initialize engine
-        g.run(); // run engine
+        g.start(); // start engine
     }
 }

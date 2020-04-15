@@ -4,15 +4,11 @@ import java.util.List;
 
 public class Node {
 
-    /*
-      Static Data
+    /**
+     * Data
      */
     private static char DIVIDER_CHAR = ':';
     private static char INDENT_CHAR = '\t';
-
-    /*
-      Data
-     */
     private List<Node> children; // child nodes
     private String name, value; // name and values (before and after dividing char in file format, respectively)
 
