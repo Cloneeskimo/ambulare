@@ -36,6 +36,14 @@ public interface GameLogic {
     void render();
 
     /**
+     * Here, the logic should react to window resizes
+     * This will be called whenever the window resizes
+     * @param w the new width of the window
+     * @param h the new height of the window
+     */
+    void resized(int w, int h);
+
+    /**
      * Here, the logic should clean up any components that need cleaned up
      * This will be called when the engine is done with this logic
      */

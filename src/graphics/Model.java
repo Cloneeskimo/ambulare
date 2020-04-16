@@ -26,8 +26,8 @@ public class Model {
     /**
      * Constructs this Model
      * The assumes input given in sequences of triangles
-     * @param positions the positions of the vertices
-     * @param colors the colors of the vertices
+     * @param positions the positions of the vertices (2-dimensional)
+     * @param colors the colors of the vertices (4-dimensional)
      * @param indices the index of the vertices. For example, if you have two triangles to make a square, the two
      *                overlapping points can be given the same index. This helps GL avoid redundant vertex rendering
      */
@@ -46,7 +46,7 @@ public class Model {
         this.posVboID = glGenBuffers(); // generate position vertex buffer object
         glBindBuffer(GL_ARRAY_BUFFER, this.posVboID); // bind position vertex buffer object
         glBufferData(GL_ARRAY_BUFFER, posBuffer, GL_STATIC_DRAW); // put position data into position VBO
-        glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0); // put VBO into VAO
+        glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, 0); // put VBO into VAO
 
         // process color data
         colorBuffer = MemoryUtil.memAllocFloat(colors.length); // allocate buffer space for color data
@@ -54,7 +54,7 @@ public class Model {
         this.colorVboID = glGenBuffers(); // generate color vertex buffer object
         glBindBuffer(GL_ARRAY_BUFFER, this.colorVboID); // bind color vertex buffer object
         glBufferData(GL_ARRAY_BUFFER, colorBuffer, GL_STATIC_DRAW); // put color data into color VBO
-        glVertexAttribPointer(1, 3, GL_FLOAT, false, 0, 0); // put VBO into VAO
+        glVertexAttribPointer(1, 4, GL_FLOAT, false, 0, 0); // put VBO into VAO
 
         // process index data
         idxBuffer = MemoryUtil.memAllocInt(indices.length); // allocate buffer space for index data

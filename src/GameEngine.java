@@ -14,6 +14,7 @@ public class GameEngine {
     /**
      * Data
      */
+    public static float ar = 5;
     private static final int MAX_FPS = 60; // target frames per second (if v-sync is off)
     private static boolean recordingFPS; // whether to record frames/loops per second
     private final Window window; // the GLFW window
@@ -125,7 +126,10 @@ public class GameEngine {
      */
     private void render() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the screen
-        if (this.window.resized(true)) glViewport(0, 0, this.window.getWidth(), this.window.getHeight());
+        if (this.window.resized(true)) { // if the window is resized
+            glViewport(0, 0, this.window.getWidth(), this.window.getHeight()); // change the GL viewport to match
+            this.logic.resized(this.window.getWidth(), this.window.getHeight()); // notify logic of resize
+        }
         this.logic.render(); // allow the logic to render
         this.window.swapBuffers(); // refresh the window
     }

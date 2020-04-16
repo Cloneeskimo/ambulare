@@ -1,14 +1,9 @@
 package logic;
 
+import gameobject.GameObject;
 import graphics.Model;
 import graphics.ShaderProgram;
 import graphics.Window;
-
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL20.glDisableVertexAttribArray;
-import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
-import static org.lwjgl.opengl.GL30.glBindVertexArray;
-
 /**
  * Lays out logic for engine to follow while in the game world
  */
@@ -18,7 +13,9 @@ public class WorldLogic implements GameLogic {
      * Data
      */
     private ShaderProgram sp; // shader program to use for world
-    private Model m; // temporary test model
+    private GameObject player; // player
+    private float ar; // aspect ratio of window
+    private boolean arAction; // aspect ratio action (for projection)
 
     /**
      * Initializes this WorldLogic
@@ -26,23 +23,38 @@ public class WorldLogic implements GameLogic {
      */
     @Override
     public void init(Window window) {
-        this.sp = new ShaderProgram("/shaders/worldV.glsl", "/shaders/worldF.glsl");
-        this.m = new Model(
+        this.initSP(window); // initialize shader program
+        Model m = new Model( // create player model
             new float[] { // rectangle positions
-                -0.5f,  0.5f,  0.0f,
-                -0.5f, -0.5f,  0.0f,
-                 0.5f, -0.5f,  0.0f,
-                 0.5f,  0.5f,  0.0f
+                -0.5f,  0.5f,
+                -0.5f, -0.5f,
+                 0.5f, -0.5f,
+                 0.5f,  0.5f
             },
             new float[] { // rectangle colors
-                    1.0f, 0.0f, 0.0f,
-                    0.0f, 1.0f, 0.0f,
-                    0.0f, 0.0f, 1.0f,
-                    1.0f, 1.0f, 1.0f
+                    1.0f, 0.0f, 0.0f, 1.0f,
+                    0.0f, 1.0f, 0.0f, 1.0f,
+                    0.0f, 0.0f, 1.0f, 1.0f,
+                    1.0f, 1.0f, 1.0f, 1.0f
 
             },
             new int[] { 0, 1, 3, 3, 1, 2 } // rectangle indices
         );
+        this.player = new GameObject(0f, 0f, m); // create player
+    }
+
+    /**
+     * Initializes the world ShaderProgram
+     * @param window the Window
+     */
+    private void initSP(Window window) {
+        this.sp = new ShaderProgram("/shaders/worldV.glsl", "/shaders/worldF.glsl"); // create ShaderProgram
+        this.sp.registerUniform("x"); // register x offset uniform
+        this.sp.registerUniform("y"); // register y offset uniform
+        this.sp.registerUniform("ar"); // register aspect ratio uniform
+        this.sp.registerUniform("arAction"); // register aspect ratio action uniform
+        this.ar = (float)window.getWidth() / (float)window.getHeight(); // calculate aspect ratio
+        this.arAction = (this.ar < 1.0f); // if ar < 1.0f (height > width) then we will make objects shorter to compensate
     }
 
     /**
@@ -69,8 +81,21 @@ public class WorldLogic implements GameLogic {
     @Override
     public void render() {
         this.sp.bind(); // bind shader program
-        this.m.render(); // render mesh
+        this.sp.setUniform("ar", this.ar); // set aspect ratio uniform
+        this.sp.setUniform("arAction", this.arAction ? 1 : 0); // set aspect ratio action uniform
+        this.player.render(this.sp); // render player
         this.sp.unbind(); // unbind shader program
+    }
+
+    /**
+     * Reacts to the window resizing
+     * @param w the new window width
+     * @param h the new window height
+     */
+    @Override
+    public void resized(int w, int h) {
+        this.ar = (float)w / (float)h; // calculate aspect ratio
+        this.arAction = (this.ar < 1.0f); // if ar < 1.0f (height > width) then we will make objects shorter to compensate
     }
 
     /**
@@ -79,6 +104,6 @@ public class WorldLogic implements GameLogic {
     @Override
     public void cleanup() {
         if (this.sp != null) this.sp.cleanup(); // cleanup shader programs
-        this.m.cleanup(); // cleanup mesh
+        this.player.cleanup(); // cleanup mesh
     }
 }
