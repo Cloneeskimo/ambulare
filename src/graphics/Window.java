@@ -1,6 +1,9 @@
+package graphics;
+
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GL;
+import utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +28,7 @@ public class Window {
     private List<KeyControl> keyControls; // list of key controls to pay attention to on GLFW key callback
 
     /**
-     * Constructs this Window
+     * Constructs this graphics.Window
      * @param title the title to give to the window
      * @param w the width to make the window. If -1, will cover 80% of the width of the screen once init() is called
      * @param h the height to make the window. If -1, will cover 80% of the height of screen once init() is called
@@ -41,7 +44,7 @@ public class Window {
     }
 
     /**
-     * Constructs this Window in fullscreen mode
+     * Constructs this graphics.Window in fullscreen mode
      * @param title the title to give to the window
      * @param vSync whether to enable vertical sync
      */
@@ -56,7 +59,7 @@ public class Window {
 
         // setup error callback and initialize GLFW
         GLFWErrorCallback.createPrint(System.err).set(); // set an error callback. by default will print errors to System.err
-        if (!glfwInit()) Utils.handleException(new IllegalStateException("Unable to initialize GLFW"), "Window", "init()", true); // throw error if cannot init GLFW
+        if (!glfwInit()) Utils.handleException(new IllegalStateException("Unable to initialize GLFW"), "graphics.Window", "init()", true); // throw error if cannot init GLFW
 
         // set window hints
         glfwDefaultWindowHints(); // set hints to the defaults
@@ -70,7 +73,7 @@ public class Window {
 
         // create window
         this.handle = glfwCreateWindow(this.w, this.h, this.title, NULL, NULL); // create window with specified characteristics
-        if (this.handle == NULL) Utils.handleException(new RuntimeException("Failed to create the GLFW window"), "Window", "init()", true); // throw error if cannot create window
+        if (this.handle == NULL) Utils.handleException(new RuntimeException("Failed to create the GLFW window"), "graphics.Window", "init()", true); // throw error if cannot create window
 
         // setup resizing callback
         glfwSetFramebufferSizeCallback(this.handle, (window, w, h) -> {
@@ -99,7 +102,7 @@ public class Window {
     }
 
     /**
-     * Registers a keyboard control to this Window.
+     * Registers a keyboard control to this graphics.Window.
      * @param keyControl the keyboard control to register to the window (interface defined below)
      */
     public void registerKeyControl(KeyControl keyControl) {
@@ -112,7 +115,7 @@ public class Window {
     public void pollEvents() { glfwPollEvents(); } // polls for events
 
     /**
-     * Swaps the Window buffers
+     * Swaps the graphics.Window buffers
      */
     public void swapBuffers() { glfwSwapBuffers(this.handle); } // swap the buffers
 
@@ -124,9 +127,30 @@ public class Window {
     }
 
     /**
-     * @return whether this Window has V-Sync enabled
+     * @return whether this graphics.Window has V-Sync enabled
      */
     public boolean usesVSync() { return this.vSync; }
+
+    /**
+     * Will determine if this Window has been resized
+     * @param resetFlag whether to reset the flag after checking (to false)
+     * @return whether this Window has been resized
+     */
+    public boolean resized(boolean resetFlag) {
+        boolean rsz = this.resized; // save resized value
+        if (resetFlag) this.resized = false; // reset if reset flag is true
+        return rsz; // reset whether resized
+    }
+
+    /**
+     * @return the width of this Window
+     */
+    public int getWidth() { return this.w; }
+
+    /**
+     * @return the height of this Window
+     */
+    public int getHeight() { return this.h; }
 
     /**
      * Represents a possible keyboard control that can be registered to this window

@@ -34,4 +34,10 @@ public interface GameLogic {
      * This will be called every loop after update()
      */
     void render();
+
+    /**
+     * Here, the logic should clean up any components that need cleaned up
+     * This will be called when the engine is done with this logic
+     */
+    void cleanup();
 }

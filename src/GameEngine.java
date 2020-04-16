@@ -26,7 +26,7 @@ public class GameEngine {
      */
     public GameEngine(GameLogic logic) {
         recordingFPS = false; // disable FPS recording by default (can be enabled by pushing R)
-        this.window = new Window("Game", false); // create graphics.Window
+        this.window = new Window("Game", true); // create graphics.Window
         this.timer = new Timer(); // create utils.Timer
         this.logic = logic; // set logic reference
     }
@@ -37,6 +37,7 @@ public class GameEngine {
     public void start() {
         this.init(); // initialize engine
         this.loop(); // begin loop
+        this.cleanup(); // cleanup after loop ends
     }
 
     /**
@@ -124,6 +125,7 @@ public class GameEngine {
      */
     private void render() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the screen
+        if (this.window.resized(true)) glViewport(0, 0, this.window.getWidth(), this.window.getHeight());
         this.logic.render(); // allow the logic to render
         this.window.swapBuffers(); // refresh the window
     }
@@ -139,4 +141,9 @@ public class GameEngine {
             catch (Exception e) { Utils.handleException(e, "GameEngine", "sync(float)", true); } // handle exceptions when trying to sleep
         }
     }
+
+    /**
+     * Cleans up components of the game that need cleaned up
+     */
+    private void cleanup() { this.logic.cleanup(); }
 }

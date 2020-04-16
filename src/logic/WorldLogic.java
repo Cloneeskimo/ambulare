@@ -1,6 +1,13 @@
 package logic;
 
+import graphics.Model;
+import graphics.ShaderProgram;
 import graphics.Window;
+
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL20.glDisableVertexAttribArray;
+import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
+import static org.lwjgl.opengl.GL30.glBindVertexArray;
 
 /**
  * Lays out logic for engine to follow while in the game world
@@ -8,12 +15,34 @@ import graphics.Window;
 public class WorldLogic implements GameLogic {
 
     /**
+     * Data
+     */
+    private ShaderProgram sp; // shader program to use for world
+    private Model m; // temporary test model
+
+    /**
      * Initializes this WorldLogic
      * @param window the window
      */
     @Override
     public void init(Window window) {
+        this.sp = new ShaderProgram("/shaders/worldV.glsl", "/shaders/worldF.glsl");
+        this.m = new Model(
+            new float[] { // rectangle positions
+                -0.5f,  0.5f,  0.0f,
+                -0.5f, -0.5f,  0.0f,
+                 0.5f, -0.5f,  0.0f,
+                 0.5f,  0.5f,  0.0f
+            },
+            new float[] { // rectangle colors
+                    1.0f, 0.0f, 0.0f,
+                    0.0f, 1.0f, 0.0f,
+                    0.0f, 0.0f, 1.0f,
+                    1.0f, 1.0f, 1.0f
 
+            },
+            new int[] { 0, 1, 3, 3, 1, 2 } // rectangle indices
+        );
     }
 
     /**
@@ -39,6 +68,17 @@ public class WorldLogic implements GameLogic {
      */
     @Override
     public void render() {
+        this.sp.bind(); // bind shader program
+        this.m.render(); // render mesh
+        this.sp.unbind(); // unbind shader program
+    }
 
+    /**
+     * Clean up components of this WorldLogic that need cleaned up
+     */
+    @Override
+    public void cleanup() {
+        if (this.sp != null) this.sp.cleanup(); // cleanup shader programs
+        this.m.cleanup(); // cleanup mesh
     }
 }
