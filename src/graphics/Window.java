@@ -65,6 +65,10 @@ public class Window {
         glfwDefaultWindowHints(); // set hints to the defaults
         glfwWindowHint(GLFW_VISIBLE, GL_FALSE); // keep hidden after creation
         glfwWindowHint(GLFW_RESIZABLE, GL_TRUE); // window will be resizable
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // request GL 3
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2); // request GL 3.2
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // request core profile
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // request forward compatibility
 
         // check window size
         GLFWVidMode vidmode = glfwGetVideoMode(glfwGetPrimaryMonitor()); // get resolution info for main monitor
