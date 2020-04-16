@@ -1,3 +1,5 @@
+package utils;
+
 import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -46,7 +48,7 @@ public class Utils {
              Scanner scanner = new Scanner(in, "UTF-8")) { // try to then use a Scanner to read it
             result = scanner.useDelimiter("\\A").next(); // read results into single string
         } catch (Exception e) { // if exception
-            handleException(e, "Utils", "resToString(String)", true); // handle exception
+            handleException(e, "utils.Utils", "resToString(String)", true); // handle exception
         }
         return result; // return string read from resource
     }
@@ -63,7 +65,7 @@ public class Utils {
             String line; // variable for each line
             while ((line = in.readLine()) != null) file.add(line); // read each line until eof
         } catch (Exception e) { // if exception
-            handleException(e, "Utils", "resToStringList(String)", true); // handle exception
+            handleException(e, "utils.Utils", "resToStringList(String)", true); // handle exception
         }
         return file; // return list of strings from resource
     }

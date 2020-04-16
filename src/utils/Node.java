@@ -1,3 +1,5 @@
+package utils;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,10 +15,10 @@ public class Node {
     private String name, value; // name and values (before and after dividing char in file format, respectively)
 
     /**
-     * Constructs this Node by giving it all of its properties
-     * @param name the name of the Node (the string before the dividing character in file format)
-     * @param value the value of the Node (the string after the dividing node in file format)
-     * @param children the starting children for the Node
+     * Constructs this utils.Node by giving it all of its properties
+     * @param name the name of the utils.Node (the string before the dividing character in file format)
+     * @param value the value of the utils.Node (the string after the dividing node in file format)
+     * @param children the starting children for the utils.Node
      */
     public Node(String name, String value, List<Node> children) {
         this.name = name; // set name
@@ -25,46 +27,46 @@ public class Node {
     }
 
     /**
-     * Constructs this Node by giving it just a name and a value
-     * @param name the name of the Node (the string before the dividing character in file format)
-     * @param value the value of the Node (the string after the dividing node in file format)
+     * Constructs this utils.Node by giving it just a name and a value
+     * @param name the name of the utils.Node (the string before the dividing character in file format)
+     * @param value the value of the utils.Node (the string after the dividing node in file format)
      */
     public Node(String name, String value) {
         this(name, value, new ArrayList<>());
     }
 
     /**
-     * Constructs this Node by giving it just a name
-     * @param name the name of the Node (the string before the dividing character in file format)
+     * Constructs this utils.Node by giving it just a name
+     * @param name the name of the utils.Node (the string before the dividing character in file format)
      */
     public Node(String name) {
         this(name, "");
     }
 
     /**
-     * Constructs this Node without any properties set
+     * Constructs this utils.Node without any properties set
      */
     public Node() {
         this("");
     }
 
     /**
-     * @return the children of this Node
+     * @return the children of this utils.Node
      */
     public List<Node> getChildren() { return this.children; }
 
     /**
-     * @return the amount of children this Node has
+     * @return the amount of children this utils.Node has
      */
     public int getChildCount() { return this.children.size(); }
 
     /**
-     * @return whether or not this Node has children
+     * @return whether or not this utils.Node has children
      */
     public boolean hasChildren() { return (this.children.size() > 0); }
 
     /**
-     * Adds a child to this Node
+     * Adds a child to this utils.Node
      * @param child the child to add
      */
     public void addChild(Node child) {
@@ -72,17 +74,17 @@ public class Node {
     }
 
     /**
-     * Adds a child to this Node
-     * @param name the name of the child Node to add
-     * @param value the value of the child Node to add
+     * Adds a child to this utils.Node
+     * @param name the name of the child utils.Node to add
+     * @param value the value of the child utils.Node to add
      */
     public void addChild(String name, String value) {
         this.addChild(new Node(name, value)); // create and add child
     }
 
     /**
-     * If this Node has no children, the given children will become its children. Otherwise, the given
-     * children will be added one-by-one to this Node's children.
+     * If this utils.Node has no children, the given children will become its children. Otherwise, the given
+     * children will be added one-by-one to this utils.Node's children.
      * @param children the children to consider
      */
     public void setAddChildren(List<Node> children) {
@@ -91,66 +93,66 @@ public class Node {
     }
 
     /**
-     * Retrieves a child of this Node at the given index.
+     * Retrieves a child of this utils.Node at the given index.
      * @param index the index of the child to retrieve
      * @return the child at the given index
      */
     public Node getChild(int index) {
         if (index > this.children.size() || index < 0) { // check for invalid index
             IllegalArgumentException e = new IllegalArgumentException("Unable to access index " + index + " in child array of size " + this.children.size()); // create exception if invalid
-            Utils.handleException(e, "Node", "getChild(int)", true); // handle exception
+            Utils.handleException(e, "utils.Node", "getChild(int)", true); // handle exception
         }
         return this.children.get(index); // return appropriate child
     }
 
     /**
-     * Searches for a child of this Node with the given name
+     * Searches for a child of this utils.Node with the given name
      * @param name the name to search for
      * @return the first child with the matching name, or null if there are none
      */
     public Node getChild(String name) {
         for (Node child : this.children) if (child.getName().equals(name)) return child; // look for matching name
-        Utils.log("Couldn't find child with name'" + name + "', returning null", "Node", "getChild(String)", false); // log failure
+        Utils.log("Couldn't find child with name'" + name + "', returning null", "utils.Node", "getChild(String)", false); // log failure
         return null; // return null
     }
 
     /**
-     * Searches for a child of this Node with the given name and, as opposed to getChild, will crash if cannot find
+     * Searches for a child of this utils.Node with the given name and, as opposed to getChild, will crash if cannot find
      * @param name the name to search for
      * @return the first child with the matching name
      */
     public Node needChild(String name) {
         for (Node child : this.children) if (child.getName().equals(name)) return child; // look for matching name
         IllegalArgumentException e = new IllegalArgumentException("Unable to find child with name " + name); // create exception if fail
-        Utils.handleException(e, "Node", "needChild(String)", true); // handle exception
+        Utils.handleException(e, "utils.Node", "needChild(String)", true); // handle exception
         return null; // just to make compiler be quiet
     }
 
     /**
-     * @return the name of this Node
+     * @return the name of this utils.Node
      */
     public String getName() { return this.name; }
 
     /**
-     * Updates the name of this Node
-     * @param name the new name to assign to this Node
+     * Updates the name of this utils.Node
+     * @param name the new name to assign to this utils.Node
      */
     public void setName(String name) { this.name = name; }
 
     /**
-     * @return the value of this Node
+     * @return the value of this utils.Node
      */
     public String getValue() { return this.value; }
 
     /**
-     * Updates the value of this Node
-     * @param value the new value to assign to this Node
+     * Updates the value of this utils.Node
+     * @param value the new value to assign to this utils.Node
      */
     public void setValue(String value) { this.value = value; }
 
     /**
-     * Converts this Node to a String (by returning the same representation that would be found in a file of it)
-     * @return the String version of this Node
+     * Converts this utils.Node to a String (by returning the same representation that would be found in a file of it)
+     * @return the String version of this utils.Node
      */
     public String toString() {
         StringWriter sw = new StringWriter();
@@ -159,40 +161,40 @@ public class Node {
     }
 
     /**
-     * Converts a resource to a Node (if the resource is properly formatted)
+     * Converts a resource to a utils.Node (if the resource is properly formatted)
      * @param resPath the resource-relative path to the data
-     * @return the created Node
+     * @return the created utils.Node
      */
     public static Node resToNode(String resPath) {
         List<String> data = Utils.resToStringList(resPath); // read resource
-        Node node = new Node(); // create root Node
-        parseNode(node, data, 0, 0); // parse read data into root Node
+        Node node = new Node(); // create root utils.Node
+        parseNode(node, data, 0, 0); // parse read data into root utils.Node
         return node; // return parsed node
     }
 
     /**
-     * Converts a file at a given path to a Node (if the file is properly formatted)
+     * Converts a file at a given path to a utils.Node (if the file is properly formatted)
      * @param path the path the file is at
      * @param dataDirRelative whether the given path is relative to the data directory
-     * @return the created Node
+     * @return the created utils.Node
      */
     public static Node fileToNode(String path, boolean dataDirRelative) {
         try { // try to open and read file
             BufferedReader in = new BufferedReader(new FileReader((dataDirRelative ? Utils.getDataDir() + "/": "") + path)); // open file
             List<String> data = new ArrayList<>(); // create empty String lists
             while (in.ready()) data.add(in.readLine()); // read and add file line-by-line
-            Node node = new Node(); // create root Node
-            parseNode(node, data, 0, 0); // parse read data into root Node
-            return node; // return read Node
+            Node node = new Node(); // create root utils.Node
+            parseNode(node, data, 0, 0); // parse read data into root utils.Node
+            return node; // return read utils.Node
         } catch (Exception e) { // if exception
-            Utils.handleException(e, "Node", "fileToNode(String, boolean)", true); // handle exception
+            Utils.handleException(e, "utils.Node", "fileToNode(String, boolean)", true); // handle exception
         }
         return null; // to make the compiler be quiet
     }
 
     /**
-     * Converts a given Node to a file to be placed at the given path
-     * @param node the Node to convert to a file
+     * Converts a given utils.Node to a file to be placed at the given path
+     * @param node the utils.Node to convert to a file
      * @param path to path to place the file
      * @param dataDirRelative whether the given path is relative to the data directory
      */
@@ -203,17 +205,17 @@ public class Node {
             layoutNode(out, node, new StringBuilder()); // recursively layout node at destination file
             out.close(); // close file
         } catch (Exception e) { // if exception
-            Utils.handleException(e, "Node", "nodeToFile(Node, String, boolean)", true); // handle exception
+            Utils.handleException(e, "utils.Node", "nodeToFile(utils.Node, String, boolean)", true); // handle exception
         }
     }
 
     /**
-     * Parses given data into a Node recursively
-     * @param curr the root Node
+     * Parses given data into a utils.Node recursively
+     * @param curr the root utils.Node
      * @param data the data
      * @param i the position to start at in the data
      * @param in how many indents to expect
-     * @return the position in the data after parsing this Node
+     * @return the position in the data after parsing this utils.Node
      */
     private static int parseNode(Node curr, List<String> data, int i, int in) {
 
@@ -226,8 +228,8 @@ public class Node {
 
         // throw error if no divider found
         if (dividerLocation == -1) { // if no divider found
-            IllegalStateException e = new IllegalStateException("Unable to find divider in line " + i + " of given Node data"); // create exception
-            Utils.handleException(e, "Node", "parseNode(Node, List<String>, int, int", true); // handle exception
+            IllegalStateException e = new IllegalStateException("Unable to find divider in line " + i + " of given utils.Node data"); // create exception
+            Utils.handleException(e, "utils.Node", "parseNode(utils.Node, List<String>, int, int", true); // handle exception
         }
 
         // create node and set name if there is one
@@ -251,8 +253,8 @@ public class Node {
                     i = parseNode(child, data, i, in); //recursively read child, keep track of file position
                     curr.addChild(child); //add child
                     if ((i + 1) > data.size()) { // if unexpected file stop
-                        IllegalStateException e = new IllegalStateException("Unexpected file stop at line " + i + " of given Node data"); // create exception
-                        Utils.handleException(e, "Node", "parseNode(Node, List<String>, int, int", true); // handle exception
+                        IllegalStateException e = new IllegalStateException("Unexpected file stop at line " + i + " of given utils.Node data"); // create exception
+                        Utils.handleException(e, "utils.Node", "parseNode(utils.Node, List<String>, int, int", true); // handle exception
                     }
                     i += 1; // iterate i
                 }
@@ -267,9 +269,9 @@ public class Node {
     }
 
     /**
-     * Lays out a given Node to a given writer recursively
+     * Lays out a given utils.Node to a given writer recursively
      * @param out the Write attached to print to
-     * @param node the Node to layout
+     * @param node the utils.Node to layout
      * @param in how many indents to print
      */
     private static void layoutNode(Writer out, Node node, StringBuilder in) {
@@ -284,7 +286,7 @@ public class Node {
                 out.write(indentString + "}\n"); // print child ending brace
             }
         } catch (Exception e) { // if exception
-            Utils.handleException(e, "Node", "layoutNode(Writer, Node, StringBuilder)", true); // handle exception
+            Utils.handleException(e, "utils.Node", "layoutNode(Writer, utils.Node, StringBuilder)", true); // handle exception
         }
     }
 }

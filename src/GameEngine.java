@@ -1,5 +1,9 @@
+import graphics.Window;
+import logic.GameLogic;
+import utils.Timer;
+import utils.Utils;
+
 import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
 import static org.lwjgl.opengl.GL11.*;
 
 /**
@@ -10,18 +14,21 @@ public class GameEngine {
     /**
      * Data
      */
-    private static boolean recordingFPS; // whether to record frames/loops per second
     private static final int MAX_FPS = 60; // target frames per second (if v-sync is off)
+    private static boolean recordingFPS; // whether to record frames/loops per second
     private final Window window; // the GLFW window
     private final Timer timer; // timer for smooth looping
+    private GameLogic logic; // the logic the engine is currently following
 
     /**
      * Constructs this GameEngine
+     * @param logic the starting logic this GameEngine should follow
      */
-    public GameEngine() {
-        this.window = new Window("Game", false); // create Window
-        this.timer = new Timer(); // create Timer
+    public GameEngine(GameLogic logic) {
         recordingFPS = false; // disable FPS recording by default (can be enabled by pushing R)
+        this.window = new Window("Game", false); // create graphics.Window
+        this.timer = new Timer(); // create utils.Timer
+        this.logic = logic; // set logic reference
     }
 
     /**
@@ -37,7 +44,8 @@ public class GameEngine {
      */
     private void init() {
         this.window.init(); // initialize GLFW window
-        this.timer.init(); // initialize Timer
+        this.timer.init(); // initialize timer
+        this.logic.init(this.window); // initialize logic
         this.window.registerKeyControl(new Window.KeyControl() { // register key to toggle FPS logging
             public int action() { return GLFW_RELEASE; } // upon release
             public int key() { return GLFW_KEY_F; } // for F key
@@ -100,6 +108,7 @@ public class GameEngine {
      */
     private void input() {
         this.window.pollEvents(); // poll for window events such as key press, resizes, etc.
+        this.logic.input(this.window); // allow logic to check input
     }
 
     /**
@@ -107,7 +116,7 @@ public class GameEngine {
      * @param interval the amount of time in seconds to account for
      */
     private void update(float interval) {
-
+        this.logic.update(interval); // allow logic to update
     }
 
     /**
@@ -115,6 +124,7 @@ public class GameEngine {
      */
     private void render() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the screen
+        this.logic.render(); // allow the logic to render
         this.window.swapBuffers(); // refresh the window
     }
 
