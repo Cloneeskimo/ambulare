@@ -2,6 +2,7 @@ package gameobject;
 
 import graphics.Model;
 import graphics.ShaderProgram;
+import graphics.Window;
 
 /**
  * Represents a single gameobject.GameObject
@@ -12,6 +13,7 @@ public class GameObject {
      * Data
      */
     private float x, y; // world position
+    private float vx, vy; // world velocity
     private Model model; // model
 
     /**
@@ -23,8 +25,41 @@ public class GameObject {
     public GameObject(float x, float y, Model model) {
         this.x = x; // set x
         this.y = y; // set y
+        this.vx = this.vy = 0; // initialize velocities to 0
         this.model = model; // set model
     }
+
+    /**
+     * Updates this GameObject
+     */
+    public void update() {
+        this.x += this.vx; // update x world position
+        this.y += this.vy; // update y world position
+    }
+
+    /**
+     * Updates this GameObject's horizontal velocity
+     * @param vx the new horizontal velocity
+     */
+    public void setVX(float vx) { this.vx = vx; }
+
+    /**
+     * Updates this GameObject's horizontal velocity by adding the given incremental change
+     * @param dvx the incremental change
+     */
+    public void incrementVX(float dvx) { this.vx += dvx; }
+
+    /**
+     * Updates this GameObject's vertical velocity
+     * @param vy the new vertical velocity
+     */
+    public void setVY(float vy) { this.vy = vy; }
+
+    /**
+     * Updates this GameObject's vertical velocity by adding the given incremental change
+     * @param dvy the incremental change
+     */
+    public void incrementVY(float dvy) { this.vy += dvy; }
 
     /**
      * Renders this gameobject.GameObject using the given ShaderProgram

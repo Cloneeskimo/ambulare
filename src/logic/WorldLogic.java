@@ -4,6 +4,9 @@ import gameobject.GameObject;
 import graphics.Model;
 import graphics.ShaderProgram;
 import graphics.Window;
+
+import static org.lwjgl.glfw.GLFW.*;
+
 /**
  * Lays out logic for engine to follow while in the game world
  */
@@ -63,7 +66,12 @@ public class WorldLogic implements GameLogic {
      */
     @Override
     public void input(Window window) {
-
+        this.player.setVX(0f); // reset horizontal velocity to 0
+        this.player.setVY(0f); // reset vertical velocity to 0
+        if (window.isKeyPressed(GLFW_KEY_W)) this.player.incrementVY(0.05f); // w -> up
+        if (window.isKeyPressed(GLFW_KEY_S)) this.player.incrementVY(-0.05f); // s -> down
+        if (window.isKeyPressed(GLFW_KEY_D)) this.player.incrementVX(0.05f); // d -> right
+        if (window.isKeyPressed(GLFW_KEY_A)) this.player.incrementVX(-0.05f); // a -> left
     }
 
     /**
@@ -72,7 +80,7 @@ public class WorldLogic implements GameLogic {
      */
     @Override
     public void update(float interval) {
-
+        this.player.update(); // update player
     }
 
     /**

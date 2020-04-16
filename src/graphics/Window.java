@@ -131,6 +131,13 @@ public class Window {
     }
 
     /**
+     * Determines if a given key is pressed
+     * @param key the key to check
+     * @return whether the given key is pressed
+     */
+    public boolean isKeyPressed(int key) { return glfwGetKey(this.handle, key) == GLFW_PRESS; }
+
+    /**
      * @return whether this graphics.Window has V-Sync enabled
      */
     public boolean usesVSync() { return this.vSync; }
