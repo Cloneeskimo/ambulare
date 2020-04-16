@@ -3,7 +3,7 @@
 
 ### Overview
 
-Game is a video game with an incredibly original name. It runs on Java, and relies on LWJGL.
+Game is a video game with an incredibly original name. It runs in the JVM, and relies on LWJGL.
 
 ### Building
 
@@ -15,4 +15,4 @@ If you experience screen tearing on MacOS despite V-Sync being enabled, run the 
 ```
 defaults write -g NSRequiresAquaSystemAppearance -bool No
 ```
-I have no idea how but this will magicaly fix it.
+I have no idea how but this will magically fix it.
