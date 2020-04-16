@@ -19,48 +19,84 @@ public class Model {
     /**
      * Data
      */
-    private final int vaoID; // ID of the vertex array object
-    private final int posVboID, colorVboID, idxVboID; // IDs of the vertex buffer objects
+    private final int ids[]; // [0] - VAO ID, [1] - position VBO ID, [2] - texture coordinate VBO ID, [4] - index VBO ID
     private final int vertexCount; // amount of vertices this Model has
+
+    /**
+     * @return the standard square model coordinates to make creating Square models easier
+     */
+    public static float[] getStdSquareModelCoords() {
+        return new float[] { // rectangle positions
+                -0.5f,  0.5f, // top left
+                -0.5f, -0.5f, // bottom left
+                0.5f, -0.5f, // bottom right
+                0.5f,  0.5f // top right
+        };
+    }
+
+    /**
+     * @return the standard square texture coordinates to make creating Square models easier
+     */
+    public static float[] getStdSquareTexCoords() {
+        return new float[] {
+                0.0f, 1.0f, // top left
+                0.0f, 0.0f, // bottom left
+                1.0f, 0.0f, // bottom right
+                1.0f, 1.0f // top right
+        };
+    }
+
+    /**
+     * @return the standard square indices to make create Square models easier
+     */
+    public static int[] getStdSquareIdx() {
+        return new int[] { 0, 1, 3, 3, 1, 2 };
+    }
+
+    /**
+     * @return the standard square model
+     */
+    public static Model getStdSquare() { return new Model(getStdSquareModelCoords(), getStdSquareTexCoords(), getStdSquareIdx()); }
 
     /**
      * Constructs this Model
      * The assumes input given in sequences of triangles
-     * @param positions the positions of the vertices (2-dimensional)
-     * @param colors the colors of the vertices (4-dimensional)
+     * @param modelCoords the positions of the vertices (2-dimensional)
+     * @param texCoords the texture coordinates of the vertices (2-dimensional)
      * @param indices the index of the vertices. For example, if you have two triangles to make a square, the two
      *                overlapping points can be given the same index. This helps GL avoid redundant vertex rendering
      */
-    public Model(float[] positions, float[] colors, int[] indices) {
+    public Model(float[] modelCoords, float[] texCoords, int[] indices) {
 
         // create buffers, record vertex count, generate VAO
-        FloatBuffer posBuffer = null, colorBuffer = null; // buffers for position data and color data
+        FloatBuffer modelCoordsBuffer = null, texCoordsBuffer = null; // buffers for model coordinate and texture coordinate data
         IntBuffer idxBuffer = null; // buffer for index data
         this.vertexCount = indices.length; // record vertex count
-        this.vaoID = glGenVertexArrays(); // generate the vertex array object
-        glBindVertexArray(vaoID); // bind the vertex array object
+        this.ids = new int[4]; // initialize ID array
+        this.ids[0] = glGenVertexArrays(); // generate the vertex array object
+        glBindVertexArray(this.ids[0]); // bind the vertex array object
 
-        // process position data
-        posBuffer = MemoryUtil.memAllocFloat(positions.length); // allocate buffer space for position data
-        posBuffer.put(positions).flip(); // put position data into buffer
-        this.posVboID = glGenBuffers(); // generate position vertex buffer object
-        glBindBuffer(GL_ARRAY_BUFFER, this.posVboID); // bind position vertex buffer object
-        glBufferData(GL_ARRAY_BUFFER, posBuffer, GL_STATIC_DRAW); // put position data into position VBO
+        // process model coordinate data
+        modelCoordsBuffer = MemoryUtil.memAllocFloat(modelCoords.length); // allocate buffer space for position data
+        modelCoordsBuffer.put(modelCoords).flip(); // put position data into buffer
+        this.ids[1] = glGenBuffers(); // generate position vertex buffer object
+        glBindBuffer(GL_ARRAY_BUFFER, this.ids[1]); // bind position vertex buffer object
+        glBufferData(GL_ARRAY_BUFFER, modelCoordsBuffer, GL_STATIC_DRAW); // put position data into position VBO
         glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, 0); // put VBO into VAO
 
-        // process color data
-        colorBuffer = MemoryUtil.memAllocFloat(colors.length); // allocate buffer space for color data
-        colorBuffer.put(colors).flip(); // put color data into buffer
-        this.colorVboID = glGenBuffers(); // generate color vertex buffer object
-        glBindBuffer(GL_ARRAY_BUFFER, this.colorVboID); // bind color vertex buffer object
-        glBufferData(GL_ARRAY_BUFFER, colorBuffer, GL_STATIC_DRAW); // put color data into color VBO
-        glVertexAttribPointer(1, 4, GL_FLOAT, false, 0, 0); // put VBO into VAO
+        // process texture coordinate data
+        texCoordsBuffer = MemoryUtil.memAllocFloat(texCoords.length); // allocate buffer space for texture coordinate data
+        texCoordsBuffer.put(texCoords).flip(); // put texture coordinate data into buffer
+        this.ids[2] = glGenBuffers(); // generate texture coordinate vertex buffer object
+        glBindBuffer(GL_ARRAY_BUFFER, this.ids[2]); // bind texture coordinate vertex buffer object
+        glBufferData(GL_ARRAY_BUFFER, texCoordsBuffer, GL_STATIC_DRAW); // put texture coordinate data into texture coordinate VBO
+        glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0); // put VBO into VAO
 
         // process index data
         idxBuffer = MemoryUtil.memAllocInt(indices.length); // allocate buffer space for index data
         idxBuffer.put(indices).flip(); // put index data into buffer
-        this.idxVboID = glGenBuffers(); // generate index vertex buffer object
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, idxVboID); // bind index vertex buffer object
+        this.ids[3] = glGenBuffers(); // generate index vertex buffer object
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this.ids[3]); // bind index vertex buffer object
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, idxBuffer, GL_STATIC_DRAW); // put index data into index VBO
 
         // unbind VBO, VAO
@@ -68,8 +104,8 @@ public class Model {
         glBindVertexArray(0); // unbind VAO
 
         // free memory
-        MemoryUtil.memFree(posBuffer); // free position buffer memory
-        MemoryUtil.memFree(colorBuffer); // free color buffer memory
+        MemoryUtil.memFree(modelCoordsBuffer); // free model coordinate buffer memory
+        MemoryUtil.memFree(texCoordsBuffer); // free texture coordinate buffer memory
         MemoryUtil.memFree(idxBuffer); // free index buffer memory
     }
 
@@ -77,26 +113,24 @@ public class Model {
      * Cleans up this Model by deleting buffers and unbinding any buffer objects or array objects
      */
     public void cleanup() {
-        glDisableVertexAttribArray(0); // disable position vbo in vao
-        glDisableVertexAttribArray(1); // disable color vbo in vao
-        glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind any vbos
-        glDeleteBuffers(this.posVboID); // delete position vbo
-        glDeleteBuffers(this.colorVboID); // delete color vbo
-        glDeleteBuffers(this.idxVboID); // delete index vbo
+        glDisableVertexAttribArray(0); // disable model coordinate vbo in vao
+        glDisableVertexAttribArray(1); // disable texture coordinate vbo in vao
+        glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind any vbo
+        for (int i = 1; i < this.ids.length; i++) glDeleteBuffers(this.ids[i]); // delete VBOs
         glBindVertexArray(0); // unbind vao
-        glDeleteVertexArrays(this.vaoID); // delete vao
+        glDeleteVertexArrays(this.ids[0]); // delete vao
     }
 
     /**
      * Renders this Mesh
      */
     public void render() {
-        glBindVertexArray(this.vaoID); // bind vao
-        glEnableVertexAttribArray(0); // enable position vbo
-        glEnableVertexAttribArray(1); // enable color vbo
+        glBindVertexArray(this.ids[0]); // bind vao
+        glEnableVertexAttribArray(0); // enable model coordinate vbo
+        glEnableVertexAttribArray(1); // enable texture coordinate vbo
         glDrawElements(GL_TRIANGLES, this.vertexCount, GL_UNSIGNED_INT, 0); // draw model
-        glDisableVertexAttribArray(0); // disable position vbo
-        glDisableVertexAttribArray(1); // disable color vbo
+        glDisableVertexAttribArray(0); // disable model coordinate vbo
+        glDisableVertexAttribArray(1); // disable texture coordinate vbo
         glBindVertexArray(0); // disable vao
     }
 }

@@ -117,6 +117,22 @@ public class ShaderProgram {
     }
 
     /**
+     * Sets the uniform with the given name to the given value (a 4-dimensional float array)
+     * @param name the name of the uniform to set
+     * @param x the first value of the 4-dimensional float array
+     * @param y the second value of the 4-dimensional float array
+     * @param z the third value of the 4-dimensional float array
+     * @param a the fourth value of the 4-dimensional float array
+     */
+    public void setUniform(String name, float x, float y, float z, float a) {
+        try {
+            glUniform4f(this.uniforms.get(name), x, y, z, a); // try to set uniform
+        } catch (Exception e) { // if exception
+            Utils.handleException(e, "ShaderProgram", "setUniform(String, float, float, float, float)", true); // handle exception
+        }
+    }
+
+    /**
      * Binds this ShaderProgram
      */
     public void bind() { glUseProgram(this.progID); }

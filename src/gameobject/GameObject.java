@@ -1,11 +1,19 @@
 package gameobject;
 
+import graphics.Material;
 import graphics.Model;
 import graphics.ShaderProgram;
 import graphics.Window;
 
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
+import static org.lwjgl.opengl.GL11.glBindTexture;
+import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
+import static org.lwjgl.opengl.GL13C.glActiveTexture;
+
 /**
- * Represents a single gameobject.GameObject
+ * Represents a single game object. This is the basic abstraction away from directly dealing with GL commands
+ * GameObject's have a Model and a Material both used for rendering, and they also have position and velocity
+ * components
  */
 public class GameObject {
 
@@ -14,19 +22,21 @@ public class GameObject {
      */
     private float x, y; // world position
     private float vx, vy; // world velocity
-    private Model model; // model
+    private Model model; // model to use when rendering
+    private Material material; // material to use when rendering
 
     /**
-     * Constructs this gameobject.GameObject
+     * Constructs this GameObject
      * @param x the world x position to place this gameobject.GameObject at
      * @param y the world y position to place this gameobject.GameObject at
      * @param model the model to render for this gameobject.GameObject
      */
-    public GameObject(float x, float y, Model model) {
+    public GameObject(float x, float y, Model model, Material material) {
         this.x = x; // set x
         this.y = y; // set y
         this.vx = this.vy = 0; // initialize velocities to 0
         this.model = model; // set model
+        this.material = material; // set material
     }
 
     /**
@@ -62,20 +72,31 @@ public class GameObject {
     public void incrementVY(float dvy) { this.vy += dvy; }
 
     /**
-     * Renders this gameobject.GameObject using the given ShaderProgram
+     * Renders this GameObject using the given ShaderProgram
      * This function will assume the given ShaderProgram is already bound
-     * @param sp the ShaderProgram to use to render this gameobject.GameObject
+     * @param sp the ShaderProgram to use to render this GameObject
      */
     public void render(ShaderProgram sp) {
+        if (this.material.isTextured()) { // if this object's material is textured
+            sp.setUniform("isTextured", 1); // set textured flag to true
+            glActiveTexture(GL_TEXTURE0); // set active texture to one in slot 0
+            glBindTexture(GL_TEXTURE_2D, this.material.getTexture().getID()); // bind texture
+        } else sp.setUniform("isTextured", 0); // set textured flag to false otherwise
+        if (this.material.isColored()) { // if this object's material is colored
+            float[] color = this.material.getColor(); // and get color instead
+            sp.setUniform("color", color[0], color[1], color[2], color[3]); // set color uniform
+        }
+        sp.setUniform("blend", this.material.blend() ? 1 : 0); // set blend uniform
         sp.setUniform("x", this.x); // set x
         sp.setUniform("y", this.y); // set y
         this.model.render(); // render model
     }
 
     /**
-     * Cleans up this gameobject.GameObject
+     * Cleans up this GameObject
      */
     public void cleanup() {
         this.model.cleanup(); // cleanup model
+        this.material.cleanup(); // cleanup material
     }
 }
