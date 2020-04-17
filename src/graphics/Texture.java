@@ -1,5 +1,7 @@
 package graphics;
 
+import org.apache.commons.io.IOUtils;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.system.MemoryStack;
 import utils.Utils;
 
@@ -39,10 +41,11 @@ public class Texture {
 
         // attempt to load texture
         try {
-            URL url = Texture.class.getResource(resPath); // get url to texture
-            File file = Paths.get(url.toURI()).toFile(); // convert to file
-            buf = stbi_load(file.getAbsolutePath(), w, h, channels, 4); // load texture into buffer
-            if (buf == null) Utils.handleException(new Exception("Unable to load texture with path '" + file.getAbsolutePath() + "' for reason: " + stbi_failure_reason()),
+            byte[] p = IOUtils.toByteArray(Class.forName(Texture.class.getName()).getResourceAsStream(resPath)); // convert resource to byte array
+            ByteBuffer pBuff = BufferUtils.createByteBuffer(p.length); // create buffer for texture data
+            pBuff.put(p).flip(); // put texture data into buffer
+            buf = stbi_load_from_memory(pBuff, w, h, channels, 4); // load texture into buffer
+            if (buf == null) Utils.handleException(new Exception("Unable to load texture with resource-relative path '" + resPath +"' for reason: " + stbi_failure_reason()),
                     "Texture", "Texture(String", true); // throw exception if unable to load texture
         } catch (Exception e) { // if exception
             Utils.handleException(e, "Texture", "Texture(String", true); // handle exception
