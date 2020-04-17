@@ -15,7 +15,7 @@ out vec4 fragColor; // final color
 // main function
 void main() {
     if (isTextured == 1) { // if textured
-        vec4 texColor = texture2D(texSampler, fTexCoords); // get texture sampled color
+        vec4 texColor = texture(texSampler, fTexCoords); // get texture sampled color
         if (blend == 1) texColor = texColor * color; // if blend mode multiplicative, multiply color and texture
         else if (blend == 2) texColor = (texColor + color) / 2; // if blend mode averaged, average color and texture
         fragColor = texColor; // set final color to calculate texture color (blended or not)
