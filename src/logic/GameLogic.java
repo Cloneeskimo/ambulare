@@ -6,6 +6,8 @@ import graphics.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.lwjgl.glfw.GLFW.glfwSetScrollCallback;
+
 /**
  * Lays out and abstracts away many lower-level details and capabilities that a game logic should have. Notably:
  *  - Has a ShaderProgram member (sp) used for rendering. sp is created and initialized in initSP(), so for a custom
@@ -18,6 +20,7 @@ public abstract class GameLogic {
      */
     protected List<GameObject> gameObjects; // game objects
     protected ShaderProgram sp; // shader program to use for rendering
+    protected Camera cam; // camera to use for view positioning
     protected float ar; // aspect ratio of window - this is used by the default ShaderProgram
     protected boolean arAction; // aspect ratio action (for projection) - this is used by the default ShaderProgram
 
@@ -30,15 +33,19 @@ public abstract class GameLogic {
     public final void init(Window window) {
         this.ar = (float)window.getWidth() / (float)window.getHeight(); // calculate aspect ratio
         this.arAction = (this.ar < 1.0f); // if ar < 1.0f (height > width) then we will make objects shorter to compensate
-        this.gameObjects = new ArrayList<>();
+        this.gameObjects = new ArrayList<>(); // initialize GameObject list
+        this.cam = new Camera(); // create camera
         this.initSP(window); // initialize shader program
-        this.initItems(); // initialize game objects
+        this.initItems(window); // initialize game objects
+        glfwSetScrollCallback(window.getHandle(), (w, x, y) -> { // when the user scrolls
+            this.cam.zoom(y > 0 ? 1.15f : 0.85f); // zoom on camera
+        });
     }
 
     /**
      * Extending classes should initialize any GameObjects or other important members here.
      */
-    protected void initItems() {}
+    protected void initItems(Window window) {}
 
     /**
      * Initializes the world ShaderProgram
@@ -49,14 +56,17 @@ public abstract class GameLogic {
      */
     protected void initSP(Window window) {
         this.sp = new ShaderProgram("/shaders/worldV.glsl", "/shaders/worldF.glsl"); // create ShaderProgram
-        this.sp.registerUniform("x"); // register x offset uniform
-        this.sp.registerUniform("y"); // register y offset uniform
+        this.sp.registerUniform("x"); // register world x uniform
+        this.sp.registerUniform("y"); // register world y uniform
         this.sp.registerUniform("ar"); // register aspect ratio uniform
         this.sp.registerUniform("arAction"); // register aspect ratio action uniform
         this.sp.registerUniform("isTextured"); // register texture flag uniform
         this.sp.registerUniform("color"); // register color uniform
         this.sp.registerUniform("blend"); // register blend uniform
         this.sp.registerUniform("texSampler"); // register texture sampler uniform
+        this.sp.registerUniform("camX"); // register camera world x uniform
+        this.sp.registerUniform("camY"); // register camera world y uniform
+        this.sp.registerUniform("camZoom"); // register camera zoom uniform
     }
 
     /**
@@ -70,7 +80,10 @@ public abstract class GameLogic {
      * Updates this GameLogic by updating each of its GameObjects
      * Extending classes can certainly override this but super.update() should definitely be called
      */
-    public void update() { for (GameObject o : this.gameObjects) o.update(); }
+    public void update() {
+        for (GameObject o : this.gameObjects) o.update(); // update GameObjects
+        this.cam.update(); // update camera
+    }
 
     /**
      * Wraps the rendering process by binding and unbinding the ShaderProgram before and after rendering, respectively
@@ -93,6 +106,9 @@ public abstract class GameLogic {
         this.sp.setUniform("texSampler", 0); // set texture sampler uniform to use texture unit 0
         this.sp.setUniform("ar", this.ar); // set aspect ratio uniform
         this.sp.setUniform("arAction", this.arAction ? 1 : 0); // set aspect ratio action uniform
+        this.sp.setUniform("camX", this.cam.getX()); // set camera x uniform
+        this.sp.setUniform("camY", this.cam.getY()); // set camera y uniform
+        this.sp.setUniform("camZoom", this.cam.getZoom()); // set camera zoom uniform
         for (GameObject o : this.gameObjects) o.render(this.sp); // render game objects
     }
 

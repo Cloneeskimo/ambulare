@@ -12,7 +12,7 @@ import static org.lwjgl.glfw.GLFW.GLFW_KEY_A;
 public class WorldLogic extends GameLogic {
 
     @Override
-    protected void initItems() {
+    protected void initItems(Window window) {
 
         // create game object components
         Model m = Model.getStdSquare(); // get standard square model
@@ -23,6 +23,7 @@ public class WorldLogic extends GameLogic {
 
         // create game objects
         this.gameObjects.add(new GameObject(0f, 0f, m, pMat)); // create player
+        this.cam.follow(this.gameObjects.get(0)); // make cam follow player
         this.gameObjects.add(new GameObject(1.2f, 0f, m, dMat)); // create dirt
         this.gameObjects.add(new GameObject(-1.2f, 0f, m, bdMat)); // create blue dirt
     }

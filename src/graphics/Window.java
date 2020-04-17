@@ -166,6 +166,11 @@ public class Window {
     public int getHeight() { return this.h; }
 
     /**
+     * @return this Window's GLFW handle
+     */
+    public long getHandle() { return this.handle; }
+
+    /**
      * Represents a possible keyboard control that can be registered to this window
      */
     public interface KeyControl {

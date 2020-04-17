@@ -48,6 +48,16 @@ public class GameObject {
     }
 
     /**
+     * @return this GameObject's x world position
+     */
+    public float getX() { return this.x; }
+
+    /**
+     * @return this GameObject's y world position
+     */
+    public float getY() { return this.y; }
+
+    /**
      * Updates this GameObject's horizontal velocity
      * @param vx the new horizontal velocity
      */
