@@ -1,51 +1,119 @@
 package logic;
 
-import graphics.Window;
+import gameobject.GameObject;
+import graphics.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Represents a generic Logic for the Engine to follow
- * Different GameLogics should implement this to allow the engine to act differently in different game states
+ * Lays out and abstracts away many lower-level details and capabilities that a game logic should have. Notably:
+ *  - Has a ShaderProgram member (sp) used for rendering. sp is created and initialized in initSP(), so for a custom
+ *    ShaderProgram, an extending class should override that method.
  */
-public interface GameLogic {
+public abstract class GameLogic {
 
     /**
-     * Here, the GameLogic should initialize its data and register and controls to the window
-     * This will be called when the GameLogic is first switched to
+     * Data
+     */
+    protected List<GameObject> gameObjects; // game objects
+    protected ShaderProgram sp; // shader program to use for rendering
+    protected float ar; // aspect ratio of window - this is used by the default ShaderProgram
+    protected boolean arAction; // aspect ratio action (for projection) - this is used by the default ShaderProgram
+
+    /**
+     * Initializes this GameLogic. This method is the only entry point into the GameLogic and it is not able to be
+     * overridden by extending classes. However, this method will call initSP() and initItems() - two methods which
+     * ARE able to be overridden by extending classes.
      * @param window the window
      */
-    void init(Window window);
+    public final void init(Window window) {
+        this.ar = (float)window.getWidth() / (float)window.getHeight(); // calculate aspect ratio
+        this.arAction = (this.ar < 1.0f); // if ar < 1.0f (height > width) then we will make objects shorter to compensate
+        this.gameObjects = new ArrayList<>();
+        this.initSP(window); // initialize shader program
+        this.initItems(); // initialize game objects
+    }
 
     /**
-     * Here, the logic should respond to any input. graphics.Window's isKeyPressed() method may be particularly useful
-     * This will be called every loop
+     * Extending classes should initialize any GameObjects or other important members here.
+     */
+    protected void initItems() {}
+
+    /**
+     * Initializes the world ShaderProgram
+     * Extending classes can override this, but if no ShaderProgram is assigned to sp, the program will likely crash
+     * Extending classes should only initialize things related to the ShaderProgram here. For other initializations,
+     * initItems() is recommended.
+     * @param window the Window
+     */
+    protected void initSP(Window window) {
+        this.sp = new ShaderProgram("/shaders/worldV.glsl", "/shaders/worldF.glsl"); // create ShaderProgram
+        this.sp.registerUniform("x"); // register x offset uniform
+        this.sp.registerUniform("y"); // register y offset uniform
+        this.sp.registerUniform("ar"); // register aspect ratio uniform
+        this.sp.registerUniform("arAction"); // register aspect ratio action uniform
+        this.sp.registerUniform("isTextured"); // register texture flag uniform
+        this.sp.registerUniform("color"); // register color uniform
+        this.sp.registerUniform("blend"); // register blend uniform
+        this.sp.registerUniform("texSampler"); // register texture sampler uniform
+    }
+
+    /**
+     * Extending classes should override this to use the window reference to respond to any input they so desire to
+     * respond to
      * @param window the window
      */
-    void input(Window window);
+    public void input(Window window) {}
 
     /**
-     * Here, the logic should update its data
-     * This will be called every loop after input()
-     * @param interval the amount of time in seconds since the last update call
+     * Updates this GameLogic by updating each of its GameObjects
+     * Extending classes can certainly override this but super.update() should definitely be called
      */
-    void update(float interval);
+    public void update() { for (GameObject o : this.gameObjects) o.update(); }
 
     /**
-     * Here, the logic should render whatever it needs to render
-     * This will be called every loop after update()
+     * Wraps the rendering process by binding and unbinding the ShaderProgram before and after rendering, respectively
+     * Extending classes cannot override this method, but they can override render() below
      */
-    void render();
+    public final void wrapRender() {
+        this.sp.bind(); // bind shader program
+        this.render(); // render
+        this.sp.unbind(); // unbind shader program
+    }
 
     /**
-     * Here, the logic should react to window resizes
-     * This will be called whenever the window resizes
-     * @param w the new width of the window
-     * @param h the new height of the window
+     * Sets appropriate ShaderProgram uniforms and renders this GameLogic's game objects
+     * Extending classes can certainly override this method, but super.render() should be called unless the extending
+     * class wishes to directly modify the rendering process. If the extending class has an additional/separate
+     * ShaderProgram, sp should be unbound first (this.sp.unbind() should be called) and then the other ShaderProgram
+     * should be bound and its uniforms appropriately set before rendering using it
      */
-    void resized(int w, int h);
+    protected void render() {
+        this.sp.setUniform("texSampler", 0); // set texture sampler uniform to use texture unit 0
+        this.sp.setUniform("ar", this.ar); // set aspect ratio uniform
+        this.sp.setUniform("arAction", this.arAction ? 1 : 0); // set aspect ratio action uniform
+        for (GameObject o : this.gameObjects) o.render(this.sp); // render game objects
+    }
 
     /**
-     * Here, the logic should clean up any components that need cleaned up
-     * This will be called when the engine is done with this logic
+     * Reacts to the window resizing by updating the aspect ratio member of GameLogic
+     * Extending classes cannot override this method
+     * @param w the new window width
+     * @param h the new window height
      */
-    void cleanup();
+    public final void resized(int w, int h) {
+        this.ar = (float)w / (float)h; // calculate aspect ratio
+        this.arAction = (this.ar < 1.0f); // if ar < 1.0f (height > width) then we will make objects shorter to compensate
+    }
+
+    /**
+     * Clean up components of this GameLogic that need cleaned up
+     * Extending classes should override this to cleanup any additional members they need to do, but they should
+     * always call super.cleanup() to clean up the base GameLogic members
+     */
+    public void cleanup() {
+        if (this.sp != null) this.sp.cleanup(); // cleanup shader programs
+        for (GameObject o : this.gameObjects) o.cleanup();
+    }
 }

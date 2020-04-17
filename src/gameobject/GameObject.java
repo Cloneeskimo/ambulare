@@ -86,7 +86,8 @@ public class GameObject {
             float[] color = this.material.getColor(); // and get color instead
             sp.setUniform("color", color[0], color[1], color[2], color[3]); // set color uniform
         }
-        sp.setUniform("blend", this.material.blend() ? 1 : 0); // set blend uniform
+        Material.BLEND_MODE bm = this.material.getBlendMode(); // get blend mode of this object's Material
+        sp.setUniform("blend", bm == Material.BLEND_MODE.NONE ? 0 : (bm == Material.BLEND_MODE.MULTIPLICATIVE ? 1 : 2)); // set blend uniform
         sp.setUniform("x", this.x); // set x
         sp.setUniform("y", this.y); // set y
         this.model.render(); // render model

@@ -118,7 +118,7 @@ public class GameEngine {
      * @param interval the amount of time in seconds to account for
      */
     private void update(float interval) {
-        this.logic.update(interval); // allow logic to update
+        this.logic.update(); // allow logic to update
     }
 
     /**
@@ -130,7 +130,7 @@ public class GameEngine {
             glViewport(0, 0, this.window.getWidth(), this.window.getHeight()); // change the GL viewport to match
             this.logic.resized(this.window.getWidth(), this.window.getHeight()); // notify logic of resize
         }
-        this.logic.render(); // allow the logic to render
+        this.logic.wrapRender(); // allow the logic to render
         this.window.swapBuffers(); // refresh the window
     }
 
