@@ -3,40 +3,40 @@ import logic.GameLogic;
 import utils.Timer;
 import utils.Utils;
 
-import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_F;
+import static org.lwjgl.glfw.GLFW.GLFW_RELEASE;
 import static org.lwjgl.opengl.GL11.*;
 
 /**
- * Controls and brings together the entire program
+ * Abstracts away many of the lower level game functions and operates the program based on whichever GameLogic
+ * is currently active
  */
 public class GameEngine {
 
     /**
      * Data
      */
-    public static float ar = 5;
     private static final int MAX_FPS = 60; // target frames per second (if v-sync is off)
-    private static boolean recordingFPS; // whether to record frames/loops per second
-    private final Window window; // the GLFW window
-    private final Timer timer; // timer for smooth looping
-    private GameLogic logic; // the logic the engine is currently following
+    private static boolean recordingFPS = false; // recording FPS is disabled by default (can be enabled with 'R')
+    private final Window window; // the Window in use
+    private final Timer timer; // used to do time measurements for smooth FPS
+    private GameLogic logic; // the GameLogic currently followed by this GameEngine
 
     /**
      * Constructs this GameEngine
-     * @param logic the starting logic this GameEngine should follow
+     * @param logic the starting GameLogic this GameEngine should follow
      */
     public GameEngine(GameLogic logic) {
-        recordingFPS = false; // disable FPS recording by default (can be enabled by pushing R)
-        this.window = new Window("Game", true); // create graphics.Window
-        this.timer = new Timer(); // create utils.Timer
-        this.logic = logic; // set logic reference
+        this.window = new Window("Game", true); // create Window
+        this.timer = new Timer(); // create Timer
+        this.logic = logic; // set GameLogic reference
     }
 
     /**
      * This starts the engine by initializing it and then beginning the game loop
      */
     public void start() {
-        this.init(); // initialize engine
+        this.init(); // initialize
         this.loop(); // begin loop
         this.cleanup(); // cleanup after loop ends
     }
@@ -45,19 +45,20 @@ public class GameEngine {
      * Initializes this GameEngine
      */
     private void init() {
-        this.window.init(); // initialize GLFW window
-        this.timer.init(); // initialize timer
-        this.logic.init(this.window); // initialize logic
-        this.window.registerKeyControl(new Window.KeyControl() { // register key to toggle FPS logging
+        this.window.init(); // initialize GLFW Window
+        this.timer.init(); // initialize Timer
+        this.logic.init(this.window); // initialize starting GameLogic
+        this.window.registerKeyControl(new Window.KeyControl() { // register key to toggle FPS recording
             public int action() { return GLFW_RELEASE; } // upon release
-            public int key() { return GLFW_KEY_F; } // for F key
-            public void reaction() { GameEngine.recordingFPS = !GameEngine.recordingFPS; } // toggle fps recording
+            public int key() { return GLFW_KEY_F; } // of F key
+            public void reaction() { GameEngine.recordingFPS = !GameEngine.recordingFPS; } // toggle FPS recording
         });
     }
 
     /**
-     * Represents the game loop
-     * This game uses a fixed-step game loop. It consists of four phases: gathering input, updating, rendering, and syncing
+     * Represents and lays out the game loop
+     * This game uses a fixed-step game loop. It consists of four phases: gathering input, updating, rendering, and
+     * syncing
      */
     private void loop() {
 
@@ -68,7 +69,7 @@ public class GameEngine {
         float[] fpsInfo = new float[] { 0.0f, 0.0f, 0.0f }; // FPS info to be used for FPS recording (explained in FPSRecord())
 
         // loop
-        while (!this.window.shouldClose()) { // while the user hasn't exited
+        while (!this.window.shouldClose()) { // while the Window shouldn't close
 
             // timekeeping
             elapsedTime = this.timer.getElapsedTime(); // get elapsed time since last loop
@@ -78,11 +79,11 @@ public class GameEngine {
             // four phases of loop
             this.input(); // gather input
             while(accumulator >= interval) { // while the amount of unaccounted for time is greater than how much one loop should be
-                this.update(interval); // do an update
-                accumulator -= interval; // account for a single loop
+                this.update(); // do an update
+                accumulator -= interval; // account for a single loop interval amount of time
             }
             this.render(); // render - we can render outside of the above while loop because we don't need to render outdated frames
-            if (!this.window.usesVSync()) this.sync(interval); // sync the loop - V-Sync should do this for us (if it's enabled)
+            if (!this.window.usesVSync()) this.sync(interval); // sync the loop - V-Sync will do this for us if it's enabled
         }
     }
 
@@ -109,28 +110,25 @@ public class GameEngine {
      * Gathers input from user
      */
     private void input() {
-        this.window.pollEvents(); // poll for window events such as key press, resizes, etc.
-        this.logic.input(this.window); // allow logic to check input
+        this.window.pollEvents(); // poll for GLFW events such as key press, resizes, etc.
+        this.logic.input(this.window); // allow the GameLogic to check input
     }
 
     /**
      * Updates everything that needs updated
-     * @param interval the amount of time in seconds to account for
      */
-    private void update(float interval) {
-        this.logic.update(); // allow logic to update
-    }
+    private void update() { this.logic.update(); } // allow the GameLogic to update
 
     /**
      * Renders everything that needs rendered
      */
     private void render() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the screen
-        if (this.window.resized(true)) { // if the window is resized
+        if (this.window.resized(true)) { // if the Window has been resized
             glViewport(0, 0, this.window.getWidth(), this.window.getHeight()); // change the GL viewport to match
-            this.logic.resized(this.window.getWidth(), this.window.getHeight()); // notify logic of resize
+            this.logic.resized(this.window.getWidth(), this.window.getHeight()); // notify the GameLogic of the resize
         }
-        this.logic.wrapRender(); // allow the logic to render
+        this.logic.render(); // allow the GameLogic to render
         this.window.swapBuffers(); // refresh the window
     }
 
@@ -147,7 +145,7 @@ public class GameEngine {
     }
 
     /**
-     * Cleans up components of the game that need cleaned up
+     * Cleans up this GameEngine when exiting
      */
     private void cleanup() { this.logic.cleanup(); }
 }

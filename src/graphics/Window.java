@@ -13,38 +13,37 @@ import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
- * Encapsulates a GLFW window
+ * Encapsulates a GLFW window into a single object
  */
 public class Window {
 
     /**
      * Data
      */
-    private final String title; // window title
-    private int w, h; // window width and height
-    private long handle; // window handle
-    private boolean resized; // whether or not the window has been resized
-    private boolean vSync; // whether or not to use v-sync
     private List<KeyControl> keyControls; // list of key controls to pay attention to on GLFW key callback
+    private final String title; // this Window's title
+    private int w, h; // this Window's width and height
+    private long handle; // this Window's handle
+    private boolean resized = false; // whether or not this Window has been resized (false by default)
+    private boolean vSync; // whether or not to use v-sync
 
     /**
-     * Constructs this graphics.Window
-     * @param title the title to give to the window
-     * @param w the width to make the window. If -1, will cover 80% of the width of the screen once init() is called
-     * @param h the height to make the window. If -1, will cover 80% of the height of screen once init() is called
+     * Constructs this Window
+     * @param title the title to give to the GLFW window
+     * @param w the width to make the GLFW window. If -1, will cover 80% of the width of the screen once init() is called
+     * @param h the height to make the GLFW window. If -1, will cover 80% of the height of screen once init() is called
      * @param vSync whether to enable vertical sync
      */
     public Window(String title, int w, int h, boolean vSync) {
-        this.title = title;
-        this.w = w;
-        this.h = h;
-        this.vSync = vSync;
-        this.resized = false;
-        this.keyControls = new ArrayList<>();
+        this.keyControls = new ArrayList<>(); // create KeyControl list
+        this.title = title; // set title
+        this.w = w; // set width
+        this.h = h; // set height
+        this.vSync = vSync; // set vertical sync setting
     }
 
     /**
-     * Constructs this graphics.Window in fullscreen mode
+     * Constructs this Window to take 80% of the monitor's width and height
      * @param title the title to give to the window
      * @param vSync whether to enable vertical sync
      */
@@ -108,14 +107,6 @@ public class Window {
     }
 
     /**
-     * Registers a keyboard control to this graphics.Window.
-     * @param keyControl the keyboard control to register to the window (interface defined below)
-     */
-    public void registerKeyControl(KeyControl keyControl) {
-        this.keyControls.add(keyControl); // add key control to list of key controls
-    }
-
-    /**
      * Polls for any GLFW window events
      */
     public void pollEvents() { glfwPollEvents(); } // polls for events
@@ -126,10 +117,11 @@ public class Window {
     public void swapBuffers() { glfwSwapBuffers(this.handle); } // swap the buffers
 
     /**
-     * @return whether this window should close
+     * Registers a keyboard control to this graphics.Window.
+     * @param keyControl the keyboard control to register to the window (interface defined below)
      */
-    public boolean shouldClose() {
-        return glfwWindowShouldClose(this.handle); // determine if this window should close and return the result
+    public void registerKeyControl(KeyControl keyControl) {
+        this.keyControls.add(keyControl); // add key control to list of key controls
     }
 
     /**
@@ -138,11 +130,6 @@ public class Window {
      * @return whether the given key is pressed
      */
     public boolean isKeyPressed(int key) { return glfwGetKey(this.handle, key) == GLFW_PRESS; }
-
-    /**
-     * @return whether this graphics.Window has V-Sync enabled
-     */
-    public boolean usesVSync() { return this.vSync; }
 
     /**
      * Will determine if this Window has been resized
@@ -154,6 +141,18 @@ public class Window {
         if (resetFlag) this.resized = false; // reset if reset flag is true
         return rsz; // reset whether resized
     }
+
+    /**
+     * @return whether this window should close
+     */
+    public boolean shouldClose() {
+        return glfwWindowShouldClose(this.handle); // determine if this window should close and return the result
+    }
+
+    /**
+     * @return whether this graphics.Window has V-Sync enabled
+     */
+    public boolean usesVSync() { return this.vSync; }
 
     /**
      * @return the width of this Window
@@ -171,7 +170,7 @@ public class Window {
     public long getHandle() { return this.handle; }
 
     /**
-     * Represents a possible keyboard control that can be registered to this window
+     * Represents a keyboard control that can be registered to this Window
      */
     public interface KeyControl {
         int key(); // the key to trigger this control

@@ -21,16 +21,17 @@ public class Model {
      */
     private final int ids[]; // [0] - VAO ID, [1] - position VBO ID, [2] - texture coordinate VBO ID, [4] - index VBO ID
     private final int vertexCount; // amount of vertices this Model has
+    public static final float STD_SQUARE_SIZE = 0.5f; // the standard square model size (width and height)
 
     /**
      * @return the standard square model coordinates to make creating Square models easier
      */
     public static float[] getStdSquareModelCoords() {
         return new float[] { // rectangle positions
-                -0.5f,  0.5f, // top left
-                -0.5f, -0.5f, // bottom left
-                0.5f, -0.5f, // bottom right
-                0.5f,  0.5f // top right
+                -STD_SQUARE_SIZE / 2,  STD_SQUARE_SIZE / 2, // top left
+                -STD_SQUARE_SIZE / 2, -STD_SQUARE_SIZE / 2, // bottom left
+                 STD_SQUARE_SIZE / 2, -STD_SQUARE_SIZE / 2, // bottom right
+                 STD_SQUARE_SIZE / 2,  STD_SQUARE_SIZE / 2 // top right
         };
     }
 

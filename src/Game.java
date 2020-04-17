@@ -6,11 +6,11 @@ import logic.WorldLogic;
 public class Game {
 
     /**
-     * Main method creates, initializes, and runs the engine
+     * Main method creates, initializes, and runs the GameEngine
      * @param args the command-line arguments
      */
     public static void main(String[] args) {
-        GameEngine g = new GameEngine(new WorldLogic()); // create engine starting with the world logic
-        g.start(); // start engine
+        GameEngine g = new GameEngine(new WorldLogic()); // create GameEngine with WorldLogic to start
+        g.start(); // start GameEngine
     }
 }

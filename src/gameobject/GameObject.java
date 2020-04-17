@@ -3,7 +3,6 @@ package gameobject;
 import graphics.Material;
 import graphics.Model;
 import graphics.ShaderProgram;
-import graphics.Window;
 
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
 import static org.lwjgl.opengl.GL11.glBindTexture;
@@ -14,22 +13,24 @@ import static org.lwjgl.opengl.GL13C.glActiveTexture;
  * Represents a single game object. This is the basic abstraction away from directly dealing with GL commands
  * GameObject's have a Model and a Material both used for rendering, and they also have position and velocity
  * components
+ * All positioning and velocity are aspect coordinates if being rendered by a HUD, or world coordinates if being
+ * rendered by a World
  */
 public class GameObject {
 
     /**
      * Data
      */
-    private float x, y; // world position
-    private float vx, vy; // world velocity
+    private float x, y; // position
+    private float vx, vy; // velocity
     private Model model; // model to use when rendering
     private Material material; // material to use when rendering
 
     /**
      * Constructs this GameObject
-     * @param x the world x position to place this gameobject.GameObject at
-     * @param y the world y position to place this gameobject.GameObject at
-     * @param model the model to render for this gameobject.GameObject
+     * @param x the x position to place this GameObject at
+     * @param y the y position to place this GameObject at
+     * @param model the model to render for this GameObject
      */
     public GameObject(float x, float y, Model model, Material material) {
         this.x = x; // set x
@@ -48,14 +49,15 @@ public class GameObject {
     }
 
     /**
-     * @return this GameObject's x world position
+     * @return this GameObject's x position
      */
     public float getX() { return this.x; }
 
     /**
-     * @return this GameObject's y world position
+     * Update's this GameObject's x position
+     * @param x the new x position
      */
-    public float getY() { return this.y; }
+    public void setX(float x) { this.x = x; }
 
     /**
      * Updates this GameObject's horizontal velocity
@@ -68,6 +70,17 @@ public class GameObject {
      * @param dvx the incremental change
      */
     public void incrementVX(float dvx) { this.vx += dvx; }
+
+    /**
+     * @return this GameObject's y position
+     */
+    public float getY() { return this.y; }
+
+    /**
+     * Update's this GameObject's y position
+     * @param y the new y position
+     */
+    public void setY(float y) { this.y = y; }
 
     /**
      * Updates this GameObject's vertical velocity
@@ -83,7 +96,8 @@ public class GameObject {
 
     /**
      * Renders this GameObject using the given ShaderProgram
-     * This function will assume the given ShaderProgram is already bound
+     * This function will assume the given ShaderProgram is already bound and has a certain set of uniforms to handle
+     * rendering a GameObject (see method for details)
      * @param sp the ShaderProgram to use to render this GameObject
      */
     public void render(ShaderProgram sp) {

@@ -10,7 +10,7 @@ public class Camera {
     /**
      * Data
      */
-    private final static float MIN_ZOOM = 0.07f; // minimum zoom
+    private final static float MIN_ZOOM = 0.05f; // minimum zoom
     private final static float MAX_ZOOM = 1.8f; // maximum zoom
     private final static float DEFAULT_ZOOM = 0.7f; // default zoom
     private float x, y, vx, vy; // position and velocity

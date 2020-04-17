@@ -7,8 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-import org.apache.commons.io.IOUtils;
-
 /**
  * Provides various utility methods to be used throughout the program
  */

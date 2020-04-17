@@ -1,135 +1,102 @@
 package logic;
 
-import gameobject.GameObject;
-import graphics.*;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.lwjgl.glfw.GLFW.glfwSetScrollCallback;
+import gameobject.HUD;
+import gameobject.World;
+import graphics.Window;
 
 /**
  * Lays out and abstracts away many lower-level details and capabilities that a game logic should have. Notably:
- *  - Has a ShaderProgram member (sp) used for rendering. sp is created and initialized in initSP(), so for a custom
- *    ShaderProgram, an extending class should override that method.
+ *  - has a World to render GameObjects that react to a Camera
+ *  - has a HUD to rendered over the World to render GameObjects that do not react to a Camera
+ *  - flags to enable/disable rendering the World and/or the HUD
+ *  - ability to use custom ShaderPrograms and render according to them
  */
 public abstract class GameLogic {
 
     /**
      * Data
      */
-    protected List<GameObject> gameObjects; // game objects
-    protected ShaderProgram sp; // shader program to use for rendering
-    protected Camera cam; // camera to use for view positioning
-    protected float ar; // aspect ratio of window - this is used by the default ShaderProgram
-    protected boolean arAction; // aspect ratio action (for projection) - this is used by the default ShaderProgram
+    protected HUD hud; // Used for rendering GameObjects over the World which do not react to a Camera
+    protected World world; // Used for rendering GameObjects which react to a Camera
+    protected boolean renderWorld = true, renderHUD = true; // flags to be set by extending classes to enable/disable rendering for the world and HUD, respectively
 
     /**
      * Initializes this GameLogic. This method is the only entry point into the GameLogic and it is not able to be
-     * overridden by extending classes. However, this method will call initSP() and initItems() - two methods which
-     * ARE able to be overridden by extending classes.
+     * Extending classes cannot override this method. However, this method will call initOthers() which can be
+     * overridden by extending classes and should be used for additional initialization
      * @param window the window
      */
     public final void init(Window window) {
-        this.ar = (float)window.getWidth() / (float)window.getHeight(); // calculate aspect ratio
-        this.arAction = (this.ar < 1.0f); // if ar < 1.0f (height > width) then we will make objects shorter to compensate
-        this.gameObjects = new ArrayList<>(); // initialize GameObject list
-        this.cam = new Camera(); // create camera
-        this.initSP(window); // initialize shader program
-        this.initItems(window); // initialize game objects
-        glfwSetScrollCallback(window.getHandle(), (w, x, y) -> { // when the user scrolls
-            this.cam.zoom(y > 0 ? 1.15f : 0.85f); // zoom on camera
-        });
+        float ar = (float)window.getWidth() / (float)window.getHeight(); // calculate aspect ratio
+        boolean arAction = (ar < 1.0f); // if ar < 1.0f (height > width) then we will make objects shorter to compensate
+        this.world = new World(window.getHandle(), ar, arAction); // create World
+        this.hud = new HUD(ar, arAction); // create HUD
+        this.initOthers(window); // allow extending classes to add GameObjects
     }
 
     /**
-     * Extending classes should initialize any GameObjects or other important members here.
+     * Extending classes should initialize any GameObjects to be placed in the World/HUD or any other members here
+     * @param window the Window in use
      */
-    protected void initItems(Window window) {}
-
-    /**
-     * Initializes the world ShaderProgram
-     * Extending classes can override this, but if no ShaderProgram is assigned to sp, the program will likely crash
-     * Extending classes should only initialize things related to the ShaderProgram here. For other initializations,
-     * initItems() is recommended.
-     * @param window the Window
-     */
-    protected void initSP(Window window) {
-        this.sp = new ShaderProgram("/shaders/worldV.glsl", "/shaders/worldF.glsl"); // create ShaderProgram
-        this.sp.registerUniform("x"); // register world x uniform
-        this.sp.registerUniform("y"); // register world y uniform
-        this.sp.registerUniform("ar"); // register aspect ratio uniform
-        this.sp.registerUniform("arAction"); // register aspect ratio action uniform
-        this.sp.registerUniform("isTextured"); // register texture flag uniform
-        this.sp.registerUniform("color"); // register color uniform
-        this.sp.registerUniform("blend"); // register blend uniform
-        this.sp.registerUniform("texSampler"); // register texture sampler uniform
-        this.sp.registerUniform("camX"); // register camera world x uniform
-        this.sp.registerUniform("camY"); // register camera world y uniform
-        this.sp.registerUniform("camZoom"); // register camera zoom uniform
-    }
+    protected void initOthers(Window window) {}
 
     /**
      * Extending classes should override this to use the window reference to respond to any input they so desire to
      * respond to
-     * @param window the window
+     * @param window the Window in use
      */
     public void input(Window window) {}
 
     /**
-     * Updates this GameLogic by updating each of its GameObjects
-     * Extending classes can certainly override this but super.update() should definitely be called
+     * Updates this GameLogic by updating the World and the HUD
+     * Extending classes can certainly override this but unless updated in the overriding method (or super.update()
+     * is called), this GameLogic's World and HUD will no longer be updated
      */
     public void update() {
-        for (GameObject o : this.gameObjects) o.update(); // update GameObjects
-        this.cam.update(); // update camera
+        this.world.update(); // update World
+        this.hud.update(); // update HUD
     }
 
     /**
-     * Wraps the rendering process by binding and unbinding the ShaderProgram before and after rendering, respectively
-     * Extending classes cannot override this method, but they can override render() below
+     * Renders this GameLogic's World, then this GameObject's HUD, and then will render anything else that extending
+     * classes wish to render by calling renderOthers()
+     * Extending classes cannot override this method. If extending classes wish to NOT render the World, the HUD, or
+     * both, they can toggle the renderWorld and renderHUD flags and provide their own rendering process in
+     * renderOthers()
      */
-    public final void wrapRender() {
-        this.sp.bind(); // bind shader program
-        this.render(); // render
-        this.sp.unbind(); // unbind shader program
+    public final void render() {
+        if (this.renderWorld) this.world.render(); // render World if flag is set to true
+        if (this.renderHUD) this.hud.render(); // render HUD if flag is set to true
+        this.renderOthers(); // allow extending class to render
     }
 
     /**
-     * Sets appropriate ShaderProgram uniforms and renders this GameLogic's game objects
-     * Extending classes can certainly override this method, but super.render() should be called unless the extending
-     * class wishes to directly modify the rendering process. If the extending class has an additional/separate
-     * ShaderProgram, sp should be unbound first (this.sp.unbind() should be called) and then the other ShaderProgram
-     * should be bound and its uniforms appropriately set before rendering using it
+     * Extending classes should override this method if they desire to render in other procedures beside the default
+     * World and HUD rendering
      */
-    protected void render() {
-        this.sp.setUniform("texSampler", 0); // set texture sampler uniform to use texture unit 0
-        this.sp.setUniform("ar", this.ar); // set aspect ratio uniform
-        this.sp.setUniform("arAction", this.arAction ? 1 : 0); // set aspect ratio action uniform
-        this.sp.setUniform("camX", this.cam.getX()); // set camera x uniform
-        this.sp.setUniform("camY", this.cam.getY()); // set camera y uniform
-        this.sp.setUniform("camZoom", this.cam.getZoom()); // set camera zoom uniform
-        for (GameObject o : this.gameObjects) o.render(this.sp); // render game objects
-    }
+    protected void renderOthers() {}
 
     /**
-     * Reacts to the window resizing by updating the aspect ratio member of GameLogic
+     * Reacts to the window resizing by calculating the new aspect ratio and aspect ratio action and then notifying this
+     * GameLogic's World and HUD
      * Extending classes cannot override this method
      * @param w the new window width
      * @param h the new window height
      */
     public final void resized(int w, int h) {
-        this.ar = (float)w / (float)h; // calculate aspect ratio
-        this.arAction = (this.ar < 1.0f); // if ar < 1.0f (height > width) then we will make objects shorter to compensate
+        float ar = (float)w / (float)h; // calculate aspect ratio
+        boolean arAction = (ar < 1.0f); // if ar < 1.0f (height > width) then we will make objects shorter to compensate
+        this.world.resized(ar, arAction); // notify World of resize
+        this.hud.resized(ar, arAction); // notify HUD of resize
     }
 
     /**
-     * Clean up components of this GameLogic that need cleaned up
+     * Cleans up this GameLogic
      * Extending classes should override this to cleanup any additional members they need to do, but they should
-     * always call super.cleanup() to clean up the base GameLogic members
+     * always call super.cleanup() to clean up the base GameLogic members as well
      */
     public void cleanup() {
-        if (this.sp != null) this.sp.cleanup(); // cleanup shader programs
-        for (GameObject o : this.gameObjects) o.cleanup();
+        this.world.cleanup(); // cleanup World
+        this.hud.cleanup(); // cleanup HUD
     }
 }
