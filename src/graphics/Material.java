@@ -8,21 +8,29 @@ import utils.Utils;
 public class Material {
 
     /**
+     * Represents how a Material should blend its Texture and its color when it has both
+     * NONE - uses texture sampling completely
+     * MULTIPLICATIVE - multiplies the color by the texture sample
+     * AVERAGED - finds average of the sample and the color
+     */
+    public enum BLEND_MODE { NONE, MULTIPLICATIVE, AVERAGED }
+
+    /**
      * Data
      */
     private float[] color; // the color of this material if it has one
     private Texture texture; // the texture of this material if it has one
-    private boolean blend; // whether to blend color and texture when rendering
+    private BLEND_MODE blendMode; // how this Material blends its texture and color when it has both
 
     /**
      * Constructs this Material based on the given texture, color, and blend flag
      * @param texture the texture to use for this Material
      * @param color the 4-dimensional color to use for this Material (must be a length-4 float array)
-     * @param blend whether to blend the given texture and color when rendering (will only use texture otherwise, or color if texture is null)
+     * @param blendMode what blending mode to use when both a Texture and a color are present (described above)
      */
-    public Material(Texture texture, float[] color, boolean blend) {
+    public Material(Texture texture, float[] color, BLEND_MODE blendMode) {
         this.texture = texture; // set texture
-        this.blend = blend; // set blend flag
+        this.blendMode = blendMode; // set blend mode
         if (color != null) { // if a color is provided
             if (color.length == 4) this.color = color; // use this color if it is properly formatted
             else { // if an invalid color array is given, just log it
@@ -37,13 +45,13 @@ public class Material {
      * Constructs this Material with only a Texture
      * @param texture the Texture to use for this Material
      */
-    public Material(Texture texture) { this(texture, null, false); } // call other constructor
+    public Material(Texture texture) { this(texture, null, BLEND_MODE.NONE); } // call other constructor
 
     /**
      * Constructs this Material with only a Color
      * @param color the 4-dimensional color to use for this Material (must be a length-4 float array)
      */
-    public Material(float[] color) { this(null, color, false); } // call other constructor
+    public Material(float[] color) { this(null, color, BLEND_MODE.NONE); } // call other constructor
 
     /**
      * @return whether this Material is textured
@@ -56,9 +64,9 @@ public class Material {
     public boolean isColored() { return this.color != null; }
 
     /**
-     * @return whether this Material should blend its texture and color
+     * @return this Material's blend mode
      */
-    public boolean blend() { return this.blend; }
+    public BLEND_MODE getBlendMode() { return this.blendMode; }
 
     /**
      * @return this Material's Texture

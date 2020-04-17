@@ -31,7 +31,7 @@ public class WorldLogic implements GameLogic {
         Material pMat = new Material(new float[] {1.0f, 0.0f, 0.0f, 1.0f}); // player should just be a red square
         Texture dirt = new Texture("/textures/dirt.png"); // create dirt texture
         Material dMat = new Material(dirt); // dirt should just be a dirt square
-        Material bdMat = new Material(dirt, new float[] {0.0f, 0.0f, 1.0f, 1.0f}, true); // blue dirt should just be a blue dirt square
+        Material bdMat = new Material(dirt, new float[] {0.0f, 0.0f, 1.0f, 1.0f}, Material.BLEND_MODE.NONE); // blue dirt should just be a blue dirt square
 
         // create game objects
         this.player = new GameObject(0f, 0f, m, pMat); // create player
