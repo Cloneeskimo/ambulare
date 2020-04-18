@@ -51,8 +51,11 @@ public class Texture {
         this.w = w.get(); // save width
         this.h = h.get(); // save height
         this.id = glGenTextures(); // generate texture object
+
         glBindTexture(GL_TEXTURE_2D, id); // bind new texture object
         glPixelStoref(GL_UNPACK_ALIGNMENT, 1); // tell GL that each component will be one byte in size
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // this makes pixels clear and un-blurred
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); // this makes pixels clear and un-blurred
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this.w, this.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf); // generate texture
         // parameters for glTexImage2D:
         // target - target texture (the type) - GL_TEXTURE_2D is what we're working with here
@@ -71,6 +74,16 @@ public class Texture {
      * @return this Texture's ID
      */
     public int getID() { return this.id; }
+
+    /**
+     * @return this Texture's width
+     */
+    public int getWidth() { return this.w; }
+
+    /**
+     * @return this Texture's height
+     */
+    public int getHeight() { return this.h; }
 
     /**
      * Cleans up this Texture

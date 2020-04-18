@@ -21,11 +21,12 @@ public class GameObject {
     /**
      * Data
      */
-    private float x, y; // position
-    private float vx, vy; // velocity
-    private float sx, sy; // x scale and y scale
-    private Model model; // model to use when rendering
-    private Material material; // material to use when rendering
+    protected boolean visible = true; // visibility
+    protected float x, y; // position
+    protected float vx, vy; // velocity
+    protected float sx, sy; // x scale and y scale
+    protected Model model; // model to use when rendering
+    protected Material material; // material to use when rendering
 
     /**
      * Constructs this GameObject
@@ -131,6 +132,7 @@ public class GameObject {
      * @param sp the ShaderProgram to use to render this GameObject
      */
     public void render(ShaderProgram sp) {
+        if (!this.visible) return; // do not render if invisible
         if (this.material.isTextured()) { // if this object's material is textured
             sp.setUniform("isTextured", 1); // set textured flag to true
             glActiveTexture(GL_TEXTURE0); // set active texture to one in slot 0
@@ -150,14 +152,16 @@ public class GameObject {
     }
 
     /**
+     * Sets the visibility flag of this GameObject to the given value
+     * @param v the new value of the visibility flag
+     */
+    public void setVisibility(boolean v) { this.visible = v; }
+
+    /**
      * Cleans up this GameObject
      */
     public void cleanup() {
         this.model.cleanup(); // cleanup model
         this.material.cleanup(); // cleanup material
-    }
-
-    public interface ResizeHandler{
-
     }
 }

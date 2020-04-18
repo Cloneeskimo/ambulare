@@ -17,7 +17,7 @@ public class GameEngine {
      * Data
      */
     private static final int MAX_FPS = 60; // target frames per second (if v-sync is off)
-    private static boolean recordingFPS = false; // recording FPS is disabled by default (can be enabled with 'R')
+    private static boolean reportingFPS = false; // FPS reporting disabled by default
     private final Window window; // the Window in use
     private final Timer timer; // used to do time measurements for smooth FPS
     private GameLogic logic; // the GameLogic currently followed by this GameEngine
@@ -30,6 +30,9 @@ public class GameEngine {
         this.window = new Window("Game", true); // create Window
         this.timer = new Timer(); // create Timer
         this.logic = logic; // set GameLogic reference
+        FPSReportControl FPSRC = new FPSReportControl(); // create new FPS reporting toggle control
+        FPSRC.logic = this.logic; // tell it which GameLogic to notify when toggled
+        this.window.registerKeyControl(FPSRC); // register control with Window in use
     }
 
     /**
@@ -48,11 +51,6 @@ public class GameEngine {
         this.window.init(); // initialize GLFW Window
         this.timer.init(); // initialize Timer
         this.logic.init(this.window); // initialize starting GameLogic
-        this.window.registerKeyControl(new Window.KeyControl() { // register key to toggle FPS recording
-            public int action() { return GLFW_RELEASE; } // upon release
-            public int key() { return GLFW_KEY_F; } // of F key
-            public void reaction() { GameEngine.recordingFPS = !GameEngine.recordingFPS; } // toggle FPS recording
-        });
     }
 
     /**
@@ -73,7 +71,7 @@ public class GameEngine {
 
             // timekeeping
             elapsedTime = this.timer.getElapsedTime(); // get elapsed time since last loop
-            if (recordingFPS) FPSRecord(elapsedTime, fpsInfo); // record FPS if enabled
+            if (GameEngine.reportingFPS) reportFPS(elapsedTime, fpsInfo); // record FPS if enabled
             accumulator += elapsedTime; // add elapsed time to an accumulator which keeps track of how much time has been unaccounted for
 
             // four phases of loop
@@ -88,7 +86,7 @@ public class GameEngine {
     }
 
     /**
-     * Records FPS if the setting is enabled
+     * Reports FPS if the setting is enabled
      * @param elapsedTime the amount of time since the last loop
      * @param fpsInfo info about the FPS recording
      *  fpsInfo[0] - accumulator - how much time since last FPS recording
@@ -96,12 +94,13 @@ public class GameEngine {
      *  fpsInfo[2] - amount of FPS values that have been added to the sum [1]
      *  this data is useful so that the program can then calculate and report average FPS every second
      */
-    private void FPSRecord(float elapsedTime, float[] fpsInfo) {
+    private void reportFPS(float elapsedTime, float[] fpsInfo) {
         fpsInfo[0] += elapsedTime; // keep time between recordings
         fpsInfo[1] += (1 / elapsedTime); // add to FPS sum
         fpsInfo[2] += 1; // keep track of how many FPS values are in sum
         if (fpsInfo[0] > 1f) { // if it has been a second since the last FPS recording
-            Utils.log("Average FPS of last second: " + (fpsInfo[1] / fpsInfo[2]), "GameEngine", "FPSRecord()", false); // record the FPS
+            this.logic.reportFPS(fpsInfo[1] / fpsInfo[2]); // tell GameLogic about FPS
+            Utils.log("Average FPS of last second: " + (fpsInfo[1] / fpsInfo[2]), "GameEngine", "FPSRecord()", false); // log the FPS
             fpsInfo[0] = fpsInfo[1] = fpsInfo[2] = 0.0f; // reset FPS info array
         }
     }
@@ -148,4 +147,20 @@ public class GameEngine {
      * Cleans up this GameEngine when exiting
      */
     private void cleanup() { this.logic.cleanup(); }
+
+    /**
+     * A KeyControl that toggles the visibility of a GameLogic's FPS counter
+     */
+    private class FPSReportControl implements Window.KeyControl {
+        GameLogic logic; // the logic whose FPS counter's visibility to toggle
+        @Override
+        public int key() { return GLFW_KEY_F; } // toggle when the key in question is F
+        @Override
+        public int action() { return GLFW_RELEASE; } // toggle when the key in question is released
+        @Override
+        public void reaction() {
+            GameEngine.reportingFPS = !GameEngine.reportingFPS; // toggle static flag
+            if (!GameEngine.reportingFPS) logic.reportFPS(null); // if toggled off, notify logic of termination of reporting
+        }
+    }
 }

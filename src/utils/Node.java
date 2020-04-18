@@ -235,7 +235,11 @@ public class Node {
         // create node and set name if there is one
         Node node = new Node(); // create empty node
         String possibleName = line.substring(0, dividerLocation); // get the possible name
-        if (!possibleName.equals("")) curr.setName(line.substring(0, dividerLocation)); // create node with name if not empty
+        if (!possibleName.equals("")) {
+            int spaceCutoff = 0; // count amount of pre-pending spaces to cutoff
+            while (line.charAt(spaceCutoff) == ' ') spaceCutoff++; // find where spaces end
+            curr.setName(line.substring(spaceCutoff, dividerLocation)); // create node with name if not empty
+        }
 
         // set node value if there is one
         String possibleValue = line.substring(dividerLocation + 1, line.length()); // get possible value

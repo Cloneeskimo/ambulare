@@ -29,10 +29,10 @@ public class Model {
      */
     public static float[] getStdSquareModelCoords() {
         return new float[] { // rectangle positions
-                -STD_SQUARE_SIZE / 2,  STD_SQUARE_SIZE / 2, // top left
-                -STD_SQUARE_SIZE / 2, -STD_SQUARE_SIZE / 2, // bottom left
-                 STD_SQUARE_SIZE / 2, -STD_SQUARE_SIZE / 2, // bottom right
-                 STD_SQUARE_SIZE / 2,  STD_SQUARE_SIZE / 2 // top right
+                -STD_SQUARE_SIZE / 2, -STD_SQUARE_SIZE / 2, // top left
+                -STD_SQUARE_SIZE / 2,  STD_SQUARE_SIZE / 2, // bottom left
+                 STD_SQUARE_SIZE / 2,  STD_SQUARE_SIZE / 2, // bottom right
+                 STD_SQUARE_SIZE / 2, -STD_SQUARE_SIZE / 2 // top right
         };
     }
 
@@ -111,19 +111,23 @@ public class Model {
         MemoryUtil.memFree(idxBuffer); // free index buffer memory
 
         // calculate width and height
-        float minX = modelCoords[0], minY = modelCoords[1]; // initialize minimum x and y to the first x and y
-        float maxX = minX, maxY = minY; // initialize max x and y to the first x and y
-        for (int i = 2; i < modelCoords.length; i++) { // for the rest of the model coordinates
-            if (i % 2 == 0) { // if an x coordinate
-                minX = Math.min(minX, modelCoords[i]); // check for smaller x
-                maxX = Math.max(maxX, modelCoords[i]); // check for larger x
-            } else { // if a ycoordinate
-                minY = Math.min(minY, modelCoords[i]); // check for smaller y
-                maxY = Math.max(maxY, modelCoords[i]); // check for larger y
+        if (modelCoords.length == 0) { // if empty Model
+            this.w = this.h = 0; // set width and height to 0
+        } else { // otherwise
+            float minX = modelCoords[0], minY = modelCoords[1]; // initialize minimum x and y to the first x and y
+            float maxX = minX, maxY = minY; // initialize max x and y to the first x and y
+            for (int i = 2; i < modelCoords.length; i++) { // for the rest of the model coordinates
+                if (i % 2 == 0) { // if an x coordinate
+                    minX = Math.min(minX, modelCoords[i]); // check for smaller x
+                    maxX = Math.max(maxX, modelCoords[i]); // check for larger x
+                } else { // if a ycoordinate
+                    minY = Math.min(minY, modelCoords[i]); // check for smaller y
+                    maxY = Math.max(maxY, modelCoords[i]); // check for larger y
+                }
             }
+            this.w = Math.abs(maxX - minX); // store width of model
+            this.h = Math.abs(maxY - minY); // store height of model
         }
-        this.w = Math.abs(maxX - minX); // store width of model
-        this.h = Math.abs(maxY - minY); // store height of model
     }
 
     /**
