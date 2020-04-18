@@ -7,6 +7,8 @@ uniform int arAction; // aspect ration action
 uniform float ar; // aspect ratio
 uniform float x; // x world position
 uniform float y; // y world position
+uniform float scaleX; // x scaling
+uniform float scaleY; // y scaling
 uniform float camX; // camera's x world position
 uniform float camY; // camera's y world position
 uniform float camZoom; // camera's zoom
@@ -18,7 +20,7 @@ out vec2 fTexCoords; // texture coordinates are just passed through to fragment 
 
 // main function
 void main() {
-    vec2 pos = vec2(modelCoords.x + x - camX, modelCoords.y + y - camY); // apply world position and camera position
+    vec2 pos = vec2((scaleX * modelCoords.x) + x - camX, (scaleY * modelCoords.y) + y - camY); // apply scaling, world position, and camera position
     if (arAction == 1) pos.y = pos.y * ar; // apply projection to y
     else pos.x = pos.x / ar; // apply projection to x
     gl_Position = vec4(pos * camZoom, 0.0, 1.0); // pass through calculated position with zoom applied

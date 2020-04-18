@@ -21,6 +21,7 @@ public class Model {
      */
     private final int ids[]; // [0] - VAO ID, [1] - position VBO ID, [2] - texture coordinate VBO ID, [4] - index VBO ID
     private final int vertexCount; // amount of vertices this Model has
+    private final float w, h; // width and height of this Model in model coordinates
     public static final float STD_SQUARE_SIZE = 0.5f; // the standard square model size (width and height)
 
     /**
@@ -108,7 +109,32 @@ public class Model {
         MemoryUtil.memFree(modelCoordsBuffer); // free model coordinate buffer memory
         MemoryUtil.memFree(texCoordsBuffer); // free texture coordinate buffer memory
         MemoryUtil.memFree(idxBuffer); // free index buffer memory
+
+        // calculate width and height
+        float minX = modelCoords[0], minY = modelCoords[1]; // initialize minimum x and y to the first x and y
+        float maxX = minX, maxY = minY; // initialize max x and y to the first x and y
+        for (int i = 2; i < modelCoords.length; i++) { // for the rest of the model coordinates
+            if (i % 2 == 0) { // if an x coordinate
+                minX = Math.min(minX, modelCoords[i]); // check for smaller x
+                maxX = Math.max(maxX, modelCoords[i]); // check for larger x
+            } else { // if a ycoordinate
+                minY = Math.min(minY, modelCoords[i]); // check for smaller y
+                maxY = Math.max(maxY, modelCoords[i]); // check for larger y
+            }
+        }
+        this.w = Math.abs(maxX - minX); // store width of model
+        this.h = Math.abs(maxY - minY); // store height of model
     }
+
+    /**
+     * @return this Model's width in Model Coordinates
+     */
+    public float getWidth() { return this.w; }
+
+    /**
+     * @return this Model's height in Model Coordinates
+     */
+    public float getHeight() { return this.h; }
 
     /**
      * Cleans up this Model by deleting buffers and unbinding any buffer objects or array objects

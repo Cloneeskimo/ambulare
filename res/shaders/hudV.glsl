@@ -7,6 +7,8 @@ uniform int arAction; // aspect ration action
 uniform float ar; // aspect ratio
 uniform float x; // x world position
 uniform float y; // y world position
+uniform float scaleX; // x scaling
+uniform float scaleY; // y scaling
 
 // data
 layout (location = 0) in vec2 modelCoords; // model coordinate data in VBO at index 0 of VAO
@@ -15,7 +17,7 @@ out vec2 fTexCoords; // texture coordinates are just passed through to fragment 
 
 // main function
 void main() {
-    vec2 pos = vec2(modelCoords.x + x, modelCoords.y + y); // apply world position and camera position
+    vec2 pos = vec2((scaleX * modelCoords.x) + x, (scaleY * modelCoords.y) + y); // apply scaling and world position
     if (arAction == 1) pos.y = pos.y * ar; // apply projection to y
     else pos.x = pos.x / ar; // apply projection to x
     gl_Position = vec4(pos, 0.0, 1.0); // pass through calculated position with zoom applied

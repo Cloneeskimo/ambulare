@@ -1,6 +1,5 @@
 package gameobject;
 
-import graphics.Model;
 import graphics.ShaderProgram;
 import utils.Coord;
 import utils.Transformation;
@@ -18,7 +17,7 @@ public class HUD {
     /**
      * Data
      */
-    private List<GameObject> gameObjects; // a List of GameObjects belonging to this HUD
+    private List<HUDItem> hudItems; // a List of HUDItems belonging to this HUD
     private ShaderProgram sp; // the ShaderProgram used to render the HUD
     private float ar; // the Window's aspect ratio
     private boolean arAction; // aspect ratio action (for projection)
@@ -31,7 +30,7 @@ public class HUD {
     public HUD(float ar, boolean arAction) {
         this.ar = ar; // save aspect ratio for rendering
         this.arAction = arAction; // save aspect ratio action for rendering
-        this.gameObjects = new ArrayList<>(); // create GameObject list
+        this.hudItems = new ArrayList<>(); // create HUDItem list
         this.initSP(); // initialize ShaderProgram
     }
 
@@ -42,6 +41,8 @@ public class HUD {
         this.sp = new ShaderProgram("/shaders/hudV.glsl", "/shaders/worldF.glsl"); // create ShaderProgram
         this.sp.registerUniform("x"); // register aspect x uniform
         this.sp.registerUniform("y"); // register aspect y uniform
+        this.sp.registerUniform("scaleX"); // register x scale uniform
+        this.sp.registerUniform("scaleY"); // register y scale uniform
         this.sp.registerUniform("ar"); // register aspect ratio uniform
         this.sp.registerUniform("arAction"); // register aspect ratio action uniform
         this.sp.registerUniform("isTextured"); // register texture flag uniform
@@ -54,7 +55,7 @@ public class HUD {
      * Updates this HUD
      */
     public void update() {
-        for (GameObject o : this.gameObjects) o.update(); // update GameObjects
+        for (HUDItem i : this.hudItems) i.o.update(); // update GameObjects
     }
 
     /**
@@ -65,74 +66,143 @@ public class HUD {
         this.sp.setUniform("texSampler", 0); // set texture sampler uniform to use texture unit 0
         this.sp.setUniform("ar", this.ar); // set aspect ratio uniform
         this.sp.setUniform("arAction", this.arAction ? 1 : 0); // set aspect ratio action uniform
-        for (GameObject o : this.gameObjects) o.render(this.sp); // render each GameObject
+        for (HUDItem i : this.hudItems) i.o.render(this.sp); // render each GameObject
         this.sp.unbind(); // unbind this HUD's ShaderProgram
     }
 
     /**
-     * Handles a resize of the Window. It is IMPERATIVE that the hosting class call this every time the Window is
-     * resized, or aspect coordinates cannot be maintained by this class automatically
+     * Handles a resize of the Window. It is vital that this is called whenever the Window in use is resized, or
+     * position of HUD elements will be off
      * @param ar the new aspect ratio
      * @param arAction the new aspect ratio action
      */
     public void resized(float ar, boolean arAction) {
-        for (GameObject o : this.gameObjects) { // for each GameObject
-            Coord ap = new Coord(o.getX(), o.getY()); // create a Coord object containing its position
-            ap.x -= (0.05f + (Model.STD_SQUARE_SIZE / 2)); // TODO: do not assume square, implement getWidth or getHeight()
-            ap.y -= (0.05f + (Model.STD_SQUARE_SIZE / 2)); // TODO: do not assume square, implement getWidth or getHeight()
-            Transformation.aspectToNorm(ap, this.ar); // convert back to normalized using old aspect ratio
-            Transformation.normToAspect(ap, ar); // then convert back to aspect using new aspect ratio
-            o.setX(ap.x + 0.05f + (Model.STD_SQUARE_SIZE / 2)); // TODO: do not assume square, implement getWidth or getHeight()
-            o.setY(ap.y + 0.05f + (Model.STD_SQUARE_SIZE / 2)); // TODO: do not assume square, implement getWidth or getHeight()
-        }
         this.ar = ar; // save new aspect ratio
         this.arAction = arAction; // save new aspect ratio action
+        this.ensureAllPlacements(); // ensure all items are correctly paced
     }
 
     /**
-     * Adds the given item to the HUD at its current position. Does not do any Transformations on the position of the
-     * given GameObject, so if this is called the caller should be sure the GameObject's position is in aspect space for
-     * it to render properly
+     * Adds a given GameObject to this HUD as independent. This means that its position does not depend on any other
+     * GameObject's position.
      * @param o the GameObject to add to this HUD
+     * @param nx the normalized x to place the given GameObject at [-1.0f, 1.0f] - will be maintained as aspect coordinates automatically
+     * @param ny the normalized y to place the given GameObject at [-1.0f, 1.0f] - will be maintained as aspect coordinates automatically
+     * @param accountForSize whether to account for the size of the given GameObject when calculating the position. For
+     *                       example, if x and y are -1f, only the top-right of the GameObject would normally be visible
+     *                       because (0, 0) is at the center of the model. If this parameter is set to true, the
+     *                       position will be modified so as to bump the object into view perfectly. This essentially
+     *                       allows for very easy binding of GameObjects to the edge of the Window in use
+     * @param padding the amount of padding to use when accounting for size
      */
-    public void addObject(GameObject o) { this.gameObjects.add(o); }
+    public void addIndependentObject(GameObject o, float nx, float ny, boolean accountForSize, float padding) {
+        this.hudItems.add(new HUDItem(o, null, nx, ny, accountForSize, padding)); // add to HUDItem list
+        this.ensurePlacement(this.hudItems.size() - 1); // place it correctly
+    }
 
     /**
-     * Adds a given GameObject
-     * @param o the GameObject to add this HUD
-     * @param x the normalized x to place the given GameObject at [-1.0f, 1.0f] - will be maintained aspect coordinates automatically
-     * @param y the normalized y to place the given GameObject at [-1.0f, 1.0f] - will be maintained aspect coordinates automatically
+     * Adds a given GameObject to this HUD as dependent. This means that its position will depend on the other given
+     * GameObject's position. Dependent GameObjects should only be added AFTER their parent has been added to avoid
+     * unexpected behavior when updating all of their positions.
+     * @param o the GameObject to add to this HUD
+     * @param po the GameObject whose position determines the position of o
+     * @param nx how many widths away o should be from po (where the width is the average of both of their widths)
+     * @param ny how many heights away o should be from po (where the height is the average of both of their heights)
+     * @param padding the amount of additional padding there should be between o and po
      */
-    public void addObject(GameObject o, float x, float y) {
-        Coord pos = new Coord(x, y); // create new Coord object with given coordinates
-        Transformation.normToAspect(pos, this.ar); // convert normalized coordinates to aspect coordinates
-        o.setX(pos.x + 0.05f + (Model.STD_SQUARE_SIZE / 2)); // TODO: do not assume square, implement getWidth or getHeight()
-        o.setY(pos.y + 0.05f + (Model.STD_SQUARE_SIZE / 2)); // TODO: do not assume square, implement getWidth or getHeight()
-        this.addObject(o); // add item
+    public void addDependentObject(GameObject o, GameObject po, float nx, float ny, float padding) {
+        this.hudItems.add(new HUDItem(o, po, nx, ny, false, padding)); // add to HUDItem list
+        this.ensurePlacement(this.hudItems.size() - 1); // place it correctly
     }
+
+    /**
+     * Accounts for the size of the given GameObject by adjusting its position by half of its size plus some given
+     * padding value
+     * @param o the GameObject whose size to account for
+     * @param pos the aspect coordinates before accounting for size
+     * @param padding the amount of padding
+     */
+    private void accountForSize(GameObject o, Coord pos, float padding) {
+        if (pos.x < 0f) pos.x += (o.getWidth() / 2 + padding); // if on the left side, nudge to the right
+        else if (pos.x > 0f) pos.x -= (o.getWidth() / 2 + padding); // if on the right side, nudge to the left
+        if (pos.y < 0f) pos.y += (o.getHeight() / 2 + padding); // if on bottom side, nudge upwards
+        else if (pos.y > 0f) pos.y -= (o.getHeight() / 2 + padding); // if on top side, nudge downwards
+    }
+
+    /**
+     * Ensures the GameObject at the given index is positioned according to its original position settings. This is
+     * good to call after modifying the size of a GameObject being rendered by this HUD in any fashion (scale, width,
+     * new Model, etc.)
+     * @param i the index of the GameObject whose placement should be ensureed
+     */
+    public void ensurePlacement(int i) {
+        HUDItem hi = this.hudItems.get(i); // get HUDItem
+        if (hi.po == null) { // if independently placed
+            Coord pos = new Coord(hi.nx, hi.ny); // create new Coord object with given coordinates
+            Transformation.normToAspect(pos, this.ar); // convert coordinates to aspect
+            if (hi.accountForSize) accountForSize(hi.o, pos, hi.padding); // account for size if flag set to true
+            hi.o.setX(pos.x); hi.o.setY(pos.y); // set position
+        } else { // if dependent on another GameObject's position
+            Coord pos = new Coord(hi.po.getX(), hi.po.getY()); // start at parent GameObject's position
+            pos.x += hi.nx * (hi.o.getWidth() / 2 + hi.po.getWidth() / 2 + hi.padding); // adjust x according to nx and padding
+            pos.y += hi.ny * (hi.o.getHeight() / 2 + hi.po.getHeight() / 2 + hi.padding); // adjust y according to ny and padding
+            hi.o.setX(pos.x); hi.o.setY(pos.y); // set position
+        }
+    }
+
+    /**
+     * Ensures the positions of all GameObject this HUD owns in the order that they were added
+     */
+    public void ensureAllPlacements() { for (int i = 0; i < this.hudItems.size(); i++) ensurePlacement(i); }
+
+    /**
+     * Finds and returns the GameObject at the given index
+     * @param i the index to find the GameObject at
+     * @return the GameObject
+     */
+    public GameObject getObject(int i) { return this.hudItems.get(i).o; }
 
     /**
      * Cleans up this HUD
      */
     public void cleanup() {
         if (this.sp != null) this.sp.cleanup(); // cleanup ShaderProgram
-        for (GameObject o : this.gameObjects) o.cleanup(); // cleanup GameObjects
+        for (HUDItem i : this.hudItems) i.o.cleanup(); // cleanup GameObjects
     }
 
     /**
-     * Represents a position to place an item in this HUD
+     * Wraps GameObjects inside of a separate class that stores the original placement settings that were assigned when
+     * added to the HUD. This is useful so that when the Window in use or the GameObject itself is resized, GameObjects
+     * can be appropriately moved to maintain their correct positioning
      */
-    public enum Placement {
-        TOP_LEFT, // top left of the Window
-        TOP_MIDDLE, // top middle of the Window
-        TOP_RIGHT, // top right of the Window
-        MIDDLE, // middle of the Window
-        BOTTOM_LEFT, // bottom left of the Window
-        BOTTOM_MIDDLE, // bottom middle of the Window
-        BOTTOM_RIGHT, // bottom right of the Window
-        LEFT_OF_LAST, // to the left of the last item added to the HUD
-        RIGHT_OF_LAST, // to the right of the last item added to the HUD
-        ABOVE_LAST, // above the last item added to the HUD
-        BELOW_LAST // below the last item added to the HUD
+    private class HUDItem {
+
+        /**
+         * Data
+         */
+        GameObject o; // reference to the wrapped GameObject
+        GameObject po; // reference to a parent GameObject whose position determines that of this GameObject (or null if independent)
+        float nx, ny; // the normalized coordinates of the GameObject, or the direction of dependency if the GameObject's position is dependent on another GameObject
+        boolean accountForSize; // whether the placement of the GameObject should account for its size
+        float padding; // the amount of padding when accounting for size
+
+        /**
+         * Constructs this HUDItem
+         * @param o the GameObject
+         * @param po the parent GameObject whose position determines that of this HUDItem (or null if independent)
+         * @param nx the normalized x of the GameObject or the direction of dependency if the GameObject's position is dependent on another GameObject
+         * @param ny the normalized y of the GameObject or the direction of dependency if the GameObject's position is dependent on another GameObject
+         * @param accountForSize whether the placement of the GameObject should account for its size. See addObject()
+         *                       for more details on how exactly this works
+         * @param padding the amount of padding to use when accounting for size
+         */
+        public HUDItem(GameObject o, GameObject po, float nx, float ny, boolean accountForSize, float padding) {
+            this.o = o; // set GameObject
+            this.po = po; // set parent GameObject
+            this.nx = nx; // set norm x
+            this.ny = ny; // set norm y
+            this.accountForSize = accountForSize; // set account for size flag
+            this.padding = padding; // set padding
+        }
     }
 }

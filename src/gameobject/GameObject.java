@@ -23,6 +23,7 @@ public class GameObject {
      */
     private float x, y; // position
     private float vx, vy; // velocity
+    private float sx, sy; // x scale and y scale
     private Model model; // model to use when rendering
     private Material material; // material to use when rendering
 
@@ -36,6 +37,7 @@ public class GameObject {
         this.x = x; // set x
         this.y = y; // set y
         this.vx = this.vy = 0; // initialize velocities to 0
+        this.sx = this.sy = 1.0f; // initialize scales to 1
         this.model = model; // set model
         this.material = material; // set material
     }
@@ -52,6 +54,11 @@ public class GameObject {
      * @return this GameObject's x position
      */
     public float getX() { return this.x; }
+
+    /**
+     * @return this GameObject's width
+     */
+    public float getWidth() { return this.model.getWidth() * this.sx; }
 
     /**
      * Update's this GameObject's x position
@@ -72,9 +79,20 @@ public class GameObject {
     public void incrementVX(float dvx) { this.vx += dvx; }
 
     /**
+     * Updates this GameObject's horizontal scaling
+     * @param sx the new horizontal scaling
+     */
+    public void setScaleX(float sx) { this.sx = sx; }
+
+    /**
      * @return this GameObject's y position
      */
     public float getY() { return this.y; }
+
+    /**
+     * @return this GameObject's height
+     */
+    public float getHeight() { return this.model.getHeight() * this.sy; }
 
     /**
      * Update's this GameObject's y position
@@ -93,6 +111,18 @@ public class GameObject {
      * @param dvy the incremental change
      */
     public void incrementVY(float dvy) { this.vy += dvy; }
+
+    /**
+     * Updates this GameObject's vertical scaling
+     * @param sy the new horizontal scaling
+     */
+    public void setScaleY(float sy) { this.sy = sy; }
+
+    /**
+     * Updates this GameObject's horizontal and vertical scaling
+     * @param s the new scaling
+     */
+    public void setScale(float s) { this.sx = this.sy = s; }
 
     /**
      * Renders this GameObject using the given ShaderProgram
@@ -114,6 +144,8 @@ public class GameObject {
         sp.setUniform("blend", bm == Material.BLEND_MODE.NONE ? 0 : (bm == Material.BLEND_MODE.MULTIPLICATIVE ? 1 : 2)); // set blend uniform
         sp.setUniform("x", this.x); // set x
         sp.setUniform("y", this.y); // set y
+        sp.setUniform("scaleX", this.sx); // set x scaling
+        sp.setUniform("scaleY", this.sy); // set y scaling
         this.model.render(); // render model
     }
 
@@ -123,5 +155,9 @@ public class GameObject {
     public void cleanup() {
         this.model.cleanup(); // cleanup model
         this.material.cleanup(); // cleanup material
+    }
+
+    public interface ResizeHandler{
+
     }
 }

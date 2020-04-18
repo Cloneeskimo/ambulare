@@ -47,6 +47,8 @@ public class World {
         this.sp = new ShaderProgram("/shaders/worldV.glsl", "/shaders/worldF.glsl"); // create ShaderProgram
         this.sp.registerUniform("x"); // register world x uniform
         this.sp.registerUniform("y"); // register world y uniform
+        this.sp.registerUniform("scaleX"); // register x scale uniform
+        this.sp.registerUniform("scaleY"); // register y scale uniform
         this.sp.registerUniform("ar"); // register aspect ratio uniform
         this.sp.registerUniform("arAction"); // register aspect ratio action uniform
         this.sp.registerUniform("isTextured"); // register texture flag uniform
