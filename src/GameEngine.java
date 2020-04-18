@@ -1,5 +1,6 @@
 import graphics.Window;
 import logic.GameLogic;
+import utils.Global;
 import utils.Timer;
 import utils.Utils;
 
@@ -16,7 +17,6 @@ public class GameEngine {
     /**
      * Data
      */
-    private static final int MAX_FPS = 60; // target frames per second (if v-sync is off)
     private static boolean reportingFPS = false; // FPS reporting disabled by default
     private final Window window; // the Window in use
     private final Timer timer; // used to do time measurements for smooth FPS
@@ -27,7 +27,7 @@ public class GameEngine {
      * @param logic the starting GameLogic this GameEngine should follow
      */
     public GameEngine(GameLogic logic) {
-        this.window = new Window("Game", true); // create Window
+        this.window = new Window("Game", Global.V_SYNC); // create Window
         this.timer = new Timer(); // create Timer
         this.logic = logic; // set GameLogic reference
         FPSReportControl FPSRC = new FPSReportControl(); // create new FPS reporting toggle control
@@ -63,7 +63,7 @@ public class GameEngine {
         // timekeeping variables
         float elapsedTime; // how much time has passed since last loop
         float accumulator = 0f; // how much time is unaccounted for
-        float interval = 1f / MAX_FPS; // how much time there should be between loops
+        float interval = 1f / Global.TARGET_UPS; // how much time there should be between loops
         float[] fpsInfo = new float[] { 0.0f, 0.0f, 0.0f }; // FPS info to be used for FPS recording (explained in FPSRecord())
 
         // loop
@@ -77,7 +77,7 @@ public class GameEngine {
             // four phases of loop
             this.input(); // gather input
             while(accumulator >= interval) { // while the amount of unaccounted for time is greater than how much one loop should be
-                this.update(); // do an update
+                this.update(interval); // do an update
                 accumulator -= interval; // account for a single loop interval amount of time
             }
             this.render(); // render - we can render outside of the above while loop because we don't need to render outdated frames
@@ -115,8 +115,9 @@ public class GameEngine {
 
     /**
      * Updates everything that needs updated
+     * @param interval the amount of time passed since the last update
      */
-    private void update() { this.logic.update(); } // allow the GameLogic to update
+    private void update(float interval) { this.logic.update(interval); } // allow the GameLogic to update
 
     /**
      * Renders everything that needs rendered
@@ -154,7 +155,7 @@ public class GameEngine {
     private class FPSReportControl implements Window.KeyControl {
         GameLogic logic; // the logic whose FPS counter's visibility to toggle
         @Override
-        public int key() { return GLFW_KEY_F; } // toggle when the key in question is F
+        public int key() { return Global.FPS_REPORTING_TOGGLE_KEY; } // toggle when the key in question is F
         @Override
         public int action() { return GLFW_RELEASE; } // toggle when the key in question is released
         @Override

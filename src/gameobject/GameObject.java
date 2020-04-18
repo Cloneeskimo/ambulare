@@ -45,10 +45,11 @@ public class GameObject {
 
     /**
      * Updates this GameObject
+     * @param interval the amount of time to account for
      */
-    public void update() {
-        this.x += this.vx; // update x world position
-        this.y += this.vy; // update y world position
+    public void update(float interval) {
+        this.x += this.vx * interval; // update x world position
+        this.y += this.vy * interval; // update y world position
     }
 
     /**

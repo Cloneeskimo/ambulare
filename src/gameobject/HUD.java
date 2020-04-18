@@ -53,9 +53,10 @@ public class HUD {
 
     /**
      * Updates this HUD
+     * @param interval the amount of time to account for
      */
-    public void update() {
-        for (HUDItem i : this.hudItems) i.o.update(); // update GameObjects
+    public void update(float interval) {
+        for (HUDItem i : this.hudItems) i.o.update(interval); // update GameObjects
     }
 
     /**

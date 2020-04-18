@@ -62,9 +62,10 @@ public class World {
 
     /**
      * Updates this World
+     * @param interval the amount of time to account for
      */
-    public void update() {
-        for (GameObject o : this.gameObjects) o.update(); // update GameObjects
+    public void update(float interval) {
+        for (GameObject o : this.gameObjects) o.update(interval); // update GameObjects
         this.cam.update(); // update camera
     }
 

@@ -49,18 +49,19 @@ public class WorldLogic extends GameLogic {
     public void input(Window window) {
         this.world.getObject(0).setVX(0f); // reset horizontal velocity to 0
         this.world.getObject(0).setVY(0f); // reset vertical velocity to 0
-        if (window.isKeyPressed(GLFW_KEY_W)) this.world.getObject(0).incrementVY(0.05f); // w -> up
-        if (window.isKeyPressed(GLFW_KEY_S)) this.world.getObject(0).incrementVY(-0.05f); // s -> down
-        if (window.isKeyPressed(GLFW_KEY_D)) this.world.getObject(0).incrementVX(0.05f); // d -> right
-        if (window.isKeyPressed(GLFW_KEY_A)) this.world.getObject(0).incrementVX(-0.05f); // a -> left
+        if (window.isKeyPressed(GLFW_KEY_W)) this.world.getObject(0).incrementVY(2f); // w -> up
+        if (window.isKeyPressed(GLFW_KEY_S)) this.world.getObject(0).incrementVY(-2f); // s -> down
+        if (window.isKeyPressed(GLFW_KEY_D)) this.world.getObject(0).incrementVX(2f); // d -> right
+        if (window.isKeyPressed(GLFW_KEY_A)) this.world.getObject(0).incrementVX(-2f); // a -> left
     }
 
     /**
      * Updates this WorldLogic
+     * @param interval the amount of time to account for
      */
     @Override
-    public void update() {
-        super.update(); // call GameLogic's update
+    public void update(float interval) {
+        super.update(interval); // call GameLogic's update
         if (((TextObject)this.hud.getObject(2)).setText("(" + String.format("%.2f", this.world.getObject(0).getX()) + ", "
                 + String.format("%.2f", this.world.getObject(0).getY()) + ")")) { // update player position text
             this.hud.ensurePlacement(2); // ensure placement if actually updated

@@ -70,10 +70,11 @@ public abstract class GameLogic {
      * Updates this GameLogic by updating the World and the HUD
      * Extending classes can certainly override this but unless updated in the overriding method (or super.update()
      * is called), this GameLogic's World and HUD will no longer be updated
+     * @param interval the amount of time to account for
      */
-    public void update() {
-        this.world.update(); // update World
-        this.hud.update(); // update HUD
+    public void update(float interval) {
+        this.world.update(interval); // update World
+        this.hud.update(interval); // update HUD
     }
 
     /**
