@@ -2,7 +2,9 @@ package gameobject;
 
 import graphics.Material;
 import graphics.Model;
+import graphics.PositionalAnimation;
 import graphics.ShaderProgram;
+import utils.Coord;
 
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
 import static org.lwjgl.opengl.GL11.glBindTexture;
@@ -27,6 +29,7 @@ public class GameObject {
     protected float sx, sy; // x scale and y scale
     protected Model model; // model to use when rendering
     protected Material material; // material to use when rendering
+    private PositionalAnimation posAnim; // positional animation which can be set to animate positional changes
 
     /**
      * Constructs this GameObject
@@ -48,9 +51,35 @@ public class GameObject {
      * @param interval the amount of time to account for
      */
     public void update(float interval) {
-        this.x += this.vx * interval; // update x world position
-        this.y += this.vy * interval; // update y world position
+        if (this.posAnim == null) { // if not in the middle of a positional animation
+            this.x += this.vx * interval; // update x world position
+            this.y += this.vy * interval; // update y world position
+        } else { // if in the middle of a positional animation
+            Coord cPos = this.posAnim.getCurrentPos(); // get appropriate position
+            this.x = cPos.x; // set x position
+            this.y = cPos.y; // set y position
+            if (this.posAnim.finished()) { // if animation is over
+                this.x = this.posAnim.getFinalX(); // make sure this GameObject is at the correct ending x
+                this.y = this.posAnim.getFinalY(); // make sure this GameObject is at the correct ending y
+                this.posAnim = null; // delete the animation
+            }
+        }
     }
+
+    /**
+     * Gives this GameObject a PositionalAnimation to undergo immediately
+     * See the class definition for more details about PositionalAnimations
+     * @param pa the PositionalAnimation to undergo
+     */
+    public void givePosAnim(PositionalAnimation pa) {
+        this.posAnim = pa; // save animation
+        this.posAnim.start(this.getX(), this.getY()); // start animation
+    }
+
+    /**
+     * @return whether this GameObject is currently undergoing a PositionAnimation
+     */
+    public boolean posAnimating() { return this.posAnim != null; }
 
     /**
      * @return this GameObject's x position

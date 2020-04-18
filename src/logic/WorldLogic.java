@@ -1,11 +1,9 @@
 package logic;
 
 import gameobject.GameObject;
+import gameobject.HUD;
 import gameobject.TextObject;
-import graphics.Material;
-import graphics.Model;
-import graphics.Texture;
-import graphics.Window;
+import graphics.*;
 
 import static org.lwjgl.glfw.GLFW.*;
 
@@ -34,11 +32,15 @@ public class WorldLogic extends GameLogic {
         this.world.getCam().follow(this.world.getObject(0)); // make cam follow player
         this.world.addObject(new GameObject(2f, 0f, m, dMat)); // create dirt
 
-        // create player position text object
-        TextObject pPos = new TextObject(this.font, "(" + Float.toString(this.world.getObject(0).getX()) + ", "
-                + Float.toString(this.world.getObject(0).getY()) + ")"); // create TextObject
+        // create informative message
+        TextObject info = new TextObject(this.font, "(1) - return to origin; (2) - double pos; (3) - halve pos; (4) - reload HUD; (5) - move pos; (6) - return pos;"); // create game name
+        info.setScale(0.1f); // scale down
+        this.hud.addObject(info, new HUD.HUDPositionSettings(-1f, -1f, true, 0.02f)); // add to bottom left
+
+        // create more text
+        TextObject pPos = new TextObject(this.font, "(0, 0)"); // create player position text
         pPos.setScale(0.1f); // scale down
-        this.hud.addIndependentObject(pPos, -1f, -1f, true, 0.02f); // add to HUD
+        this.hud.addObject(pPos, new HUD.HUDPositionSettings(null, info, -1f, 1f, 0.02f)); // put pos above info text
     }
 
     /**
@@ -53,6 +55,16 @@ public class WorldLogic extends GameLogic {
         if (window.isKeyPressed(GLFW_KEY_S)) this.world.getObject(0).incrementVY(-2f); // s -> down
         if (window.isKeyPressed(GLFW_KEY_D)) this.world.getObject(0).incrementVX(2f); // d -> right
         if (window.isKeyPressed(GLFW_KEY_A)) this.world.getObject(0).incrementVX(-2f); // a -> left
+        if (window.isKeyPressed(GLFW_KEY_1)) this.world.getObject(0).givePosAnim(new PositionalAnimation(0f, 0f, 1f));
+        if (window.isKeyPressed(GLFW_KEY_2)) this.hud.getObject(3).setScale(0.2f);
+        if (window.isKeyPressed(GLFW_KEY_3)) this.hud.getObject(3).setScale(0.1f);
+        if (window.isKeyPressed(GLFW_KEY_4)) this.hud.ensureAllPlacements();
+        if (window.isKeyPressed(GLFW_KEY_5)) {
+            this.hud.moveObject(3, new HUD.HUDPositionSettings(1f, 1f, true, 0.02f), 1f);
+        }
+        if (window.isKeyPressed(GLFW_KEY_6)) {
+            this.hud.moveObject(3, new HUD.HUDPositionSettings(null, this.hud.getObject(2), -1f, 1f, 0.02f), 1f);
+        }
     }
 
     /**
@@ -62,9 +74,8 @@ public class WorldLogic extends GameLogic {
     @Override
     public void update(float interval) {
         super.update(interval); // call GameLogic's update
-        if (((TextObject)this.hud.getObject(2)).setText("(" + String.format("%.2f", this.world.getObject(0).getX()) + ", "
-                + String.format("%.2f", this.world.getObject(0).getY()) + ")")) { // update player position text
-            this.hud.ensurePlacement(2); // ensure placement if actually updated
-        }
+        ((TextObject)this.hud.getObject(3)).setText("(" + String.format("%.2f", this.world.getObject(0).getX()) + ", " +
+                String.format("%.2f", this.world.getObject(0).getY()) + ")");
+        if (!this.hud.getObject(3).posAnimating()) this.hud.ensurePlacement(3);
     }
 }

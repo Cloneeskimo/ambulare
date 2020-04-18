@@ -18,7 +18,7 @@ public class Timer {
     /**
      * @return the current time in seconds
      */
-    public double getTime() { return System.nanoTime() / 1000_000_000.0; } // calculate seconds from nano seconds
+    public static double getTime() { return System.nanoTime() / 1000_000_000.0; } // calculate seconds from nano seconds
 
     /**
      * @return the time of the last loop or the time that this utils.Timer was initialized (whichever was later)

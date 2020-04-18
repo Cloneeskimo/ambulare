@@ -4,7 +4,6 @@ import utils.Global;
 import utils.Timer;
 import utils.Utils;
 
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_F;
 import static org.lwjgl.glfw.GLFW.GLFW_RELEASE;
 import static org.lwjgl.opengl.GL11.*;
 

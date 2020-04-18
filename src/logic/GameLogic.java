@@ -54,8 +54,8 @@ public abstract class GameLogic {
         FPSCount.setScale(0.1f); // scale actual FPS text
         FPSStatic.setVisibility(false); // invisible to start
         FPSCount.setVisibility(false); // invisible to start
-        this.hud.addIndependentObject(FPSStatic, -1f, 1f, true, 0.02f); // add static FPS text to HUD
-        this.hud.addDependentObject(FPSCount, FPSStatic, 1f, 0f, 0f); // add actual FPS text to HUD
+        this.hud.addObject(FPSStatic, new HUD.HUDPositionSettings(-1f, 1f, true, 0.02f)); // add static FPS text to HUD
+        this.hud.addObject(FPSCount, new HUD.HUDPositionSettings(FPSStatic, FPSStatic, 1f, 0f, 0f)); // add actual FPS text to HUD
         this.FPSItemsAdded = true; // save that these FPS items have been added
     }
 
