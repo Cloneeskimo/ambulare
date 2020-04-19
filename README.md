@@ -1,9 +1,9 @@
 
-# Game
+# Ambulare
 
 ### Overview
 
-Game is a video game with an incredibly original name. It runs in the JVM, and relies on LWJGL.
+Ambulare is a space-themed classic RPG. It runs in the JVM, and relies on LWJGL.
 
 ### Building
 
