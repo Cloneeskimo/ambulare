@@ -1,8 +1,5 @@
 package graphics;
 
-import utils.Coord;
-import utils.Timer;
-
 /**
  * Contains tools necessary for a game object to undergo a positional animation (one where its position changes)
  * This class stores more variables than necessary to avoid repetitive arithmetic because instantiations of this class
@@ -14,21 +11,30 @@ public class PositionalAnimation {
     /**
      * Data
      */
-    float x0, y0; // starting position of owning game object
-    float xf, yf; // ending position of owning game object
-    float dx, dy; // difference between ending and starting position of owning game object
+    boolean x = true, y = true, r = true; // flags representing which components are being animated
+    float x0, y0, r0; // starting position and rotation of owning game object
+    float xf, yf, rf; // ending position and rotation of owning game object
+    float dx, dy, dr; // difference between ending and starting position and rotation of owning game object
     float duration; // duration (in seconds) of the animation
-    double time0, timef; // starting and ending time of the animation (in second)
+    float animProg; // animation progress
+    float time; // current amount of time that animating has occured (in seconds)
 
     /**
      * Constructs this animation
-     * @param xf the target x
-     * @param yf the target y
+     * @param xf the target x - if null, will not change x
+     * @param yf the target y - if null, will not change y
+     * @param rf the target rotation in degrees - if null, will not change rotation. Rotation can be given in numbers
+     *           much greater than 360 and it will calculate the amount of rotation needed to get through all of the
+     *           given degrees, while maintaining an actual rotation value < 360f in the owning game object.
      * @param duration how long (in seconds) the animation should take
      */
-    public PositionalAnimation(float xf, float yf, float duration) {
-        this.xf = xf; // save target x
-        this.yf = yf; // save target y
+    public PositionalAnimation(Float xf, Float yf, Float rf, float duration) {
+        if (xf != null) this.xf = xf; // save target x
+        else this.x = false; // if null, disable x animating
+        if (yf != null) this.yf = yf; // save target y
+        else this.y = false; // if null, disable y animating
+        if (rf != null) this.rf = (float)Math.toRadians(rf); // save target rotation
+        else this.r = false; // if null, disable rotation animating
         this.duration = duration; // save duration
     }
 
@@ -36,24 +42,50 @@ public class PositionalAnimation {
      * Starts the animation by beginning the timekeeping and calculating extra variables
      * @param x0 the starting x
      * @param y0 the starting y
+     * @param r0 the starting rotation
      */
-    public void start(float x0, float y0) {
+    public void start(float x0, float y0, float r0) {
         this.x0 = x0; // save starting x
         this.y0 = y0; // save starting y
-        this.dx = this.xf - this.x0; // calculate difference in final and starting x
-        this.dy = this.yf - this.y0; // calculate difference in final and starting y
-        this.time0 = Timer.getTime(); // save starting time (current time)
-        this.timef = this.time0 + duration; // calculate end time
+        this.r0 = r0; // save starting rotation
+        if (x) this.dx = this.xf - this.x0; // calculate difference in final and starting x if enabled
+        else xf = x0; // if disabled, target x is starting x
+        if (y) this.dy = this.yf - this.y0; // calculate difference in final and starting y if enabled
+        else yf = y0; // if disabled, target y is starting y
+        if (r) this.dr = this.rf - this.r0; // calculate difference in final and starting rotation if enabled
+        else rf = r0; // if disabled, target rotation is starting rotation
     }
 
     /**
-     * Called by the owning game object to get an exact position based on how much time has passed since the start of
-     * the animation
-     * @return a coordinate object containing the appropriate x and y values
+     * Updates the animation by keeping track of time for accurate calculations in the getter methods. It's important
+     * to call this or the animation will not be timed correctly
+     * @param interval the amount of time to account for
      */
-    public Coord getCurrentPos() {
-        float timeFrac = (float)((Timer.getTime() - this.time0) / this.duration); // calc how far along the animation
-        return new Coord(this.x0 + this.dx * timeFrac, this.y0 + this.dy * timeFrac); // apply to pos diff
+    public void update(float interval) {
+        this.time += interval; // account for time
+        this.animProg = this.time / this.duration; // calculate how far along the animation with new time
+    }
+
+    /**
+     * @return the correct x for the owning game object based on how much time has passed
+     */
+    public float getX() {
+        return this.x0 + this.dx * this.animProg; // starting position plus how far along the difference animation is
+    }
+
+    /**
+     * @return the correct y for the owning game object based on how much time has passed
+     */
+    public float getY() {
+        return this.y0 + this.dy * this.animProg; // starting position plus how far along the difference animation is
+    }
+
+    /**
+     * @return the correct rotation for the owning game object based on how much time has passed
+     */
+    public float getR() {
+        return (this.r0 + this.dr * this.animProg) % (float)(2 * Math.PI); /* starting position plus how far along the
+                                                                                    the difference the animation is */
     }
 
     /**
@@ -67,7 +99,12 @@ public class PositionalAnimation {
     public float getFinalY() { return this.yf; }
 
     /**
+     * @return the target rotation of the animation
+     */
+    public float getFinalR() { return this.rf  % (float)(2 * Math.PI); }
+
+    /**
      * @return whether the animation has finished
      */
-    public boolean finished() { return (Timer.getTime() > this.timef); }
+    public boolean finished() { return (this.animProg >= 1.0f); }
 }

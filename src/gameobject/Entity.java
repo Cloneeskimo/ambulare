@@ -1,6 +1,5 @@
 package gameobject;
 
-import graphics.Material;
 import utils.Node;
 import utils.Utils;
 

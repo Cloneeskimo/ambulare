@@ -1,7 +1,11 @@
 package logic;
 
-import gameobject.*;
-import graphics.*;
+import gameobject.Entity;
+import gameobject.HUD;
+import gameobject.TextObject;
+import gameobject.Tile;
+import graphics.PositionalAnimation;
+import graphics.Window;
 
 import static org.lwjgl.glfw.GLFW.*;
 
@@ -18,15 +22,13 @@ public class WorldLogic extends GameLogic {
     protected void initOthers(Window window) {
         super.initOthers(window); // call super so that FPS displaying objects are added to HUD
         this.world.addObject(new Tile("/tile/player.txt")); // add player tile
-        this.world.addObject(new Entity("/tile/evildirt.txt"));
+        this.world.addObject(new Entity("/tile/evildirt.txt")); // add evil dirt
+        this.world.addObject(new Tile("/tile/stationarydirt.txt")); // add stationary dirt
         this.world.getCam().follow(this.world.getObject(0)); // make camera follow player
         TextObject pPos = new TextObject(this.font, "(0, 0)"); // create player position text
         pPos.setScale(0.1f); // scale down player position text
         this.hud.addObject(pPos, new HUD.HUDPositionSettings(-1f, -1f, true,
                 0.02f)); // put player position text into hud at bottom left
-        this.world.getObject(0).setRot(45);
-        this.world.getObject(0).setScale(1.8f);
-        pPos.setRot(0);
     }
 
     /**
@@ -50,8 +52,11 @@ public class WorldLogic extends GameLogic {
     @Override
     public void update(float interval) {
         super.update(interval); // call super's update to update world and HUD
-        if (((TextObject)this.hud.getObject(2)).setText("(" + String.format("%.2f", this.world.getObject(0).getX()) +
-                ", " + String.format("%.2f", this.world.getObject(0).getY()) + ")")) // update player position text
-            this.hud.ensurePlacement(2); // ensure player position text's placement if text actually changed
+        ((TextObject)this.hud.getObject(2)).setText("(" + String.format("%.2f", this.world.getObject(0).getX()) +
+                ", " + String.format("%.2f", this.world.getObject(0).getY()) + ")"); // update player position text
+        if (!this.hud.getObject(2).posAnimating()) { // if player pos text is not animating, animate it
+            this.hud.getObject(2).givePosAnim(new PositionalAnimation(null, null, 360f, 3f));
+        }
+        this.hud.ensurePlacement(2); // ensure placement of player pos text
     }
 }

@@ -4,7 +4,6 @@ import graphics.Material;
 import graphics.Model;
 import graphics.PositionalAnimation;
 import graphics.ShaderProgram;
-import utils.Coord;
 
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
 import static org.lwjgl.opengl.GL11.glBindTexture;
@@ -64,12 +63,14 @@ public class GameObject {
             this.x += this.vx * interval; // update x position
             this.y += this.vy * interval; // update y position
         } else { // if in the middle of a positional animation
-            Coord cPos = this.posAnim.getCurrentPos(); // get appropriate position
-            this.x = cPos.x; // set x position
-            this.y = cPos.y; // set y position
+            this.posAnim.update(interval); // update animation
+            this.x = this.posAnim.getX(); // set x position
+            this.y = this.posAnim.getY(); // set y position
+            this.rot = this.posAnim.getR(); // set rotation
             if (this.posAnim.finished()) { // if animation is over
                 this.x = this.posAnim.getFinalX(); // make sure at the correct ending x
                 this.y = this.posAnim.getFinalY(); // make sure at the correct ending y
+                this.rot = this.posAnim.getFinalR(); // make sure at the correct ending rotation
                 this.posAnim = null; // delete the animation
             }
         }
@@ -110,7 +111,7 @@ public class GameObject {
      */
     public void givePosAnim(PositionalAnimation pa) {
         this.posAnim = pa; // save animation
-        this.posAnim.start(this.getX(), this.getY()); // start animation
+        this.posAnim.start(this.getX(), this.getY(), this.getRot()); // start animation
     }
 
     /**
@@ -126,7 +127,10 @@ public class GameObject {
     /**
      * @return this game object's width
      */
-    public float getWidth() { return this.model.getWidth() * this.sx; }
+    public float getWidth() {
+        return this.sy * (float)(this.model.getWidth()  * Math.abs(Math.cos(rot)) +
+                                 this.model.getHeight() * Math.abs(Math.sin(rot))); // take rotation into account
+    }
 
     /**
      * Update's this game object's x position
@@ -160,7 +164,10 @@ public class GameObject {
     /**
      * @return this game object's height
      */
-    public float getHeight() { return this.model.getHeight() * this.sy; }
+    public float getHeight() {
+        return this.sy * (float)(this.model.getHeight() * Math.abs(Math.cos(rot)) +
+                                 this.model.getWidth()  * Math.abs(Math.sin(rot))); // take rotation into account
+    }
 
     /**
      * Update's this game object's y position
@@ -200,10 +207,15 @@ public class GameObject {
     public void setPos(float x, float y) { this.x = x; this.y = y; }
 
     /**
+     * @return this game object's rotation in radians
+     */
+    public float getRot() { return this.rot; }
+
+    /**
      * Updates the rotation of this game object
      * @param degrees the new rotation value in degrees
      */
-    public void setRot(float degrees) { this.rot = (float)Math.toRadians(degrees); }
+    public void setRot(float degrees) { this.rot = (float)Math.toRadians(degrees % 360); }
 
     /**
      * Sets the visibility flag of this game object

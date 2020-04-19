@@ -109,7 +109,7 @@ public class HUD {
         hi.hps = hps; // update settings
         if (duration > 0f) { // if animated change
             Coord correctPos = hi.hps.getCorrectPosition(hi.o, this.ar); // get correct position
-            hi.o.givePosAnim(new PositionalAnimation(correctPos.x, correctPos.y, duration)); // and start animation
+            hi.o.givePosAnim(new PositionalAnimation(correctPos.x, correctPos.y, null, duration)); // and start animation
         } else { // if not an animated change
             hi.ensurePosition(this.ar); // just change position immediately
         }
