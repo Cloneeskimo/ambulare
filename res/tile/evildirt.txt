@@ -1,0 +1,13 @@
+evildirt:
+{
+    name: Evil Dirt
+    tex_res_path: /textures/dirt.png
+    color: null
+    blend_mode: none
+    speed: 2.6f
+    min_wait_time: 0.2f
+    max_wait_time: 2.6f
+    min_wander_time: 1f
+    max_wander_time: 3f
+    x: -1.5f
+}

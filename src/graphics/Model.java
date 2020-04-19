@@ -11,8 +11,7 @@ import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
 import static org.lwjgl.opengl.GL30.*;
 
 /**
- * Represents a single Model (or model). Currently supports representing objects made out of triangles. Each vertex
- * of the Model can have one property: color
+ * Represents a model with model coordinates, texture coordinates, and indices. It renders in triangles
  */
 public class Model {
 
@@ -20,12 +19,12 @@ public class Model {
      * Data
      */
     private final int ids[]; // [0] - VAO ID, [1] - position VBO ID, [2] - texture coordinate VBO ID, [4] - index VBO ID
-    private final int vertexCount; // amount of vertices this Model has
-    private final float w, h; // width and height of this Model in model coordinates
+    private final int vertexCount; // amount of vertices the model has
+    private final float w, h; // width and height of this model in model coordinates
     public static final float STD_SQUARE_SIZE = 0.5f; // the standard square model size (width and height)
 
     /**
-     * @return the standard square model coordinates to make creating Square models easier
+     * @return the standard square model coordinates to make creating square models easier
      */
     public static float[] getStdSquareModelCoords() {
         return new float[] { // rectangle positions
@@ -37,7 +36,7 @@ public class Model {
     }
 
     /**
-     * @return the standard square texture coordinates to make creating Square models easier
+     * @return the standard square texture coordinates to make creating square models easier
      */
     public static float[] getStdSquareTexCoords() {
         return new float[] {
@@ -49,19 +48,22 @@ public class Model {
     }
 
     /**
-     * @return the standard square indices to make create Square models easier
+     * @return the standard square indices to make create square models easier
      */
     public static int[] getStdSquareIdx() {
         return new int[] { 0, 1, 3, 3, 1, 2 };
     }
 
     /**
+     * All tiles use a single copy of this standard square model to avoid redundant memory usage
      * @return the standard square model
      */
-    public static Model getStdSquare() { return new Model(getStdSquareModelCoords(), getStdSquareTexCoords(), getStdSquareIdx()); }
+    public static Model getStdSquare() {
+        return new Model(getStdSquareModelCoords(), getStdSquareTexCoords(), getStdSquareIdx());
+    }
 
     /**
-     * Constructs this Model
+     * Constructs the model
      * The assumes input given in sequences of triangles
      * @param modelCoords the positions of the vertices (2-dimensional)
      * @param texCoords the texture coordinates of the vertices (2-dimensional)
@@ -71,7 +73,7 @@ public class Model {
     public Model(float[] modelCoords, float[] texCoords, int[] indices) {
 
         // create buffers, record vertex count, generate VAO
-        FloatBuffer modelCoordsBuffer = null, texCoordsBuffer = null; // buffers for model coordinate and texture coordinate data
+        FloatBuffer modelCoordsBuffer = null, texCoordsBuffer = null; // buffers for model coords and tex coords
         IntBuffer idxBuffer = null; // buffer for index data
         this.vertexCount = indices.length; // record vertex count
         this.ids = new int[4]; // initialize ID array
@@ -87,11 +89,11 @@ public class Model {
         glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, 0); // put VBO into VAO
 
         // process texture coordinate data
-        texCoordsBuffer = MemoryUtil.memAllocFloat(texCoords.length); // allocate buffer space for texture coordinate data
+        texCoordsBuffer = MemoryUtil.memAllocFloat(texCoords.length); // allocate buffer space for tex coord data
         texCoordsBuffer.put(texCoords).flip(); // put texture coordinate data into buffer
         this.ids[2] = glGenBuffers(); // generate texture coordinate vertex buffer object
         glBindBuffer(GL_ARRAY_BUFFER, this.ids[2]); // bind texture coordinate vertex buffer object
-        glBufferData(GL_ARRAY_BUFFER, texCoordsBuffer, GL_STATIC_DRAW); // put texture coordinate data into texture coordinate VBO
+        glBufferData(GL_ARRAY_BUFFER, texCoordsBuffer, GL_STATIC_DRAW); // put tex coord data into tex coord VBO
         glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0); // put VBO into VAO
 
         // process index data
@@ -120,7 +122,7 @@ public class Model {
                 if (i % 2 == 0) { // if an x coordinate
                     minX = Math.min(minX, modelCoords[i]); // check for smaller x
                     maxX = Math.max(maxX, modelCoords[i]); // check for larger x
-                } else { // if a ycoordinate
+                } else { // if a y coordinate
                     minY = Math.min(minY, modelCoords[i]); // check for smaller y
                     maxY = Math.max(maxY, modelCoords[i]); // check for larger y
                 }
@@ -131,17 +133,17 @@ public class Model {
     }
 
     /**
-     * @return this Model's width in Model Coordinates
+     * @return this model's width in model coordinates
      */
     public float getWidth() { return this.w; }
 
     /**
-     * @return this Model's height in Model Coordinates
+     * @return this model's height in model coordinates
      */
     public float getHeight() { return this.h; }
 
     /**
-     * Cleans up this Model by deleting buffers and unbinding any buffer objects or array objects
+     * Cleans up this model by deleting buffers and unbinding any buffer objects or array objects
      */
     public void cleanup() {
         glDisableVertexAttribArray(0); // disable model coordinate vbo in vao
@@ -153,7 +155,7 @@ public class Model {
     }
 
     /**
-     * Renders this Mesh
+     * Renders the model
      */
     public void render() {
         glBindVertexArray(this.ids[0]); // bind vao

@@ -15,13 +15,13 @@ public class Camera {
     private final static float DEFAULT_ZOOM = 0.7f; // default zoom
     private float x, y, vx, vy; // position and velocity
     private float zoom; // zoom
-    private GameObject following; // a GameObject to follow
+    private GameObject following; // a game object to follow, if assigned
 
     /**
-     * Constructs this Camera
-     * @param x the world x of this Camera
-     * @param y the world y of this Camera
-     * @param zoom the zoom of this Camera - will be bounded by MIN_ZOOM and MAX_ZOOM defined above
+     * Constructs the camera with a specified zoom
+     * @param x the x
+     * @param y the y
+     * @param zoom the zoom of this camera - will be bounded by MIN_ZOOM and MAX_ZOOM defined above
      */
     public Camera(float x, float y, float zoom) {
         this.x = x; // set x
@@ -30,19 +30,19 @@ public class Camera {
     }
 
     /**
-     * Constructs this Camera with the default zoom
-     * @param x the world x of this Camera
-     * @param y the world y of this Camera
+     * Constructs the camera with the default zoom
+     * @param x the x
+     * @param y the y
      */
     public Camera(float x, float y) { this(x, y, Camera.DEFAULT_ZOOM); } // call other constructor
 
     /**
-     * Constructs this Camera at world pos (0, 0) and with the default zoom
+     * Constructs the camera at pos (0, 0) and with the default zoom
      */
     public Camera() { this(0f, 0f); } // call other constructor
 
     /**
-     * Updates this Camera
+     * Updates the camera
      */
     public void update() {
         if (this.following == null) { // if not following anything
@@ -55,34 +55,34 @@ public class Camera {
     }
 
     /**
-     * Assigns a GameObject for this Camera to follow
-     * @param o the GameObject to follow. If null, won't follow anything
+     * Assigns a game object for the camera to follow
+     * @param o the game object to follow. If null, won't follow anything
      */
     public void follow(GameObject o) { this.following = o; }
 
     /**
-     * @return this Camera's world x
+     * @return the camera's x
      */
     public float getX() { return this.x; }
 
     /**
-     * @return this Camera's world y
+     * @return the camera's y
      */
     public float getY() { return this.y; }
 
     /**
-     * @return this Camera's world zoom
+     * @return the camera's zoom
      */
     public float getZoom() { return this.zoom; }
 
     /**
-     * Sets this Camera's zoom to the given zoom, or the minimum or maximum bound that it surpasses
-     * @param z the value to attempt to set this Camera's zoom too
+     * Sets the zoom to the given zoom, or the minimum/maximum bound that it surpasses
+     * @param z the value to set it to
      */
     public void setZoom(float z) { this.zoom = Math.min(Camera.MAX_ZOOM, Math.max(Camera.MIN_ZOOM, z)); }
 
     /**
-     * Change's this Camera's soon by the given magnitude in a multiplicative manner
+     * Change the zoom by the given magnitude in a multiplicative manner
      */
     public void zoom(float dz) { this.setZoom(this.zoom * dz); }
 }

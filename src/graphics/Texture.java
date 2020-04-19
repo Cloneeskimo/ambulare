@@ -23,7 +23,7 @@ public class Texture {
     private final int id, w, h; // texture ID, width, and height
 
     /**
-     * Constructs this Texture.
+     * Constructor
      * @param resPath the resource-relative path of the texture image
      */
     public Texture(String resPath) {
@@ -33,18 +33,20 @@ public class Texture {
         MemoryStack stack = MemoryStack.stackPush(); // push memory stack for buffers
         IntBuffer w = stack.mallocInt(1); // create buffer for texture width
         IntBuffer h = stack.mallocInt(1); // create buffer for texture height
-        IntBuffer channels = stack.mallocInt(1); // create buffer to hold channel amount (should be 4 - r, g, b, and a)
+        IntBuffer channels = stack.mallocInt(1); // create buffer to hold channel amount (4 if rgba)
 
         // attempt to load texture
         try {
-            byte[] p = IOUtils.toByteArray(Class.forName(Texture.class.getName()).getResourceAsStream(resPath)); // convert resource to byte array
+            byte[] p = IOUtils.toByteArray(Class.forName(Texture.class.getName())
+                    .getResourceAsStream(resPath)); // convert resource to byte array
             ByteBuffer pBuff = BufferUtils.createByteBuffer(p.length); // create buffer for texture data
             pBuff.put(p).flip(); // put texture data into buffer
             buf = stbi_load_from_memory(pBuff, w, h, channels, 4); // load texture into buffer
-            if (buf == null) Utils.handleException(new Exception("Unable to load texture with resource-relative path '" + resPath +"' for reason: " + stbi_failure_reason()),
-                    "Texture", "Texture(String", true); // throw exception if unable to load texture
+            if (buf == null) Utils.handleException(new Exception("Unable to load texture with resource-relative path '"
+                            + resPath +"' for reason: " + stbi_failure_reason()), "graphics.Texture",
+                            "Texture(String)", true); // throw exception if unable to load texture
         } catch (Exception e) { // if exception
-            Utils.handleException(e, "Texture", "Texture(String", true); // handle exception
+            Utils.handleException(e, "graphics.Texture", "Texture(String)", true); // handle exception
         }
 
         // save info, create texture, cleanup
@@ -56,7 +58,8 @@ public class Texture {
         glPixelStoref(GL_UNPACK_ALIGNMENT, 1); // tell GL that each component will be one byte in size
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // this makes pixels clear and un-blurred
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); // this makes pixels clear and un-blurred
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this.w, this.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf); // generate texture
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this.w, this.h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                buf); // generate texture
         // parameters for glTexImage2D:
         // target - target texture (the type) - GL_TEXTURE_2D is what we're working with here
         // level - the level-of-detail number - o is the base image. level n is the nth mipmap reduction
@@ -71,22 +74,22 @@ public class Texture {
     }
 
     /**
-     * @return this Texture's ID
+     * @return the texture's ID
      */
     public int getID() { return this.id; }
 
     /**
-     * @return this Texture's width
+     * @return the texture's width
      */
     public int getWidth() { return this.w; }
 
     /**
-     * @return this Texture's height
+     * @return the texture's height
      */
     public int getHeight() { return this.h; }
 
     /**
-     * Cleans up this Texture
+     * Cleans up the texture
      */
     public void cleanup() { glDeleteTextures(this.id); }
 }

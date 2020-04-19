@@ -8,33 +8,34 @@ import java.util.Map;
 import static org.lwjgl.opengl.GL20.*;
 
 /**
- * Represents a shader program
+ * Represents a GLSL shader program
  */
 public class ShaderProgram {
 
     /**
      * Data
      */
-    private final int progID; // program id of this ShaderProgram
+    private final int progID; // program id of the shader program
     private final Map<String, Integer> uniforms; // map of uniform names to locations
-    private int vShaderID; // program id of this ShaderProgram's vertex shader
-    private int fShaderID; // program id of this ShaderProgram's fragment shader
+    private int vShaderID; // program id of the vertex shader
+    private int fShaderID; // program id of the fragment shader
 
     /**
-     * Constructs this ShaderProgram
-     * @param vShaderPath the resource-relative path to the vertex shader
-     * @param fShaderPath the resource-relative path to the fragment shader
+     * Constructor
+     * @param vShaderPath the resource-relative path to the vertex shader code
+     * @param fShaderPath the resource-relative path to the fragment shader code
      */
     public ShaderProgram(String vShaderPath, String fShaderPath) {
         this.progID = glCreateProgram(); // create GLSL program
         this.uniforms = new HashMap<>(); // initialize uniform map
-        if (this.progID == 0) // if fail
-         Utils.handleException(new Exception("Unable to create GLSL program"), "ShaderProgram", "ShaderProgram(String, String)", true); // throw exception
+        if (this.progID == 0) Utils.handleException(new Exception("Unable to create GLSL program"),
+                "graphics.ShaderProgram", "ShaderProgram(String, String)",
+                true); // throw exception if cannot create program
         this.processShaders(vShaderPath, fShaderPath); // process shaders
     }
 
     /**
-     * Processes this ShaderProgram's GLSL shaders by loading the code, compiling the code, then linking.
+     * Processes the GLSL shaders by loading the code, compiling the code, then linking.
      * @param vShaderPath the resource-relative path to the vertex shader
      * @param fShaderPath the resource-relative path to the fragment shader
      */
@@ -56,27 +57,32 @@ public class ShaderProgram {
     private int processShader(String code, int type) {
         int id = glCreateShader(type); // create shader
         if (id == 0) // if fail
-         Utils.handleException(new Exception("Unable to create shader of type " + type + " with code: " + code), "ShaderProgram", "processShader(String, int)", true); // throw exception
+            Utils.handleException(new Exception("Unable to create shader of type " + type + " with code: " + code),
+                    "graphics.ShaderProgram", "processShader(String, int)", true); // throw exception
         glShaderSource(id, code); // give shader the code
         glCompileShader(id); // compile shader
         if (glGetShaderi(id, GL_COMPILE_STATUS) == 0) // if fail
-         Utils.handleException(new Exception("Unable to compile shader of type " + type + ": " + glGetShaderInfoLog(id, 1024)), "ShaderProgram", "processShader(String, int)", true); // throw exception
+         Utils.handleException(new Exception("Unable to compile shader of type " + type + ": " +
+                 glGetShaderInfoLog(id, 1024)), "graphics.ShaderProgram", "processShader(String, int)",
+                 true); // throw exception
         glAttachShader(this.progID, id); // attach to main program
         return id; // return id
     }
 
     /**
-     * Links this ShaderProgram's GLSL shaders together
+     * Links the shader programs's GLSL shaders together
      */
     private void link() {
         glLinkProgram(this.progID); // link program
         if (glGetProgrami(this.progID, GL_LINK_STATUS) == 0) // if fail
-            Utils.handleException(new Exception("Unable to link shaders: " + glGetProgramInfoLog(this.progID, 1024)), "ShaderProgram", "link()", true); // throw exception
+            Utils.handleException(new Exception("Unable to link shaders: " + glGetProgramInfoLog(this.progID,
+                    1024)), "graphics.ShaderProgram", "link()", true); // throw exception
         glDetachShader(this.progID, this.vShaderID); // detach vertex shader
         glDetachShader(this.progID, this.fShaderID); // detach fragment shader
-        glValidateProgram(this.progID); // validates program. If validation does not succeed, does not necessarily mean program is broken
+        glValidateProgram(this.progID); // validates program. Failure does not necessarily mean program is broken
         if (glGetProgrami(this.progID, GL_VALIDATE_STATUS) == 0) // if validation message
-            Utils.log("Shader validation gave the following response: " + glGetProgramInfoLog(this.progID, 1024), "ShaderProgram", "link()", false); // log
+            Utils.log("Shader validation gave the following response: " + glGetProgramInfoLog(this.progID,
+                    1024), "graphics.ShaderProgram", "link()", false); // log
     }
 
     /**
@@ -86,12 +92,13 @@ public class ShaderProgram {
     public void registerUniform(String name) {
         int loc = glGetUniformLocation(this.progID, name); // get location
         if (loc < 0) // if fail
-            Utils.handleException(new Exception("Unable to find uniform with name '" + name + "'"), "ShaderProgram", "registerUniform(String)", true); // throw exception
+            Utils.handleException(new Exception("Unable to find uniform with name '" + name + "'"),
+                    "graphics.ShaderProgram", "registerUniform(String)", true); // throw exception
         this.uniforms.put(name, loc); // save location
     }
 
     /**
-     * Sets the uniform with the given name to the given value
+     * Sets the uniform with the given name to the given value (a float)
      * @param name the name of the uniform the set
      * @param v the value to set it to
      */
@@ -99,12 +106,12 @@ public class ShaderProgram {
         try {
             glUniform1f(this.uniforms.get(name), v); // try to set uniform
         } catch (Exception e) { // if exception
-            Utils.handleException(e, "ShaderProgram", "setUniform(String, float)", true); // handle exception
+            Utils.handleException(e, "graphics.ShaderProgram", "setUniform(String, float)", true); // handle exception
         }
     }
 
     /**
-     * Sets the uniform with the given name to the given value
+     * Sets the uniform with the given name to the given value (an integer)
      * @param name the name of the uniform to set
      * @param v the value to set it to
      */
@@ -112,7 +119,7 @@ public class ShaderProgram {
         try {
             glUniform1i(this.uniforms.get(name), v); // try to set uniform
         } catch (Exception e) { // if exception
-            Utils.handleException(e, "ShaderProgram", "setUniform(String, int)", true); // handle exception
+            Utils.handleException(e, "graphics.ShaderProgram", "setUniform(String, int)", true); // handle exception
         }
     }
 
@@ -128,22 +135,23 @@ public class ShaderProgram {
         try {
             glUniform4f(this.uniforms.get(name), x, y, z, a); // try to set uniform
         } catch (Exception e) { // if exception
-            Utils.handleException(e, "ShaderProgram", "setUniform(String, float, float, float, float)", true); // handle exception
+            Utils.handleException(e, "graphics.ShaderProgram", "setUniform(String, float, float, float, float)",
+                    true); // handle exception
         }
     }
 
     /**
-     * Binds this ShaderProgram
+     * Binds the shader program
      */
     public void bind() { glUseProgram(this.progID); }
 
     /**
-     * Unbinds this ShaderProgram
+     * Unbinds the shader program
      */
     public void unbind() { glUseProgram(0); }
 
     /**
-     * Cleans up this ShaderProgram
+     * Cleans up the shader program
      */
     public void cleanup() {
         this.unbind(); // make sure isn't bound

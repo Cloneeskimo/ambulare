@@ -1,0 +1,6 @@
+stationarydirt:
+{
+    x: -1.2f
+    y: 0f
+    tex_res_path: /textures/dirt.png
+}

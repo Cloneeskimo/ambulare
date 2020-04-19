@@ -9,8 +9,16 @@ import java.util.Map;
 /**
  * Represents a font by having a font sheet texture containing all the characters of the font in ASCII order. Correctly
  * formatted font sheets can start at any character, but they may NOT skip characters, and the sheet must be a perfect
- * grid where each cell is the same size. Since some characters are skinnier than others, amounts (in pixels) to cut
- * off of each letter (horizontally and symmetrically) should be defined in the separate required info file
+ * grid where each cell is the same size. A node-file is required to load a font in order to specify certain things
+ * about it. The node-file must contain the following children:
+ * - chars_per_row: how many characters are in each row
+ * - chars_per_col: how many characters are in each column
+ * - starting_char: the first character in the font sheet (at the top-left)
+ * - char_cutoffs: how much horizontal cutoff to apply to each character to avoid empty space. This child can then
+ *                 contain a child for (1) each character with a unique cutoff where the name is the character (except
+ *                 for color, the name should be 'colon' for obvious reasons), and the value is the amount of pixels to
+ *                 cut off, and (2) a child named 'standard' to define a standard cutoff for characters not otherwise
+ *                 listed - default is 0
  */
 public class Font {
 
@@ -24,50 +32,54 @@ public class Font {
     private char startingChar; // the first character of the font sheet (top left)
 
     /**
-     * Constructs this Font
+     * Constructor
      * @param sheetResPath the resource-relative path to the font sheet
-     * @param infoResPath the resource-relative path to the font info file. See font_info.txt for an example
+     * @param infoResPath the resource-relative path to the font node-file. The node-file layout is defined above
      */
     public Font(String sheetResPath, String infoResPath) {
         this.sheet = new Texture(sheetResPath); // load sheet
         Node info = Node.resToNode(infoResPath); // load info
         try { // try to parse data
             this.charsPerRow = Integer.parseInt(info.getChild("chars_per_row").getValue()); // parse characters per row
-            this.charsPerCol = Integer.parseInt(info.getChild("chars_per_col").getValue()); // parse characters per column
-            this.startingChar = (char)Integer.parseInt(info.getChild("starting_char").getValue()); // parse starting character
+            this.charsPerCol = Integer.parseInt(info.getChild("chars_per_col").getValue()); // parse characters per col
+            this.startingChar = (char)Integer.parseInt(info.getChild("starting_char").getValue()); // parse start char
             this.processCharCutoffs(info.getChild("char_cutoffs")); // parse character cutoffs
         } catch (Exception e) { // if exception
-            Utils.handleException(e, "Font", "Font(String, String)", true); // handle exception
+            Utils.handleException(e, "graphics.Font", "Font(String, String)", true); // handle exception
         }
     }
 
     /**
      * Processes the character cutoff map based on the given cutoff info
-     * @param cutOffInfo the Node containing the cutoff info from this Font's info file
+     * @param cutOffInfo the node containing the cutoff info from the font info's node-file
      */
     private void processCharCutoffs(Node cutOffInfo) {
         this.charCutoffs = new HashMap<>(); // initialize map
         this.stdCharCutoff = 0; // unless a standard cutoff is found, the default with be 0
         for (Node c : cutOffInfo.getChildren()) { // for each child (each corresponding to a cutoff)
-            if (c.getName().toUpperCase().equals("STANDARD")) this.stdCharCutoff = Integer.parseInt(c.getValue()); // standard cutoff
-            else if (c.getName().toUpperCase().equals("COLON")) this.charCutoffs.put(':', Integer.parseInt(c.getValue())); // colon gets special treatment due to importance in Node structure
-            else this.charCutoffs.put(c.getName().charAt(0), Integer.parseInt(c.getValue())); // add to map regularly for every other character
+            if (c.getName().toUpperCase().equals("STANDARD")) this.stdCharCutoff =
+                    Integer.parseInt(c.getValue()); // standard cutoff
+            else if (c.getName().toUpperCase().equals("COLON")) this.charCutoffs.put(':',
+                    Integer.parseInt(c.getValue())); // colon gets special treatment for obvious node-file reasons
+            else this.charCutoffs.put(c.getName().charAt(0),
+                    Integer.parseInt(c.getValue())); // add to map normally for every other character
         }
     }
 
     /**
-     * Calculates the texture coordinates for this Font of the given character
+     * Calculates the texture coordinates of the given character using this font
      * @param c the character whose texture coordinates to calculate
-     * @param cutoff whether or not to use the given character's horizontal cutoff value to make the character contain less empty space
-     * @return the 2-dimensional texture coordinates (length 8 array)
+     * @param cutoff whether or not to use the given character's horizontal cutoff value to make the character contain
+     *               less empty space
+     * @return the 2-dimensional texture coordinates (a length 8 array)
      */
     public float[] getCharTexCoords(char c, boolean cutoff) {
         if (c < this.startingChar) // if character is before the starting character
-            Utils.handleException(new Exception("Invalid character '" + c + "' when starting character is '" + this.startingChar + "'"),
-                    "Font", "getCharTexCoords(char, boolean)", true); // throw an exception
+            Utils.handleException(new Exception("Invalid character '" + c + "' when starting character is '" +
+                            this.startingChar + "'"), "Font", "getCharTexCoords(char, boolean)", true); // throw error
 
         // make necessary row/column calculations
-        int loc = (c - this.startingChar); // the location of the character in the font sheet (where loc = 0 is top left)
+        int loc = (c - this.startingChar); // the location of the character in the font sheet (where loc 0 is top left)
         int row = loc / this.charsPerRow; // the row of the character in the font sheet
         int col = loc - (row * this.charsPerRow); // the column of the character in the font sheet
         float fracRow = 1 / (float)charsPerRow; // fraction of a row for a single character
@@ -95,7 +107,7 @@ public class Font {
     /**
      * Finds the appropriate horizontal cutoff for the given character
      * @param c the character whose cutoff to find
-     * @return the given character's unique cutoff or this Font's standard cutoff if the given char has no unique one
+     * @return the given character's unique cutoff or the standard cutoff if the given char has no unique one
      */
     public int getCharCutoff(char c) {
         Integer cutoff = this.charCutoffs.get(c); // attempt to get
@@ -104,17 +116,17 @@ public class Font {
     }
 
     /**
-     * @return the width of a single character in this Font's font sheet
+     * @return the width of a single character in the font sheet
      */
     public float getCharWidth() { return (float)this.sheet.getWidth() / (float)this.charsPerRow; }
 
     /**
-     * @return the height of a single character in this Font's font sheet
+     * @return the height of a single character in the font sheet
      */
     public float getCharHeight() { return (float)this.sheet.getHeight() / (float)this.charsPerCol; }
 
     /**
-     * @return this Font's font sheet
+     * @return this font sheet
      */
     public Texture getSheet() { return this.sheet; }
 }

@@ -8,29 +8,59 @@ import java.util.List;
 import java.util.Scanner;
 
 /**
- * Provides various utility methods to be used throughout the program
+ * Provides various utility methods that are used throughout the program
  */
 public class Utils {
 
     /**
-     * Returns the directory of the data folder where all user data should be stored
-     * @return the aforementioned data directory
+     * Generates a random float within the given range
+     * @param min the minimum the random float can be
+     * @param max the maximum the random float can be
+     * @return the generated random float
      */
-    public static String getDataDir() {
-        return System.getProperty("user.home") + "/Game"; // user home plus game folder
+    public static float genRandFloat(float min, float max) { return (float)(min + Math.random() * (max - min)); }
+
+    /**
+     * Converts a string to a float array containing color data. A properly formatted string has all four components
+     * separated by a space and each component is a proper float value. example: "1f 0.5f 0.1f 1f"
+     * @param colorData the string to convert
+     * @return the converted float array with four color components ([r, g, b, and a]) or null if the string was not
+     * properly formatted
+     */
+    public static float[] strToColor(String colorData) {
+        String[] components = colorData.split(" "); // split by spaces
+        if (components.length != 4) return null; // if incorrect length, return null
+        float[] color = new float[4]; // create float array
+        for (int i = 0; i < color.length; i++) { // loop through each string
+            try { color[i] = Float.parseFloat(components[i]); } // parse each as a float
+            catch (Exception e) { // if exception
+                Utils.handleException(e, "utils.Utils", "strToColor(String)", false); // log exception but don't crash
+                return null; // and then return null
+            }
+        }
+        return color; // return color
     }
 
     /**
-     * Ensures that a directory exists. This will remove anything after the last slash to avoid turning
+     * @return the directory of the folder where all game data should be stored
+     */
+    public static String getDataDir() {
+        return System.getProperty("user.home") + "/Ambulare"; /* user home plus Ambulare folder. usually the user.home
+                                                                 ends up being the folder containing the documents
+                                                                 folder */
+    }
+
+    /**
+     * Ensures that a directory exists. This will not consider anything after the last slash to avoid turning
      * what should be normal files into directories themselves (unless there are no slashes)
      * @param directory the directory to ensure
-     * @param dataDirRelative whether the given directory is relative to the data directory
+     * @param dataDirRelative whether the given directory is relative to the data directory (see getDataDir())
      */
     public static void ensureDirs(String directory, boolean dataDirRelative) {
         for (int i = directory.length() - 1; i >= 0; i--) { // remove anything after the last slash
             if (directory.charAt(i) == '/') { // starting at the end, if we see a slash
                 directory = directory.substring(0, i); // remove everything after the slash
-                break; // break from loop
+                break; // break from loop - only remove stuff after last slash
             }
         }
         File dir = new File((dataDirRelative ? getDataDir() : "") + directory); // create file object
@@ -38,7 +68,7 @@ public class Utils {
    }
 
     /**
-     * Loads a resource into a single String
+     * Loads a resource into a single string
      * @param resPath the resource-relative path of the file
      * @return the loaded resource as a string
      */
@@ -72,6 +102,9 @@ public class Utils {
 
     /**
      * Generalizes exception handling from anywhere in the program. Logs the exception and exits if fatal
+     * This is probably looked down upon amongst Java convention purists, but it essentially does the same thing that
+     * a throw would do anyways, but with more customization and while logging the info in an easy to find place and
+     * format
      * @param e the exception
      * @param src the source file from which the exception originates
      * @param method the method from which the exception originates
@@ -89,7 +122,8 @@ public class Utils {
      * @param info the info string to be logged
      * @param src the source code file from which the event originates
      * @param method the method from which the event originates
-     * @param fatal whether or not the program is going to exit after handling the event
+     * @param fatal whether or not the program is going to exit after handling the event. Note that setting this to
+     *              true does not quit the program. The method calling this method needs to quit after logging
      */
     public static void log(String info, String src, String method, boolean fatal) {
 
@@ -104,39 +138,39 @@ public class Utils {
 
         //print to console and attempt to print to log file
         System.out.println(lli + info); // print to console
-        String fileName = getLogFileName(); // get file name
+        String fileName = getLogFileName(); // get name of log file
         ensureDirs(fileName, false); // make sure appropriate directories exist
-        PrintWriter out; // create PrintWriter
+        PrintWriter out; // create PrintWriter to write to log file
         try {
             out = new PrintWriter(new FileOutputStream(new File(fileName), true)); // try to open file
             out.println(lli + info); // print
             out.close(); // close
-
-        //if can't log to file
-        } catch (Exception e) {
-            e.printStackTrace(); // just print corresponding exception and hope for the best
+        } catch (Exception e) { // if exception
+            e.printStackTrace(); /* just print corresponding exception and hope for the best because attempting to
+                                    handle this exception using Utils.handleException() would likely cause an infinite
+                                    loop */
         }
     }
 
     /**
-     * Creates an appropriate log line intro for something to be logged
+     * Creates an appropriate log line intro for an event to be logged
      * @param fatal whether the corresponding event is fatal or not
      * @param src the source code file from which the event originates
      * @param method the method from which the event originates
-     * @return the built log line into
+     * @return the created log line into
      */
     private static String getLogLineIntro(boolean fatal, String src, String method) {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss"); // create date/time formatter
         return "[" + dtf.format(LocalDateTime.now()) + "][" + (fatal ? "FATAL" : "INFO") +
-                "][" + src + "][" + method + "]: "; // compile important info into one line
+                "][" + src + "][" + method + "]: "; // compile important info into one line and return
     }
 
     /**
-     * Creates an appropriate log file name/directory based on the day
+     * Creates an appropriate log file name/directory based on the date
      * @return the appropriate file name/directory for a log file at the given date and time
      */
     private static String getLogFileName() {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MM-dd-yy"); // format the date
-        return getDataDir() + "/logs/ " + dtf.format(LocalDateTime.now()) + ".txt"; // create and return the appropriate log file name
+        return getDataDir() + "/logs/ " + dtf.format(LocalDateTime.now()) + ".txt"; // create and return log file name
     }
 }

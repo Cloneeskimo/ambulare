@@ -16,40 +16,44 @@ public class GameEngine {
     /**
      * Data
      */
-    private static boolean reportingFPS = false; // FPS reporting disabled by default
-    private final Window window; // the Window in use
-    private final Timer timer; // used to do time measurements for smooth FPS
-    private GameLogic logic; // the GameLogic currently followed by this GameEngine
+    private static boolean reportingFPS = false; // flag representing whether or not FPS is being reported
+    private final Window window;                 // the window we are using
+    private final Timer timer;                   // object used to keep track of time for looping purposes
+    private GameLogic logic;                     // the logic that the engine follows
 
     /**
-     * Constructs this GameEngine
-     * @param logic the starting GameLogic this GameEngine should follow
+     * Constructor
+     * @param logic the starting logic to follow
      */
     public GameEngine(GameLogic logic) {
-        this.window = new Window("Game", Global.V_SYNC); // create Window
-        this.timer = new Timer(); // create Timer
-        this.logic = logic; // set GameLogic reference
-        FPSReportControl FPSRC = new FPSReportControl(); // create new FPS reporting toggle control
-        FPSRC.logic = this.logic; // tell it which GameLogic to notify when toggled
-        this.window.registerKeyControl(FPSRC); // register control with Window in use
+        this.window = new Window(Global.WINDOW_TITLE, Global.V_SYNC); // window with correct name and v-sync setting
+        this.timer = new Timer(); // create timer
+        this.logic = logic; // save logic reference
+        FPSReportControl FPSRC = new FPSReportControl(); /* this is an implementation of the Window.KeyControl interface
+                                                            which basically lays out a keyboard control and how to
+                                                            handle it. This is instantiated because it needs to be able
+                                                            to have a reference to the logic in order to tell it when
+                                                            the setting is toggled */
+        FPSRC.logic = this.logic; // tell the FPSRC which logic to notify when the setting is toggled
+        this.window.registerKeyControl(FPSRC); // register the new control with the window
     }
 
     /**
      * This starts the engine by initializing it and then beginning the game loop
      */
     public void start() {
-        this.init(); // initialize
-        this.loop(); // begin loop
+        this.init(); // initialize the engine
+        this.loop(); // begin game loop
         this.cleanup(); // cleanup after loop ends
     }
 
     /**
-     * Initializes this GameEngine
+     * Initializes the engine
      */
     private void init() {
-        this.window.init(); // initialize GLFW Window
-        this.timer.init(); // initialize Timer
-        this.logic.init(this.window); // initialize starting GameLogic
+        this.window.init(); // initialize the window
+        this.timer.init(); // initialize the timer
+        this.logic.init(this.window); // initialize starting logic
     }
 
     /**
@@ -63,104 +67,112 @@ public class GameEngine {
         float elapsedTime; // how much time has passed since last loop
         float accumulator = 0f; // how much time is unaccounted for
         float interval = 1f / Global.TARGET_UPS; // how much time there should be between loops
-        float[] fpsInfo = new float[] { 0.0f, 0.0f, 0.0f }; // FPS info to be used for FPS recording (explained in FPSRecord())
+        float[] fpsInfo = new float[] { 0.0f, 0.0f, 0.0f }; // FPS info to be used for FPS recording (see FPSRecord())
 
-        // loop
+        // game loop
         while (!this.window.shouldClose()) { // while the Window shouldn't close
 
             // timekeeping
             elapsedTime = this.timer.getElapsedTime(); // get elapsed time since last loop
             if (GameEngine.reportingFPS) reportFPS(elapsedTime, fpsInfo); // record FPS if enabled
-            accumulator += elapsedTime; // add elapsed time to an accumulator which keeps track of how much time has been unaccounted for
+            accumulator += elapsedTime; /* add elapsed time to an accumulator which keeps track of how much time has
+                                           unaccounted for */
 
             // four phases of loop
             this.input(); // gather input
-            while(accumulator >= interval) { // while the amount of unaccounted for time is greater than how much one loop should be
-                this.update(interval); // do an update
+            while(accumulator >= interval) { // while there is a sufficient amount of unaccounted for time
+                this.update(interval); // do an game update
                 accumulator -= interval; // account for a single loop interval amount of time
             }
-            this.render(); // render - we can render outside of the above while loop because we don't need to render outdated frames
-            if (!this.window.usesVSync()) this.sync(interval); // sync the loop - V-Sync will do this for us if it's enabled
+            this.render(); // render - we render outside of the above loop to avoid rendering outdated frames
+            if (!this.window.usesVSync()) this.sync(1 / (float)Global.TARGET_FPS); /* sync loop - V-Sync will do
+                                                                                             this for us if it's
+                                                                                             enabled */
         }
     }
 
     /**
      * Reports FPS if the setting is enabled
      * @param elapsedTime the amount of time since the last loop
-     * @param fpsInfo info about the FPS recording
-     *  fpsInfo[0] - accumulator - how much time since last FPS recording
-     *  fpsInfo[1] - current sum of FPS since last record
-     *  fpsInfo[2] - amount of FPS values that have been added to the sum [1]
-     *  this data is useful so that the program can then calculate and report average FPS every second
+     * @param fpsInfo info about the FPS report
+     *  fpsInfo[0] - accumulator - how much time since last FPS report
+     *  fpsInfo[1] - current sum of FPSes since last report
+     *  fpsInfo[2] - amount of FPS values that have been added to the sum at index 1
+     *                this data is useful so that the program can then calculate and report average FPS every second
+     *                instead of tirelessly and constantly calculating instantaneous FPS values
      */
     private void reportFPS(float elapsedTime, float[] fpsInfo) {
-        fpsInfo[0] += elapsedTime; // keep time between recordings
-        fpsInfo[1] += (1 / elapsedTime); // add to FPS sum
+        fpsInfo[0] += elapsedTime; // keep time between reports
+        fpsInfo[1] += (1 / elapsedTime); // add to sum
         fpsInfo[2] += 1; // keep track of how many FPS values are in sum
-        if (fpsInfo[0] > 1f) { // if it has been a second since the last FPS recording
-            this.logic.reportFPS(fpsInfo[1] / fpsInfo[2]); // tell GameLogic about FPS
-            Utils.log("Average FPS of last second: " + (fpsInfo[1] / fpsInfo[2]), "GameEngine", "FPSRecord()", false); // log the FPS
+        if (fpsInfo[0] > Global.TIME_BETWEEN_FPS_REPORTS) { // if sufficient amount of time since last report
+            this.logic.reportFPS(fpsInfo[1] / fpsInfo[2]); // calculate and tell logic the FPS
+            Utils.log("Average FPS of last second: " + (fpsInfo[1] / fpsInfo[2]), "GameEngine",
+                    "FPSRecord()", false); // log fps
             fpsInfo[0] = fpsInfo[1] = fpsInfo[2] = 0.0f; // reset FPS info array
         }
     }
 
     /**
-     * Gathers input from user
+     * Phase 1 of loop: gathering input
      */
     private void input() {
         this.window.pollEvents(); // poll for GLFW events such as key press, resizes, etc.
-        this.logic.input(this.window); // allow the GameLogic to check input
+        this.logic.input(this.window); // allow the logic to check input
     }
 
     /**
-     * Updates everything that needs updated
-     * @param interval the amount of time passed since the last update
+     * Phase 2 of loop: updating the game
+     * @param interval the amount of time to account for
      */
-    private void update(float interval) { this.logic.update(interval); } // allow the GameLogic to update
+    private void update(float interval) { this.logic.update(interval); } // allow the logic to update
 
     /**
-     * Renders everything that needs rendered
+     * Phase 3 of loop: rendering the game
      */
     private void render() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the screen
-        if (this.window.resized(true)) { // if the Window has been resized
+        if (this.window.resized(true)) { // if the window was resized
             glViewport(0, 0, this.window.getWidth(), this.window.getHeight()); // change the GL viewport to match
-            this.logic.resized(this.window.getWidth(), this.window.getHeight()); // notify the GameLogic of the resize
+            this.logic.resized(this.window.getWidth(), this.window.getHeight()); // notify the logic of the resize
         }
-        this.logic.render(); // allow the GameLogic to render
+        this.logic.render(); // allow the logic to render
         this.window.swapBuffers(); // refresh the window
     }
 
     /**
+     * Phase 4 of loop: syncing
      * Syncs the game loop by sleeping for any leftover time in between updates
+     * This doesn't occur if vertical sync is enabled because vertical sync will take care of it
      * @param interval how much time there should be between frames
      */
     private void sync(float interval) {
         double loopEnd = this.timer.getLastLoop() + interval; // calculate time when the current loop should end
         while (this.timer.getTime() < loopEnd) { // while there is leftover time for this loop
             try { Thread.sleep(1); } // sleep
-            catch (Exception e) { Utils.handleException(e, "GameEngine", "sync(float)", true); } // handle exceptions when trying to sleep
+            catch (Exception e) { Utils.handleException(e, "GameEngine", "sync(float)", true); } // handle exceptions
         }
     }
 
     /**
-     * Cleans up this GameEngine when exiting
+     * Cleans up the engine after the loop ends
      */
     private void cleanup() { this.logic.cleanup(); }
 
     /**
-     * A KeyControl that toggles the visibility of a GameLogic's FPS counter
+     * A KeyControl that allows notification of the engine's logic when the fps changes and when the setting is toggled
+     * See GameEngine's constructor for more info
      */
     private class FPSReportControl implements Window.KeyControl {
-        GameLogic logic; // the logic whose FPS counter's visibility to toggle
+        GameLogic logic; // the logic to notify about FPS
         @Override
-        public int key() { return Global.FPS_REPORTING_TOGGLE_KEY; } // toggle when the key in question is F
+        public int key() { return Global.FPS_REPORTING_TOGGLE_KEY; } // toggle when the key matches setting
         @Override
-        public int action() { return GLFW_RELEASE; } // toggle when the key in question is released
+        public int action() { return GLFW_RELEASE; } // toggle when key released
         @Override
         public void reaction() {
             GameEngine.reportingFPS = !GameEngine.reportingFPS; // toggle static flag
-            if (!GameEngine.reportingFPS) logic.reportFPS(null); // if toggled off, notify logic of termination of reporting
+            if (!GameEngine.reportingFPS) logic.reportFPS(null); // if toggled off, tell logic reporting has stopped
         }
     }
 }

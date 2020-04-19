@@ -6,41 +6,44 @@ import graphics.Model;
 import graphics.ShaderProgram;
 
 /**
- * a GameObject designed to easily and accessibly display text
+ * A game object designed to easily and accessibly display text
  */
 public class TextObject extends GameObject {
 
     /**
      * Data
      */
-    public static final float[] DEFAULT_COLOR = new float[] { 1.0f, 1.0f, 1.0f, 1.0f }; // the default color of a TextObject
-    private String text; // the current text of this TextObject
-    private Font font; // the Font used by this TextObject
+    private static final float[] DEFAULT_COLOR = new float[] { 1.0f, 1.0f, 1.0f, 1.0f }; // default color
+    private static final float DEFAULT_X = 0f, DEFAULT_Y = 0f; // default position
+    private String text; // the current text
+    private Font font; // the font used
 
     /**
-     * Constructs this TextObject
-     * @param font the Font to use when rendering text for this TextObject
+     * Constructor this text object at a specified position
+     * @param font the font to use when rendering the text
      * @param text the text to display
      * @param color the color the text should be
-     * @param x the x position of this TextObject
-     * @param y the y position of this TextObject
+     * @param x the x position
+     * @param y the y position
      */
     public TextObject(Font font, String text, float[] color, float x, float y) {
-        super(x, y, new Model(new float[]{}, new float[]{}, new int[]{}), // call super
-                new Material(font.getSheet(), color, Material.BLEND_MODE.MULTIPLICATIVE));
+        super(x, y, new Model(new float[]{}, new float[]{}, new int[]{}),
+                new Material(font.getSheet(), color, Material.BLEND_MODE.MULTIPLICATIVE)); // call super
         this.font = font; // save font
         this.setText(text); // set text
     }
 
     /**
-     * Constructs this TextObject by playing it at x = y = 0f and assigning it the default color
-     * @param font the Font to use when rendering text for this TextObject
+     * Constructs this text object at the default position
+     * @param font the font to use when rendering text
      * @param text the text to display
      */
-    public TextObject(Font font, String text) { this(font, text, TextObject.DEFAULT_COLOR, 0f, 0f); } // call other constructor
+    public TextObject(Font font, String text) {
+        this(font, text, TextObject.DEFAULT_COLOR, DEFAULT_X, DEFAULT_Y); // call other constructor
+    }
 
     /**
-     * Refreshes this TextObject by recalculating its Model's model coordinates and texture coordinates
+     * Refreshes this TextObject by recalculating its model coordinates and texture coordinates
      * This is somewhat of a heavy-ish operation, so it should be avoided unless the text has actually changed
      * @param text the new text
      */
@@ -92,12 +95,12 @@ public class TextObject extends GameObject {
     }
 
     /**
-     * Changes the text of this TextObject and refreshes the Model if the text is actually different
+     * Changes the text of this text object and refreshes the model if the text is actually different
      * @param text the new text to set
      * @return whether the text was actually changed or not
      */
     public boolean setText(String text) {
-        if (!text.equals(this.text)) { // check if text actually changed first since model refreshing is relatively heavy
+        if (!text.equals(this.text)) { // check if text actually changed since model refreshing is relatively heavy
             this.text = text; // set text
             this.refreshModel(text); // refresh model
             return true; // return that text was changed
@@ -106,15 +109,15 @@ public class TextObject extends GameObject {
     }
 
     /**
-     * Appends text to the TextObject
+     * Appends text to the text object
      * @param text the text to append
      */
     public void appendText(String text) { this.setText(this.text + text); }
 
     /**
-     * Removes a given amount of the last characters of this TextObject
+     * Removes a given amount of the last characters
      * @param n the amount of last characters to remove. If n is greater than this text's length, the text will become
-     *          an empty String. If n is less than 1, nothing will happen
+     *          an empty string. If n is less than 1, nothing will happen
      */
     public void removeLastChars(int n) {
         if (n < 1) return; // ignore negative or zero values
@@ -123,8 +126,8 @@ public class TextObject extends GameObject {
     }
 
     /**
-     * Renders this TextObject if there is text to display
-     * @param sp the ShaderProgram to use to render this TextObject
+     * Renders the text object if there is text to display
+     * @param sp the shader program to use to render
      */
     @Override
     public void render(ShaderProgram sp) {

@@ -1,8 +1,6 @@
 package logic;
 
-import gameobject.GameObject;
-import gameobject.HUD;
-import gameobject.TextObject;
+import gameobject.*;
 import graphics.*;
 
 import static org.lwjgl.glfw.GLFW.*;
@@ -13,38 +11,25 @@ import static org.lwjgl.glfw.GLFW.*;
 public class WorldLogic extends GameLogic {
 
     /**
-     * Initializes any GameObjects to be placed in the World or the HUD
-     * @param window the Window in use
+     * Initializes any game objects to be placed in the world or the HUD
+     * @param window the window
      */
     @Override
     protected void initOthers(Window window) {
         super.initOthers(window); // call super so that FPS displaying objects are added to HUD
-
-        // create additional world game object components
-        Model m = Model.getStdSquare(); // get standard square model
-        Material pMat = new Material(new float[] {1.0f, 0.0f, 0.0f, 1.0f}); // player should just be a red square
-        Texture dirt = new Texture("/textures/dirt.png"); // create dirt texture
-        Material dMat = new Material(dirt, new float[] {1.0f, 1.0f, 1.0f, 1.0f}, Material.BLEND_MODE.MULTIPLICATIVE); // dirt should just be a dirt square
-
-        // create world additional game objects
-        this.world.addObject(new GameObject(0f, 0f, m, pMat)); // create player
-        this.world.getObject(0).setScale(1.4f); // scale player
-        this.world.getCam().follow(this.world.getObject(0)); // make cam follow player
-        this.world.addObject(new GameObject(2f, 0f, m, dMat)); // create dirt
-
-        // create informative message
-        TextObject info = new TextObject(this.font, "(1) - return to origin; (2) - double pos; (3) - halve pos; (4) - reload HUD; (5) - move pos; (6) - return pos;"); // create game name
-        info.setScale(0.1f); // scale down
-        this.hud.addObject(info, new HUD.HUDPositionSettings(-1f, -1f, true, 0.02f)); // add to bottom left
-
-        // create more text
+        this.world.addObject(new Tile("/tile/player.txt")); // add player tile
+        this.world.addObject(new Tile("/tile/stationarydirt.txt")); // add stationary dirt tile
+        this.world.addObject(new Entity("/tile/evildirt.txt")); // add evil dirt entity
+        this.world.getObject(1).setPos(1.3f, 1.3f); // move evil dirt to (1.3, 1.3)
+        this.world.getCam().follow(this.world.getObject(0)); // make camera follow player
         TextObject pPos = new TextObject(this.font, "(0, 0)"); // create player position text
-        pPos.setScale(0.1f); // scale down
-        this.hud.addObject(pPos, new HUD.HUDPositionSettings(null, info, -1f, 1f, 0.02f)); // put pos above info text
+        pPos.setScale(0.1f); // scale down player position text
+        this.hud.addObject(pPos, new HUD.HUDPositionSettings(-1f, -1f, true,
+                0.02f)); // put player position text into hud at bottom left
     }
 
     /**
-     * Detects input in the Window to update GameObjects accordingly
+     * Detects input in the window and updates game objects accordingly
      * @param window the window
      */
     @Override
@@ -55,27 +40,17 @@ public class WorldLogic extends GameLogic {
         if (window.isKeyPressed(GLFW_KEY_S)) this.world.getObject(0).incrementVY(-2f); // s -> down
         if (window.isKeyPressed(GLFW_KEY_D)) this.world.getObject(0).incrementVX(2f); // d -> right
         if (window.isKeyPressed(GLFW_KEY_A)) this.world.getObject(0).incrementVX(-2f); // a -> left
-        if (window.isKeyPressed(GLFW_KEY_1)) this.world.getObject(0).givePosAnim(new PositionalAnimation(0f, 0f, 1f));
-        if (window.isKeyPressed(GLFW_KEY_2)) this.hud.getObject(3).setScale(0.2f);
-        if (window.isKeyPressed(GLFW_KEY_3)) this.hud.getObject(3).setScale(0.1f);
-        if (window.isKeyPressed(GLFW_KEY_4)) this.hud.ensureAllPlacements();
-        if (window.isKeyPressed(GLFW_KEY_5)) {
-            this.hud.moveObject(3, new HUD.HUDPositionSettings(1f, 1f, true, 0.02f), 1f);
-        }
-        if (window.isKeyPressed(GLFW_KEY_6)) {
-            this.hud.moveObject(3, new HUD.HUDPositionSettings(null, this.hud.getObject(2), -1f, 1f, 0.02f), 1f);
-        }
     }
 
     /**
-     * Updates this WorldLogic
+     * Updates the logic
      * @param interval the amount of time to account for
      */
     @Override
     public void update(float interval) {
-        super.update(interval); // call GameLogic's update
-        ((TextObject)this.hud.getObject(3)).setText("(" + String.format("%.2f", this.world.getObject(0).getX()) + ", " +
-                String.format("%.2f", this.world.getObject(0).getY()) + ")");
-        if (!this.hud.getObject(3).posAnimating()) this.hud.ensurePlacement(3);
+        super.update(interval); // call super's update to update world and HUD
+        if (((TextObject)this.hud.getObject(2)).setText("(" + String.format("%.2f", this.world.getObject(0).getX()) +
+                ", " + String.format("%.2f", this.world.getObject(0).getY()) + ")")) // update player position text
+            this.hud.ensurePlacement(2); // ensure player position text's placement if text actually changed
     }
 }
