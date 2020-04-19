@@ -58,7 +58,7 @@ public class Transformation {
      */
     public static void normalize(Coord pos, int w, int h) {
         pos.x = ((pos.x / (float)w) * 2) - 1; // normalize x
-        pos.y = ((pos.y / (float)h) * 2) - 1; // normalize y
+        pos.y = -(((pos.y / (float)h) * 2) - 1); // normalize y and take its inverse
     }
 
     /**

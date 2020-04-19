@@ -18,10 +18,10 @@ public class Tile extends GameObject {
     private static final float[] DEFAULT_COLOR = new float[] {0.5f, 0.5f, 0.5f, 0.5f}; // default color
     private static final float DEFAULT_X = 0, DEFAULT_Y = 0; // default position
     private static final Model STD_SQUARE_MODEL = Model.getStdSquare(); // re-use standard square model for all tiles
-    private String name = "unnamed"; // name of the Tile
+    protected String name = "unnamed"; // name of the Tile
 
     /**
-     * Constructs this tile using the default properties listed above. No texture will be given
+     * Constructs this tile using the default properties
      */
     public Tile() {
         super(DEFAULT_X, DEFAULT_Y, Tile.STD_SQUARE_MODEL, new Material(DEFAULT_COLOR)); // call super with defaults
@@ -68,12 +68,11 @@ public class Tile extends GameObject {
                                 true); // throw exception
                     }
                 }
-                else if (c.getName().equals("x")) this.x = Float.parseFloat(c.getValue()); // x
-                else if (c.getName().equals("y")) this.y = Float.parseFloat(c.getValue()); // y
+                else if (c.getName().equals("x")) this.setX(Float.parseFloat(c.getValue())); // x
+                else if (c.getName().equals("y")) this.setY(Float.parseFloat(c.getValue())); // y
             }
         } catch (Exception e) { // catch general exceptions
-            Utils.handleException(new Exception(Node.getNodeParseErrorMsg("Tile", "incorrectly formatted: " + e.getMessage(),
-                    resPath)), "Tile", "Tile(String)", true); // handle them
+            Utils.handleException(e, "Tile", "Tile(String)", true); // handle them
         }
         this.material = new Material(trs == null ? null : new Texture(trs), color, bm); // create Material
     }

@@ -5,6 +5,7 @@ import gameobject.TextObject;
 import gameobject.World;
 import graphics.Font;
 import graphics.Window;
+import utils.Global;
 
 /**
  * Lays out and abstracts away many lower-level details and capabilities that a game logic should take care of. Notably:
@@ -18,7 +19,6 @@ public abstract class GameLogic {
     /**
      * Data
      */
-    protected Font font; // font that can be used for text
     protected HUD hud; // used for rendering game objects over the world that do not react to a camera
     protected World world; // used for rendering game objects that react to a Camera
     protected boolean renderWorld = true, renderHUD = true; /* flags to be set by extending classes to enable/disable
@@ -39,7 +39,6 @@ public abstract class GameLogic {
         boolean arAction = (ar < 1.0f); /* this stores what actions need to be done to compensate for aspect ratio. If
                                             ar < 1.0f (height > width) then we will make objects shorter to compensate
                                             and if ar > 1.0f, the opposite is true */
-        this.font = new Font("/font.png", "/font_info.txt"); // create font
         this.hud = new HUD(ar, arAction); // create HUD
         this.world = new World(window.getHandle(), ar, arAction); // create world
         this.initOthers(window); // allow extending classes to intialize other members
@@ -51,10 +50,10 @@ public abstract class GameLogic {
      * @param window the window
      */
     protected void initOthers(Window window) {
-        TextObject FPSStatic = new TextObject(font, "FPS: "); /* we separate the part of the text that doesn't
-                                                                      change so that we don't reinvent the wheel when
-                                                                      updating the FPS text */
-        TextObject FPSCount = new TextObject(font, "N/A"); // create actual FPS text object
+        TextObject FPSStatic = new TextObject(Global.FONT, "FPS: "); /* we separate the part of the text that
+                                                                             doesn't change so that we don't reinvent
+                                                                             the wheel when updating the FPS text */
+        TextObject FPSCount = new TextObject(Global.FONT, "N/A"); // create actual FPS text object
         FPSStatic.setScale(0.1f); // scale FPS counter static text
         FPSCount.setScale(0.1f); // scale actual FPS text
         FPSStatic.setVisibility(false); // invisible to start

@@ -10,4 +10,5 @@ evildirt:
     min_wander_time: 1f
     max_wander_time: 3f
     x: -1.5f
+    nameplate_color: 1f 0f 0f 1f
 }

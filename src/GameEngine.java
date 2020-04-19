@@ -53,6 +53,7 @@ public class GameEngine {
     private void init() {
         this.window.init(); // initialize the window
         this.timer.init(); // initialize the timer
+        Global.init(); // initialize global members
         this.logic.init(this.window); // initialize starting logic
     }
 

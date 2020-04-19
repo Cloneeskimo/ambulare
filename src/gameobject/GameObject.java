@@ -21,11 +21,11 @@ public class GameObject {
     /**
      * Data
      */
+    private float x = 0f, y = 0f; // position
+    private float sx = 1f, sy = 1f; // x scale and y scale
+    private float rot = 0f; // rotation - in radians
     protected boolean visible = true; // visibility
-    protected float x = 0f, y = 0f; // position
     protected float vx = 0f, vy = 0f; // velocity
-    protected float sx = 1f, sy = 1f; // x scale and y scale
-    protected float rot = 0f; // rotation - in radians
     protected Model model; // model to use when rendering
     protected Material material; // material to use when rendering
     protected PositionalAnimation posAnim; // positional animation which can be set to animate positional changes
@@ -62,11 +62,13 @@ public class GameObject {
         if (this.posAnim == null) { // if not in the middle of a positional animation
             this.x += this.vx * interval; // update x position
             this.y += this.vy * interval; // update y position
+            if (this.vx != 0f || this.vy != 0f) this.onMove(); // if actual movement, call onMove()
         } else { // if in the middle of a positional animation
             this.posAnim.update(interval); // update animation
             this.x = this.posAnim.getX(); // set x position
             this.y = this.posAnim.getY(); // set y position
             this.rot = this.posAnim.getR(); // set rotation
+            this.onMove(); // call onMove()
             if (this.posAnim.finished()) { // if animation is over
                 this.x = this.posAnim.getFinalX(); // make sure at the correct ending x
                 this.y = this.posAnim.getFinalY(); // make sure at the correct ending y
@@ -75,6 +77,12 @@ public class GameObject {
             }
         }
     }
+
+    /**
+     * This is called whenever x, y, rotation, or scale is changed. The point is for extending classes to be able to
+     * override this in order to react to a changes in position/rotation/scale
+     */
+    protected void onMove() {}
 
     /**
      * Renders this game object using the given shader program
@@ -133,10 +141,17 @@ public class GameObject {
     }
 
     /**
+     * @return this game object's width without taking rotation into consideration
+     */
+    public float getUnrotatedWidth() {
+        return this.sx * this.model.getWidth();
+    }
+
+    /**
      * Update's this game object's x position
      * @param x the new x position
      */
-    public void setX(float x) { this.x = x; }
+    public void setX(float x) { this.x = x; this.onMove(); }
 
     /**
      * Updates this game object's horizontal velocity (x velocity)
@@ -154,7 +169,7 @@ public class GameObject {
      * Updates this game object's horizontal scaling
      * @param sx the new horizontal scaling
      */
-    public void setScaleX(float sx) { this.sx = sx; }
+    public void setScaleX(float sx) { this.sx = sx; this.onMove(); }
 
     /**
      * @return this game object's y position
@@ -170,10 +185,17 @@ public class GameObject {
     }
 
     /**
+     * @return this game object's height without taking rotation into consideration
+     */
+    public float getUnrotatedHeight() {
+        return this.sy * this.model.getHeight();
+    }
+
+    /**
      * Update's this game object's y position
      * @param y the new y position
      */
-    public void setY(float y) { this.y = y; }
+    public void setY(float y) { this.y = y; this.onMove(); }
 
     /**
      * Updates this game object's vertical velocity
@@ -191,20 +213,20 @@ public class GameObject {
      * Updates this game object's vertical scaling
      * @param sy the new horizontal scaling
      */
-    public void setScaleY(float sy) { this.sy = sy; }
+    public void setScaleY(float sy) { this.sy = sy; this.onMove(); }
 
     /**
      * Updates this game object's horizontal and vertical scaling
      * @param s the new scaling
      */
-    public void setScale(float s) { this.sx = this.sy = s; }
+    public void setScale(float s) { this.sx = this.sy = s; this.onMove(); }
 
     /**
      * Updates the position of this game object
      * @param x the new x
      * @param y the new y
      */
-    public void setPos(float x, float y) { this.x = x; this.y = y; }
+    public void setPos(float x, float y) { this.x = x; this.y = y; this.onMove(); }
 
     /**
      * @return this game object's rotation in radians
@@ -213,15 +235,30 @@ public class GameObject {
 
     /**
      * Updates the rotation of this game object
-     * @param degrees the new rotation value in degrees
+     * @param rot the new rotation value in degrees
      */
-    public void setRot(float degrees) { this.rot = (float)Math.toRadians(degrees % 360); }
+    public void setRotDeg(float rot) { this.rot = (float)Math.toRadians(rot % 360); this.onMove(); }
+
+    /**
+     * Updates the rotation of this game object
+     * @param rot the new rotation value in radians
+     */
+    public void setRotRad(float rot) { this.rot = rot % (float)(Math.PI * 2); this.onMove(); }
 
     /**
      * Sets the visibility flag of this game object
      * @param v the new value of the visibility flag
      */
     public void setVisibility(boolean v) { this.visible = v; }
+
+    /**
+     * Sets the game object's velocities to 0
+     * @param stopPosAnim whether or not to stop any positional animation that may be happening
+     */
+    public void stop(boolean stopPosAnim) {
+        this.vx = this.vy = 0; // reset velocities
+        if (stopPosAnim) this.posAnim = null; // delete positional animation if flag set
+    }
 
     /**
      * Cleans up the game object

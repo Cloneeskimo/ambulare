@@ -1,4 +1,6 @@
 player:
 {
-    color: 0.2f 0f 1f 0.8f
+    color: 0f 0f 0f 1f
+    speed: 4f
+    name: Svenske
 }
