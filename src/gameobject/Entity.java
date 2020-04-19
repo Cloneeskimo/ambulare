@@ -102,7 +102,7 @@ public class Entity extends Tile {
             }
         } else { // if waiting for the next wander
             if (this.acc > nextWanderTime) { // if wait is up
-                float angle = Utils.genRandFloat(0, 360); // generate an angle to wander at
+                float angle = Utils.genRandFloat(0, (float)Math.toRadians(360)); // generate an angle to wander at
                 this.vx = (float)Math.cos(angle) * this.speed; // get the x component of velocity for that
                 this.vy = (float)Math.sin(angle) * this.speed; // get the y component of velocity for that
                 this.wanderLength = Utils.genRandFloat(minWanderTime, maxWanderTime); // generate length of wander

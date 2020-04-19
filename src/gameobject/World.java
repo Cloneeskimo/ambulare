@@ -11,7 +11,8 @@ import static org.lwjgl.glfw.GLFW.glfwSetScrollCallback;
 
 /**
  * Encapsulates a collection of game objects that react to a camera when rendered
- * Any objects added to this world are considered to be in world space when received and will maintained as such
+ * Any objects added to this world will have their object coordinates converted to camera-view coordinates (using the
+ * world's camera member) and will be projected when rendered
  */
 public class World {
 
@@ -45,19 +46,20 @@ public class World {
      * Initializes the world's shader program
      */
     protected void initSP() {
-        this.sp = new ShaderProgram("/shaders/worldV.glsl", "/shaders/worldF.glsl"); // create SP
-        this.sp.registerUniform("x"); // register world x uniform
-        this.sp.registerUniform("y"); // register world y uniform
-        this.sp.registerUniform("scaleX"); // register x scale uniform
-        this.sp.registerUniform("scaleY"); // register y scale uniform
+        this.sp = new ShaderProgram("/shaders/vertex.glsl", "/shaders/fragment.glsl"); // create SP
         this.sp.registerUniform("ar"); // register aspect ratio uniform
         this.sp.registerUniform("arAction"); // register aspect ratio action uniform
+        this.sp.registerUniform("x"); // register object x uniform
+        this.sp.registerUniform("y"); // register object y uniform
+        this.sp.registerUniform("scaleX"); // register x scale uniform
+        this.sp.registerUniform("scaleY"); // register y scale uniform
+        this.sp.registerUniform("rot"); // register rotation uniform
         this.sp.registerUniform("isTextured"); // register texture flag uniform
         this.sp.registerUniform("color"); // register color uniform
         this.sp.registerUniform("blend"); // register blend uniform
         this.sp.registerUniform("texSampler"); // register texture sampler uniform
-        this.sp.registerUniform("camX"); // register camera world x uniform
-        this.sp.registerUniform("camY"); // register camera world y uniform
+        this.sp.registerUniform("camX"); // register camera x uniform
+        this.sp.registerUniform("camY"); // register camera y uniform
         this.sp.registerUniform("camZoom"); // register camera zoom uniform
     }
 
@@ -106,7 +108,8 @@ public class World {
      * @param i the index to find the game object at
      * @return the found game object
      */
-    public GameObject getObject(int i) {
+    public GameObject getObject(int i)
+    {
         try { // try to get item
             return this.gameObjects.get(i); // and return it
         } catch (Exception e) { // if exception

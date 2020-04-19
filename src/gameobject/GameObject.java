@@ -14,9 +14,8 @@ import static org.lwjgl.opengl.GL13C.glActiveTexture;
 /**
  * Represents a single game object. This is the basic abstraction away from directly dealing with GL commands
  * These objects have a model and a material both used for rendering. They also have position, velocity, scaling, and
- * visibility components. They and are able to be given positional animations to undergo
- * All positioning and velocity are aspect coordinates if being rendered by a HUD, or world coordinates if being
- * rendered by a world
+ * visibility components that are used during rendering to convert this object's model coordinates into object
+ * coordinates. They and are able to be given positional animations to undergo
  */
 public class GameObject {
 
@@ -24,27 +23,36 @@ public class GameObject {
      * Data
      */
     protected boolean visible = true; // visibility
-    protected float x, y; // position
-    protected float vx, vy; // velocity
-    protected float sx, sy; // x scale and y scale
+    protected float x = 0f, y = 0f; // position
+    protected float vx = 0f, vy = 0f; // velocity
+    protected float sx = 1f, sy = 1f; // x scale and y scale
+    protected float rot = 0f; // rotation - in radians
     protected Model model; // model to use when rendering
     protected Material material; // material to use when rendering
     protected PositionalAnimation posAnim; // positional animation which can be set to animate positional changes
 
+
     /**
-     * Constructor
+     * Constructs the game object at the default starting position (see above)
+     * @param model the model to render
+     * @param material the material to use for rendering
+     */
+    public GameObject(Model model, Material material) {
+        this.model = model;
+        this.material = material;
+    }
+
+    /**
+     * Constructs the game object with a starting position
      * @param x the x position to place the game object at
      * @param y the y position to place the game object at
      * @param model the model to render
      * @param material the material to use for rendering
      */
     public GameObject(float x, float y, Model model, Material material) {
+        this(model, material); // call other constructor
         this.x = x; // set x
         this.y = y; // set y
-        this.vx = this.vy = 0; // initialize velocities to 0
-        this.sx = this.sy = 1.0f; // initialize scales to 1
-        this.model = model; // set model
-        this.material = material; // set material
     }
 
     /**
@@ -65,6 +73,34 @@ public class GameObject {
                 this.posAnim = null; // delete the animation
             }
         }
+    }
+
+    /**
+     * Renders this game object using the given shader program
+     * This function will assume the given shader program is already bound and has the correct set of uniforms to handle
+     * rendering a game object (see method for specifics)
+     * @param sp the shader program to use to render this game object
+     */
+    public void render(ShaderProgram sp) {
+        if (!this.visible) return; // do not render if invisible
+        if (this.material.isTextured()) { // if this object's material is textured
+            sp.setUniform("isTextured", 1); // set textured flag to true
+            glActiveTexture(GL_TEXTURE0); // set active texture to one in slot 0
+            glBindTexture(GL_TEXTURE_2D, this.material.getTexture().getID()); // bind texture
+        } else sp.setUniform("isTextured", 0); // set textured flag to false otherwise
+        if (this.material.isColored()) { // if this object's material is colored
+            float[] color = this.material.getColor(); // and get color instead
+            sp.setUniform("color", color[0], color[1], color[2], color[3]); // set color uniform
+        }
+        Material.BLEND_MODE bm = this.material.getBlendMode(); // get blend mode of this object's Material
+        sp.setUniform("blend", bm == Material.BLEND_MODE.NONE ? 0 : (bm == Material.BLEND_MODE.MULTIPLICATIVE ? 1
+                : 2)); // set blend uniform
+        sp.setUniform("x", this.x); // set x
+        sp.setUniform("y", this.y); // set y
+        sp.setUniform("scaleX", this.sx); // set x scaling
+        sp.setUniform("scaleY", this.sy); // set y scaling
+        sp.setUniform("rot", this.rot); // set rotation
+        this.model.render(); // render model
     }
 
     /**
@@ -164,31 +200,10 @@ public class GameObject {
     public void setPos(float x, float y) { this.x = x; this.y = y; }
 
     /**
-     * Renders this game object using the given shader program
-     * This function will assume the given shader program is already bound and has the correct set of uniforms to handle
-     * rendering a game object (see method for specifics)
-     * @param sp the shader program to use to render this game object
+     * Updates the rotation of this game object
+     * @param degrees the new rotation value in degrees
      */
-    public void render(ShaderProgram sp) {
-        if (!this.visible) return; // do not render if invisible
-        if (this.material.isTextured()) { // if this object's material is textured
-            sp.setUniform("isTextured", 1); // set textured flag to true
-            glActiveTexture(GL_TEXTURE0); // set active texture to one in slot 0
-            glBindTexture(GL_TEXTURE_2D, this.material.getTexture().getID()); // bind texture
-        } else sp.setUniform("isTextured", 0); // set textured flag to false otherwise
-        if (this.material.isColored()) { // if this object's material is colored
-            float[] color = this.material.getColor(); // and get color instead
-            sp.setUniform("color", color[0], color[1], color[2], color[3]); // set color uniform
-        }
-        Material.BLEND_MODE bm = this.material.getBlendMode(); // get blend mode of this object's Material
-        sp.setUniform("blend", bm == Material.BLEND_MODE.NONE ? 0 : (bm == Material.BLEND_MODE.MULTIPLICATIVE ? 1
-                : 2)); // set blend uniform
-        sp.setUniform("x", this.x); // set x
-        sp.setUniform("y", this.y); // set y
-        sp.setUniform("scaleX", this.sx); // set x scaling
-        sp.setUniform("scaleY", this.sy); // set y scaling
-        this.model.render(); // render model
-    }
+    public void setRot(float degrees) { this.rot = (float)Math.toRadians(degrees); }
 
     /**
      * Sets the visibility flag of this game object

@@ -28,10 +28,10 @@ public class Model {
      */
     public static float[] getStdSquareModelCoords() {
         return new float[] { // rectangle positions
-                -STD_SQUARE_SIZE / 2, -STD_SQUARE_SIZE / 2, // top left
-                -STD_SQUARE_SIZE / 2,  STD_SQUARE_SIZE / 2, // bottom left
-                 STD_SQUARE_SIZE / 2,  STD_SQUARE_SIZE / 2, // bottom right
-                 STD_SQUARE_SIZE / 2, -STD_SQUARE_SIZE / 2 // top right
+                -STD_SQUARE_SIZE / 2,  STD_SQUARE_SIZE / 2, // top left
+                -STD_SQUARE_SIZE / 2, -STD_SQUARE_SIZE / 2, // bottom left
+                 STD_SQUARE_SIZE / 2, -STD_SQUARE_SIZE / 2, // bottom right
+                 STD_SQUARE_SIZE / 2,  STD_SQUARE_SIZE / 2 // top right
         };
     }
 

@@ -18,14 +18,15 @@ public class WorldLogic extends GameLogic {
     protected void initOthers(Window window) {
         super.initOthers(window); // call super so that FPS displaying objects are added to HUD
         this.world.addObject(new Tile("/tile/player.txt")); // add player tile
-        this.world.addObject(new Tile("/tile/stationarydirt.txt")); // add stationary dirt tile
-        this.world.addObject(new Entity("/tile/evildirt.txt")); // add evil dirt entity
-        this.world.getObject(1).setPos(1.3f, 1.3f); // move evil dirt to (1.3, 1.3)
+        this.world.addObject(new Entity("/tile/evildirt.txt"));
         this.world.getCam().follow(this.world.getObject(0)); // make camera follow player
         TextObject pPos = new TextObject(this.font, "(0, 0)"); // create player position text
         pPos.setScale(0.1f); // scale down player position text
         this.hud.addObject(pPos, new HUD.HUDPositionSettings(-1f, -1f, true,
                 0.02f)); // put player position text into hud at bottom left
+        this.world.getObject(0).setRot(45);
+        this.world.getObject(0).setScale(1.8f);
+        pPos.setRot(0);
     }
 
     /**
