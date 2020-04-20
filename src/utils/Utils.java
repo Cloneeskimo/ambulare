@@ -20,6 +20,15 @@ public class Utils {
      */
     public static float genRandFloat(float min, float max) { return (float)(min + Math.random() * (max - min)); }
 
+    public static Coord rotatePoint(float cx, float cy, float x, float y, float rot) {
+        double dx = x - cx, dy = y - cy; // calculate distance from center point (un-translate)
+        double rdx = (dx * Math.cos(rot) - dy * Math.sin(rot)); // rotate the x component of the point in question
+        double rdy = (dy * Math.cos(rot) + dx * Math.sin(rot)); // rotate the y component of the point in question
+        double rx = cx + rdx; // re-translate rotated x
+        double ry = cy + rdy; // re-translate rotated y
+        return new Coord((float)rx, (float)ry); // put into a coordinate and return
+    }
+
     /**
      * Converts a string to a float array containing color data. A properly formatted string has all four components
      * separated by a space and each component is a proper float value. example: "1f 0.5f 0.1f 1f"

@@ -4,6 +4,8 @@ import graphics.Material;
 import graphics.Model;
 import graphics.PositionalAnimation;
 import graphics.ShaderProgram;
+import utils.Bounds;
+import utils.Coord;
 
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
 import static org.lwjgl.opengl.GL11.glBindTexture;
@@ -250,6 +252,8 @@ public class GameObject {
      * @param v the new value of the visibility flag
      */
     public void setVisibility(boolean v) { this.visible = v; }
+
+    public Bounds getBounds() { return new Bounds(this.x, this.y, this.getUnrotatedWidth(), this.getUnrotatedHeight(), this.rot); }
 
     /**
      * Sets the game object's velocities to 0

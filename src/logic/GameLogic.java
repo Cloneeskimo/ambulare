@@ -5,7 +5,11 @@ import gameobject.TextObject;
 import gameobject.World;
 import graphics.Font;
 import graphics.Window;
+import utils.Coord;
 import utils.Global;
+import utils.Transformation;
+
+import static org.lwjgl.glfw.GLFW.*;
 
 /**
  * Lays out and abstracts away many lower-level details and capabilities that a game logic should take care of. Notably:
@@ -41,7 +45,7 @@ public abstract class GameLogic {
                                             and if ar > 1.0f, the opposite is true */
         this.hud = new HUD(ar, arAction); // create HUD
         this.world = new World(window.getHandle(), ar, arAction); // create world
-        this.initOthers(window); // allow extending classes to intialize other members
+        this.initOthers(window); // allow extending classes to initialize other members
     }
 
     /**
@@ -53,7 +57,7 @@ public abstract class GameLogic {
         TextObject FPSStatic = new TextObject(Global.FONT, "FPS: "); /* we separate the part of the text that
                                                                              doesn't change so that we don't reinvent
                                                                              the wheel when updating the FPS text */
-        TextObject FPSCount = new TextObject(Global.FONT, "N/A"); // create actual FPS text object
+        TextObject FPSCount = new TextObject(Global.FONT, ""); // create actual FPS text object
         FPSStatic.setScale(0.1f); // scale FPS counter static text
         FPSCount.setScale(0.1f); // scale actual FPS text
         FPSStatic.setVisibility(false); // invisible to start
@@ -63,6 +67,19 @@ public abstract class GameLogic {
         this.hud.addObject(FPSCount, new HUD.HUDPositionSettings(FPSStatic, FPSStatic, 1f, 0f,
                 0f)); // add actual FPS text to HUD
         this.FPSItemsAdded = true; // save that these FPS items have been added
+    }
+
+    /**
+     * Receives mouse input from the engine and notifies the world and the HUD of the input.
+     * Extending classes can certainly override this method to change how they react to mouse input. If super is not
+     * called, or the world and HUD are not manually notified, they may not respond to mouse input
+     * @param x the normalized and projected x position of the mouse if hover event, 0 otherwise
+     * @param y the normalized and projected y position of the mouse if hover event, 0 otherwise
+     * @param action the nature of the mouse input (GLFW_PRESS, GLFW_RELEASE, or GLFW_HOVERED)
+     */
+    public void mouseInput(float x, float y, int action) {
+        this.world.mouseInput(x, y, action); // notify world of input
+        this.hud.mouseInput(x, y, action); // notify HUD of input
     }
 
     /**

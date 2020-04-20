@@ -18,7 +18,6 @@ public class WorldLogic extends GameLogic {
      * Data
      */
     Player player; // the player
-    Coord lastMousePos = new Coord(); // save last mouse position to avoid re-calculating the same value multiple times
 
     /**
      * Initializes any game objects to be placed in the world or the HUD
@@ -40,6 +39,9 @@ public class WorldLogic extends GameLogic {
         pPos.setScale(0.1f); // scale down player position text
         this.hud.addObject(pPos, new HUD.HUDPositionSettings(-1f, -1f, true,
                 0.02f)); // put player position text into hud at bottom left
+        Player hudPlayer = new Player("/tile/player.txt"); // create small player for HUD
+        hudPlayer.setScale(0.5f);
+        this.hud.addObject(hudPlayer, new HUD.HUDPositionSettings(1f, -1f, true, 0.2f));
     }
 
     /**
@@ -49,14 +51,24 @@ public class WorldLogic extends GameLogic {
     @Override
     public void input(Window window) {
         player.stop(false); // stop moving
-        Coord mousePos = window.getMousePos(); // get mouse position
-        if (!mousePos.equals(lastMousePos)) { // check if different from last mouse position
-            this.lastMousePos = new Coord(mousePos); // save new mouse position
-            Transformation.normalize(mousePos, window.getWidth(), window.getHeight()); // normalize mouse position
-            Transformation.project(mousePos, (float)window.getWidth() / (float)window.getHeight()); // project
-            player.setRotRad((float)Math.atan2(mousePos.y, mousePos.x)); // rotate player accordingly
-        }
         if (window.isKeyPressed(GLFW_KEY_W)) player.moveForward(); // move player forward if W pressed
+    }
+
+    /**
+     * Reacts to mouse input by rotating the player to follow the mouse
+     * @param x the normalized and projected x position of the mouse if hover event, 0 otherwise
+     * @param y the normalized and projected y position of the mouse if hover event, 0 otherwise
+     * @param action the nature of the mouse input (GLFW_PRESS, GLFW_RELEASE, or GLFW_HOVERED)
+     */
+    @Override
+    public void mouseInput(float x, float y, int action) {
+        super.mouseInput(x, y, action); // call super
+        if (action == GLFW_HOVERED) {
+            Coord pos = new Coord(x, y); // bundle into coordinate
+            Transformation.useCam(pos, this.world.getCam()); // convert to camera-view coordinates
+            player.setRotRad((float)Math.atan2(pos.y - player.getY(),
+                    pos.x - player.getX())); // rotate player if mouse movement event
+        }
     }
 
     /**

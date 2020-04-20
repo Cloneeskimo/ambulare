@@ -1,10 +1,9 @@
 import graphics.Window;
 import logic.GameLogic;
-import utils.Global;
-import utils.Timer;
-import utils.Utils;
+import utils.*;
 
-import static org.lwjgl.glfw.GLFW.GLFW_RELEASE;
+import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.glfw.GLFW.glfwSetMouseButtonCallback;
 import static org.lwjgl.opengl.GL11.*;
 
 /**
@@ -52,9 +51,22 @@ public class GameEngine {
      */
     private void init() {
         this.window.init(); // initialize the window
+        this.initMouseInput(); // initialize mouse input callbacks
         this.timer.init(); // initialize the timer
         Global.init(); // initialize global members
         this.logic.init(this.window); // initialize starting logic
+    }
+
+    /**
+     * Creates GLFW callbacks for mouse movement or button events
+     */
+    private void initMouseInput() {
+        glfwSetCursorPosCallback(window.getHandle(), (w, x, y) -> { // create mouse position callback
+            this.mouseInput((float)x, (float)y, GLFW_HOVERED); // forward input to mouse input method
+        });
+        glfwSetMouseButtonCallback(window.getHandle(), (w, b, a, i) -> { // create mouse button callback
+            this.mouseInput(0f, 0f, a); // forward input to mouse input method
+        });
     }
 
     /**
@@ -120,6 +132,24 @@ public class GameEngine {
     private void input() {
         this.window.pollEvents(); // poll for GLFW events such as key press, resizes, etc.
         this.logic.input(this.window); // allow the logic to check input
+    }
+
+    /**
+     * This method gets called for mouse events (movement, pressing, and releasing). It will call the logic's mouse
+     * input method and allow it to handle the input accordingly. If a hovering event, it will convert the mouse
+     * position to projected normalized coordinates
+     * @param x the normalized and projected x position of the mouse if hover event, 0 otherwise
+     * @param y the normalized and projected y position of the mouse if hover event, 0 otherwise
+     * @param action the action of the mouse (GLFW_HOVER, GLFW_PRESS, or GLFW_RELEASE)
+     */
+    private void mouseInput(float x, float y, int action) {
+        if (action == GLFW_HOVERED) { // if hover,
+            Coord pos = new Coord(x, y); // bundle into coordinate object
+            Transformation.normalize(pos, window.getWidth(), window.getHeight()); // normalize mouse position
+            Transformation.project(pos, (float) window.getWidth() / (float) window.getHeight()); // project position
+            x = pos.x; y = pos.y; // extract x and y
+        }
+        logic.mouseInput(x, y, action); // notify logic of input
     }
 
     /**

@@ -1,15 +1,14 @@
 package gameobject;
 
+import graphics.PositionalAnimation;
 import graphics.ShaderProgram;
-import utils.Global;
-import utils.Node;
-import utils.Utils;
+import utils.*;
 
 /**
  * Extends the Tile class by holding entity-related info such as health points and basic world AI wandering mechanics
  * Entities can be constructed using a node-file or with all default properties
  */
-public class Entity extends Tile {
+public class Entity extends Tile implements MouseInteractable {
 
     /**
      * Wandering Parameters
@@ -94,6 +93,7 @@ public class Entity extends Tile {
         this.nameplate = color == null ? new TextObject(Global.FONT, this.name) : // default color if color is null
             new TextObject(Global.FONT, this.name, color, 0f, 0f); // custom color if color provided
         this.nameplate.setScale(0.28f); // scale it appropriately
+        this.nameplate.setVisibility(false); // invisible by default
         this.positionNameplate(); // position kit
     }
 
@@ -150,6 +150,10 @@ public class Entity extends Tile {
         }
     }
 
+    /**
+     * Renders the entity
+     * @param sp the shader program to use to render
+     */
     @Override
     public void render(ShaderProgram sp) {
         super.render(sp); // render game object
@@ -178,6 +182,46 @@ public class Entity extends Tile {
         }
         this.wanders = wanders; // save new flag
     }
+
+    /**
+     * Reacts to the entity being hovered by making their nameplate visible
+     * @param x the normalized and projected x position of the mouse
+     * @param y the normalized and projected y position of the mouse
+     */
+    @Override
+    public void onHover(float x, float y) {
+        this.nameplate.setVisibility(true);
+    }
+
+    /**
+     * When hovering ends, stop showing nameplate
+     */
+    @Override
+    public void onDoneHovering() {
+        this.nameplate.setVisibility(false);
+    }
+
+    /**
+     * Called when a mouse button releases on the entity
+     */
+    @Override
+    public void onPress() {
+        this.givePosAnim(new PositionalAnimation(0f, 0f, 0f, 0.5f)); // animate a full 360
+    }
+
+    /**
+     * Called when a mouse button releases on the entity
+     */
+    @Override
+    public void onRelease() {
+    }
+
+    /**
+     * Gets the appropriate bounds to consider when checking for hovering
+     * @return the bounds of the underlying game object
+     */
+    @Override
+    public Bounds getHoverBounds() { return this.getBounds(); }
 
     /**
      * Cleans up the entity

@@ -20,6 +20,7 @@ public class HUD {
      * Data
      */
     private List<HUDItem> hudItems; // a list of HUD items belonging to this HUD
+    private MIHSB mihsb; // mouse interactable hover state bundle to abstract away mouse input
     private ShaderProgram sp; // the shader program used to render the HUD
     private float ar; // the window's aspect ratio
     private boolean arAction; // aspect ratio action (see GameEngine.init)
@@ -33,6 +34,7 @@ public class HUD {
         this.ar = ar; // save aspect ratio for rendering
         this.arAction = arAction; // save aspect ratio action for rendering
         this.hudItems = new ArrayList<>(); // create HUD item list
+        this.mihsb = new MIHSB(); // create MIHSB
         this.initSP(); // initialize shader program
     }
 
@@ -52,6 +54,28 @@ public class HUD {
         this.sp.registerUniform("color"); // register color uniform
         this.sp.registerUniform("blend"); // register blend uniform
         this.sp.registerUniform("texSampler"); // register texture sampler uniform
+    }
+
+    /**
+     * Handles a resize of the window. It is vital that this is called whenever the window is resized, or position of
+     * HUD elements will be off
+     * @param ar the new aspect ratio
+     * @param arAction the new aspect ratio action (see GameEngine.init)
+     */
+    public void resized(float ar, boolean arAction) {
+        this.ar = ar; // save new aspect ratio
+        this.arAction = arAction; // save new aspect ratio action
+        this.ensureAllPlacements(); // ensure all items are correctly paced
+    }
+
+    /**
+     * Delegates mouse input the MIHSB
+     * @param x the normalized and projected x position of the mouse if hover event, 0 otherwise
+     * @param y the normalized and projected y position of the mouse if hover event, 0 otherwise
+     * @param action the nature of the mouse input (GLFW_PRESS, GLFW_RELEASE, or GLFW_HOVERED)
+     */
+    public void mouseInput(float x, float y, int action) {
+        this.mihsb.mouseInput(x, y, null, action);
     }
 
     /**
@@ -75,18 +99,6 @@ public class HUD {
     }
 
     /**
-     * Handles a resize of the window. It is vital that this is called whenever the window is resized, or position of
-     * HUD elements will be off
-     * @param ar the new aspect ratio
-     * @param arAction the new aspect ratio action (see GameEngine.init)
-     */
-    public void resized(float ar, boolean arAction) {
-        this.ar = ar; // save new aspect ratio
-        this.arAction = arAction; // save new aspect ratio action
-        this.ensureAllPlacements(); // ensure all items are correctly paced
-    }
-
-    /**
      * Adds the given game object to this HUD, positioning it using the given settings
      * @param o the game object to add to this HUD
      * @param hps the position settings to use to maintain the game object's position. For details on these settings,
@@ -94,6 +106,7 @@ public class HUD {
      */
     public void addObject(GameObject o, HUDPositionSettings hps) {
         HUDItem hi = new HUDItem(o, hps); // wrap object and settings into single object
+        if (o instanceof MouseInteractable) this.mihsb.add((MouseInteractable)o); // add to MIHSB if MouseInteractable
         hi.ensurePosition(this.ar); // position the object according to its settings
         this.hudItems.add(hi); // add object to the HUD
     }
