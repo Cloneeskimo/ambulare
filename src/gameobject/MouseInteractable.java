@@ -1,7 +1,6 @@
 package gameobject;
 
-import utils.Bounds;
-import utils.Coord;
+import utils.Frame;
 
 /**
  * An interface to be implemented by objects that want to react to being interacted with by a mouse
@@ -33,5 +32,5 @@ public interface MouseInteractable {
     /**
      * @return the appropriate bounds to use to consider whether or not the implementing object is being hovered
      */
-    Bounds getHoverBounds();
+     Frame getFrame();
 }

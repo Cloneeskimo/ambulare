@@ -2,8 +2,6 @@ package gameobject;
 
 import graphics.Camera;
 import graphics.ShaderProgram;
-import utils.Coord;
-import utils.Transformation;
 import utils.Utils;
 
 import java.util.ArrayList;
@@ -55,9 +53,6 @@ public class World {
         this.sp.registerUniform("arAction"); // register aspect ratio action uniform
         this.sp.registerUniform("x"); // register object x uniform
         this.sp.registerUniform("y"); // register object y uniform
-        this.sp.registerUniform("scaleX"); // register x scale uniform
-        this.sp.registerUniform("scaleY"); // register y scale uniform
-        this.sp.registerUniform("rot"); // register rotation uniform
         this.sp.registerUniform("isTextured"); // register texture flag uniform
         this.sp.registerUniform("color"); // register color uniform
         this.sp.registerUniform("blend"); // register blend uniform

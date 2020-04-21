@@ -1,6 +1,10 @@
 package graphics;
 
 import org.lwjgl.system.MemoryUtil;
+import utils.Frame;
+import utils.Global;
+import utils.Pair;
+import utils.Utils;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
@@ -11,34 +15,48 @@ import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
 import static org.lwjgl.opengl.GL30.*;
 
 /**
- * Represents a model with model coordinates, texture coordinates, and indices. It renders in triangles
+ * Represents a model with model coordinates, texture coordinates, and indices
+ * This model supports scaling and rotating. However, in order for these to work as intended, the center of the model
+ * MUST be (0, 0)
  */
 public class Model {
 
     /**
      * Data
      */
-    private final int ids[]; // [0] - VAO ID, [1] - position VBO ID, [2] - texture coordinate VBO ID, [4] - index VBO ID
-    private final int vertexCount; // amount of vertices the model has
-    private final float w, h; // width and height of this model in model coordinates
-    public static final float STD_SQUARE_SIZE = 0.5f; // the standard square model size (width and height)
+    private final int ids[];             /* integer array to store the various GL object ids: [0] - VAO ID,
+                                            [1] - model coordinate VBO ID, [2] - texture coordinate VBO ID,
+                                            [4] - index VBO ID */
+    private final int idx;               // the amount of vertices this shape has
+    private float[] modelCoords;         // the model's model coordinates
+    private float sx = 1f, sy = 1f;      // horizontal and vertical scale
+    private float r = 0f;                // rotation in radians
+    private float w = 0, h = 0;          // width and height of the model in model coordinates
+    private float uw = 0, uh = 0;        // width and height of the model when not rotated
+    private boolean outdatedSize = true; /* whenever scale or rotation of the model is changed, this flag will be set
+                                            to true but the model won't re-calculate width and height until the
+                                            corresponding methods are called while this flag is true to save computing
+                                            power */
 
     /**
-     * @return the standard square model coordinates to make creating square models easier
+     * Returns the model coordinates appropriate for a rectangular model with the given width/height in cells
+     * @param w the width of the rectangular model in cells
+     * @param h the height of the rectangular model in cells
+     * @return the standard rectangular model coordinates
      */
-    public static float[] getStdSquareModelCoords() {
-        return new float[] { // rectangle positions
-                -STD_SQUARE_SIZE / 2,  STD_SQUARE_SIZE / 2, // top left
-                -STD_SQUARE_SIZE / 2, -STD_SQUARE_SIZE / 2, // bottom left
-                 STD_SQUARE_SIZE / 2, -STD_SQUARE_SIZE / 2, // bottom right
-                 STD_SQUARE_SIZE / 2,  STD_SQUARE_SIZE / 2 // top right
+    public static float[] getGridRectModelCoords(int w, int h) {
+        return new float[] {
+                -w * Global.GRID_CELL_SIZE / 2, -h * Global.GRID_CELL_SIZE / 2, // top left
+                -w * Global.GRID_CELL_SIZE / 2,  h * Global.GRID_CELL_SIZE / 2, // bottom left
+                 w * Global.GRID_CELL_SIZE / 2,  h * Global.GRID_CELL_SIZE / 2, // bottom right
+                 w * Global.GRID_CELL_SIZE / 2, -h * Global.GRID_CELL_SIZE / 2 // top right
         };
     }
 
     /**
-     * @return the standard square texture coordinates to make creating square models easier
+     * @return the standard rectangle texture coordinates
      */
-    public static float[] getStdSquareTexCoords() {
+    public static float[] getStdRectTexCoords() {
         return new float[] {
                 0.0f, 1.0f, // top left
                 0.0f, 0.0f, // bottom left
@@ -48,18 +66,20 @@ public class Model {
     }
 
     /**
-     * @return the standard square indices to make create square models easier
+     * @return the standard rectangle indices
      */
-    public static int[] getStdSquareIdx() {
+    public static int[] getStdRectIdx() {
         return new int[] { 0, 1, 3, 3, 1, 2 };
     }
 
     /**
-     * All tiles use a single copy of this standard square model to avoid redundant memory usage
-     * @return the standard square model
+     * Creates a standard rectangular model with the given width and height in cells
+     * @param w the width of the rectangular model in cells
+     * @param h the height of the rectangular model in cells
+     * @return the standard rectangular model
      */
-    public static Model getStdSquare() {
-        return new Model(getStdSquareModelCoords(), getStdSquareTexCoords(), getStdSquareIdx());
+    public static Model getStdGridRect(int w, int h) {
+        return new Model(getGridRectModelCoords(w, h), getStdRectTexCoords(), getStdRectIdx());
     }
 
     /**
@@ -72,47 +92,51 @@ public class Model {
      */
     public Model(float[] modelCoords, float[] texCoords, int[] indices) {
 
-        // create buffers, record vertex count, generate VAO
-        FloatBuffer modelCoordsBuffer = null, texCoordsBuffer = null; // buffers for model coords and tex coords
-        IntBuffer idxBuffer = null; // buffer for index data
-        this.vertexCount = indices.length; // record vertex count
+        // set and initialize members
+        this.modelCoords = modelCoords; // save model coordinates
+        this.idx = indices.length; // save index count
         this.ids = new int[4]; // initialize ID array
+
+        // create buffers, generation VAO
+        FloatBuffer fb = null; // buffer to use for loading float data into VBOs
+        IntBuffer ib = null; // buffer to use for loading integer data into VBOs
         this.ids[0] = glGenVertexArrays(); // generate the vertex array object
         glBindVertexArray(this.ids[0]); // bind the vertex array object
 
         // process model coordinate data
-        modelCoordsBuffer = MemoryUtil.memAllocFloat(modelCoords.length); // allocate buffer space for position data
-        modelCoordsBuffer.put(modelCoords).flip(); // put position data into buffer
-        this.ids[1] = glGenBuffers(); // generate position vertex buffer object
-        glBindBuffer(GL_ARRAY_BUFFER, this.ids[1]); // bind position vertex buffer object
-        glBufferData(GL_ARRAY_BUFFER, modelCoordsBuffer, GL_STATIC_DRAW); // put position data into position VBO
-        glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, 0); // put VBO into VAO
-
+        this.updateModelCoordsVBO(); // update model coordinates
+        glBindVertexArray(this.ids[0]); // bind the vertex array object
         // process texture coordinate data
-        texCoordsBuffer = MemoryUtil.memAllocFloat(texCoords.length); // allocate buffer space for tex coord data
-        texCoordsBuffer.put(texCoords).flip(); // put texture coordinate data into buffer
+        fb = MemoryUtil.memAllocFloat(texCoords.length); // allocate buffer space for tex coord data
+        fb.put(texCoords).flip(); // put texture coordinate data into buffer
         this.ids[2] = glGenBuffers(); // generate texture coordinate vertex buffer object
         glBindBuffer(GL_ARRAY_BUFFER, this.ids[2]); // bind texture coordinate vertex buffer object
-        glBufferData(GL_ARRAY_BUFFER, texCoordsBuffer, GL_STATIC_DRAW); // put tex coord data into tex coord VBO
+        glBufferData(GL_ARRAY_BUFFER, fb, GL_STATIC_DRAW); // put tex coord data into tex coord VBO
         glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0); // put VBO into VAO
+        MemoryUtil.memFree(fb); // free buffer
 
         // process index data
-        idxBuffer = MemoryUtil.memAllocInt(indices.length); // allocate buffer space for index data
-        idxBuffer.put(indices).flip(); // put index data into buffer
+        ib = MemoryUtil.memAllocInt(indices.length); // allocate buffer space for index data
+        ib.put(indices).flip(); // put index data into buffer
         this.ids[3] = glGenBuffers(); // generate index vertex buffer object
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this.ids[3]); // bind index vertex buffer object
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, idxBuffer, GL_STATIC_DRAW); // put index data into index VBO
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, ib, GL_STATIC_DRAW); // put index data into index VBO
+        MemoryUtil.memFree(ib); // free buffer
 
         // unbind VBO, VAO
         glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind VBO
         glBindVertexArray(0); // unbind VAO
 
-        // free memory
-        MemoryUtil.memFree(modelCoordsBuffer); // free model coordinate buffer memory
-        MemoryUtil.memFree(texCoordsBuffer); // free texture coordinate buffer memory
-        MemoryUtil.memFree(idxBuffer); // free index buffer memory
+        // calculate initial size
+        this.calculateSize(); // calculate size
+        this.uw = this.w; // save width as un-rotated width
+        this.uh = this.h; // save height as un-rotated height
+    }
 
-        // calculate width and height
+    /**
+     * Updates the width and height members of the model
+     */
+    private void calculateSize() {
         if (modelCoords.length == 0) { // if empty Model
             this.w = this.h = 0; // set width and height to 0
         } else { // otherwise
@@ -130,17 +154,152 @@ public class Model {
             this.w = Math.abs(maxX - minX); // store width of model
             this.h = Math.abs(maxY - minY); // store height of model
         }
+        this.outdatedSize = false; // set size update flag to false
+    }
+
+    /**
+     * Updates the model coordinates VBO with the current model coordinates member of the model
+     */
+    private void updateModelCoordsVBO() {
+        glBindVertexArray(this.ids[0]); // bind the vertex array object
+        FloatBuffer b = MemoryUtil.memAllocFloat(this.modelCoords.length); // allocate buffer space for position data
+        b.put(this.modelCoords).flip(); // put position data into buffer
+        this.ids[1] = glGenBuffers(); // generate position vertex buffer object
+        glBindBuffer(GL_ARRAY_BUFFER, this.ids[1]); // bind position vertex buffer object
+        glBufferData(GL_ARRAY_BUFFER, b, GL_STATIC_DRAW); // put position data into position VBO
+        glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, 0); // put VBO into VAO
+        glBindVertexArray(0); // unbind the vertex array object
+    }
+
+    /**
+     * Sets the scaling factors of the model to the given scaling factors
+     * @param x the x scaling factor to use
+     * @param y the y scaling factor to use
+     */
+    public void setScale(float x, float y) {
+        float mx = x / this.sx, my = y / this.sy; // get multiplicative factor to use on each model coordinate
+        this.sx = x; this.sy = y; // update members
+        for (int i = 0; i < this.modelCoords.length; i++) { // for each model coordinate
+            if (i % 2 == 0) this.modelCoords[i] *= mx; // if x coordinate, use x factor on it
+            else this.modelCoords[i] *= my; // if y coordinate, use y factor on it
+        }
+        this.updateModelCoordsVBO(); // update VBO
+        this.outdatedSize = true; // flag that the size members are outdated
+    }
+
+    /**
+     * Sets the x scaling factor of the model to the given x scaling factor
+     * @param x the x scaling factor to use
+     */
+    public void setXScale(float x) {
+        this.setScale(x, this.sy); // call other method
+    }
+
+    /**
+     * Sets the y scaling factor of the model to the given y scaling factor
+     * @param y the y scaling factor to use
+     */
+    public void setYScale(float y) {
+        this.setScale(this.sx, y); // call other method
+    }
+
+    /**
+     * Sets the rotation of the model
+     * @param r the new rotation in radians
+     */
+    public void setRotationRad(float r) {
+        r = r % (2 * (float)Math.PI); // keep within one full rotation
+        float dr = r - this.r; // calculate difference from current rotation
+        this.r = r; // save member
+        for (int i = 0; i < this.modelCoords.length; i+=2) { // for each coordinate
+            Pair rp = Utils.rotatePoint(0f, 0f, modelCoords[i], modelCoords[i + 1], dr); // rotate it
+            this.modelCoords[i] = rp.x; // save rotated x
+            this.modelCoords[i + 1] = rp.y; // save rotated y
+        }
+        this.updateModelCoordsVBO(); // update VBO
+        this.outdatedSize = true; // flag that the size members are outdated
     }
 
     /**
      * @return this model's width in model coordinates
      */
-    public float getWidth() { return this.w; }
+    public float getWidth() {
+        if (this.outdatedSize) this.calculateSize(); // if outdated width member, recalculate
+        return this.w; // return width
+    }
+
+    /**
+     * @return this model's width when not rotated
+     */
+    public float getUnrotatedWidth() {
+        return this.uw * this.sx; // take scale into account and return
+    }
+
+    /**
+     * @return this model's horizontal scaling factor
+     */
+    public float getXScale() { return this.sx; }
 
     /**
      * @return this model's height in model coordinates
      */
-    public float getHeight() { return this.h; }
+    public float getHeight() {
+        if (this.outdatedSize) this.calculateSize(); // if outdated height member, recalculate
+        return this.h; // return height
+    }
+
+    /**
+     * @return this model's height when not rotated
+     */
+    public float getUnrotatedHeight() {
+        return this.uh * this.sy; // take scale into account and return
+    }
+
+    /**
+     * @return this model's vertical scaling factor
+     */
+    public float getYScale() { return this.sy; }
+
+    /**
+     * @return the model's rotation in radians
+     */
+    public float getRotationRad() { return this.r; }
+
+    /**
+     * Calculates a frame for this model. If this is a rectangular model (i.e, have 4 vertices), it will create a
+     * rotated frame that perfectly fits the rectangle. Otherwise, it will create the smallest possible un-rotated
+     * rectangle that will fit all of the vertices
+     * @return the frame described above
+     */
+    public Frame getFrame() {
+        float w2 = 0, h2 = 0; // values to hold half of the width and height to use
+        if (this.modelCoords.length == 8) { // if rectangular
+            w2 = this.getUnrotatedWidth() / 2; // use unrotated width (frame will take care of rotation)
+            h2 = this.getUnrotatedHeight() / 2; // use unrotated height (frame will take care of rotation)
+        } else { // if not rectangular
+            w2 = this.getWidth() / 2; // use entire width to capture all points
+            h2 = this.getHeight() / 2; // use entire height to caputre all points
+        }
+        return new Frame(new float[] {-w2, h2, -w2, -h2, w2, -h2, w2, h2},
+                this.modelCoords.length == 8 ? this.r : 0, 0, 0); /* create the frame and return. Only tell the
+                                                                            frame to consider rotation if this is a
+                                                                            rectangular model. Otherwise, just consider
+                                                                            the unrotated rectangle that fits all
+                                                                            points*/
+    }
+
+    /**
+     * Renders the model
+     */
+    public void render() {
+        glBindVertexArray(this.ids[0]); // bind vao
+        glEnableVertexAttribArray(0); // enable model coordinate vbo
+        glEnableVertexAttribArray(1); // enable texture coordinate vbo
+        glDrawElements(GL_TRIANGLES, this.idx, GL_UNSIGNED_INT, 0); // draw model
+        glDisableVertexAttribArray(0); // disable model coordinate vbo
+        glDisableVertexAttribArray(1); // disable texture coordinate vbo
+        glBindVertexArray(0); // disable vao
+    }
 
     /**
      * Cleans up this model by deleting buffers and unbinding any buffer objects or array objects
@@ -152,18 +311,5 @@ public class Model {
         for (int i = 1; i < this.ids.length; i++) glDeleteBuffers(this.ids[i]); // delete VBOs
         glBindVertexArray(0); // unbind vao
         glDeleteVertexArrays(this.ids[0]); // delete vao
-    }
-
-    /**
-     * Renders the model
-     */
-    public void render() {
-        glBindVertexArray(this.ids[0]); // bind vao
-        glEnableVertexAttribArray(0); // enable model coordinate vbo
-        glEnableVertexAttribArray(1); // enable texture coordinate vbo
-        glDrawElements(GL_TRIANGLES, this.vertexCount, GL_UNSIGNED_INT, 0); // draw model
-        glDisableVertexAttribArray(0); // disable model coordinate vbo
-        glDisableVertexAttribArray(1); // disable texture coordinate vbo
-        glBindVertexArray(0); // disable vao
     }
 }

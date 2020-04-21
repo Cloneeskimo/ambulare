@@ -3,7 +3,7 @@ package graphics;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GL;
-import utils.Coord;
+import utils.Pair;
 import utils.Utils;
 
 import java.util.ArrayList;
@@ -137,11 +137,11 @@ public class Window {
      */
     public boolean isKeyPressed(int key) { return glfwGetKey(this.handle, key) == GLFW_PRESS; }
 
-    public Coord getMousePos() {
+    public Pair getMousePos() {
         double[] x = new double[1];
         double[] y = new double[1];
         glfwGetCursorPos(this.handle, x, y);
-        return new Coord((float)x[0], (float)y[0]);
+        return new Pair((float)x[0], (float)y[0]);
     }
 
     /**

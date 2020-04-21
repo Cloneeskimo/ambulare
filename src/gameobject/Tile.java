@@ -17,7 +17,7 @@ public class Tile extends GameObject {
      */
     private static final float[] DEFAULT_COLOR = new float[] {0.5f, 0.5f, 0.5f, 0.5f}; // default color
     private static final float DEFAULT_X = 0, DEFAULT_Y = 0; // default position
-    private static final Model STD_SQUARE_MODEL = Model.getStdSquare(); // re-use standard square model for all tiles
+    private static final Model STD_SQUARE_MODEL = Model.getStdGridRect(1, 1); // get rectangle model
     protected String name = "unnamed"; // name of the Tile
 
     /**

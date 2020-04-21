@@ -5,7 +5,6 @@ import gameobject.TextObject;
 import gameobject.World;
 import graphics.Font;
 import graphics.Window;
-import utils.Coord;
 import utils.Global;
 import utils.Transformation;
 
@@ -58,8 +57,8 @@ public abstract class GameLogic {
                                                                              doesn't change so that we don't reinvent
                                                                              the wheel when updating the FPS text */
         TextObject FPSCount = new TextObject(Global.FONT, ""); // create actual FPS text object
-        FPSStatic.setScale(0.1f); // scale FPS counter static text
-        FPSCount.setScale(0.1f); // scale actual FPS text
+        FPSStatic.setScale(0.1f, 0.1f); // scale FPS counter static text
+        FPSCount.setScale(0.1f, 0.1f); // scale actual FPS text
         FPSStatic.setVisibility(false); // invisible to start
         FPSCount.setVisibility(false); // invisible to start
         this.hud.addObject(FPSStatic, new HUD.HUDPositionSettings(-1f, 1f, true,

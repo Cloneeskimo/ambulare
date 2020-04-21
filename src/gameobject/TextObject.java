@@ -4,6 +4,7 @@ import graphics.Font;
 import graphics.Material;
 import graphics.Model;
 import graphics.ShaderProgram;
+import utils.Global;
 
 /**
  * A game object designed to easily and accessibly display text
@@ -60,7 +61,7 @@ public class TextObject extends GameObject {
         float width = 0; // total width
         for (int i = 0; i < text.length(); i++) { // for each character
             float cw =  charWidth - (float)(font.getCharCutoff(text.charAt(i)) * 2); // width of particular character
-            float modelcw = (cw / charWidth * Model.STD_SQUARE_SIZE); // width in terms of standard square model size
+            float modelcw = (cw / charWidth * Global.GRID_CELL_SIZE); // width in terms of standard square model size
             widths[i] = modelcw; // add character width
             width += modelcw; // add to cumulative width
         }
@@ -81,8 +82,8 @@ public class TextObject extends GameObject {
             modelCoords[s + 4] = modelCoords[s + 6] = x; // bottom right and top right x
 
             // model coordinates y
-            modelCoords[s + 1] = modelCoords[s + 7] = (Model.STD_SQUARE_SIZE / 2); // top left and top right y
-            modelCoords[s + 3] = modelCoords[s + 5] = (-Model.STD_SQUARE_SIZE / 2); // bottom left and bottom right y
+            modelCoords[s + 1] = modelCoords[s + 7] = (-Global.GRID_CELL_SIZE / 2); // top left and top right y
+            modelCoords[s + 3] = modelCoords[s + 5] = (Global.GRID_CELL_SIZE / 2); // bottom left and bottom right y
 
             // indices
             s = i * 6;
@@ -91,7 +92,9 @@ public class TextObject extends GameObject {
             idx[s + 2] = idx[s + 3] = i * 4 + 3;
             idx[s + 5] = i * 4 + 2;
         }
-        this.model = new Model(modelCoords, texCoords, idx); // create and set model
+        float sx = this.model.getXScale(), sy = this.model.getYScale(); // get scaling factor of previous model
+        this.model = new Model(modelCoords, texCoords, idx); // create and set new model
+        this.model.setScale(sx, sy); // re-apply scale
     }
 
     /**

@@ -42,7 +42,7 @@ import graphics.Model;
  * - can be directly converted into model coordinates if there is no camera or object properties to take into account
  *
  * GRID COORDINATES: camera-view coordinates restricted to a grid. In Ambulare, this grid is defined by cells whose sizez
- *   match Model.STD_SQUARE_SIZE
+ *   match Global.GRID_CELL_SIZE
  * - can be directly converted into camera-view coordinates
  *
  * The conversions made to render are: model -> object (done in GameObject) -> (if rendering with a camera) ->
@@ -56,7 +56,7 @@ public class Transformation {
      * @param w the width of the window
      * @param h the height of the window
      */
-    public static void normalize(Coord pos, int w, int h) {
+    public static void normalize(Pair pos, int w, int h) {
         pos.x = ((pos.x / (float)w) * 2) - 1; // normalize x
         pos.y = -(((pos.y / (float)h) * 2) - 1); // normalize y and take its inverse
     }
@@ -67,7 +67,7 @@ public class Transformation {
      * @param w the width of the window
      * @param h the height of the window
      */
-    public static void denormalize(Coord pos, int w, int h) {
+    public static void denormalize(Pair pos, int w, int h) {
         pos.x = ((pos.x + 1) / 2) * w; // denormalize x
         pos.y = ((pos.y + 1) / 2) * h; // denormalize y
     }
@@ -77,7 +77,7 @@ public class Transformation {
      * @param pos the coordinates to convert
      * @param ar the aspect ratio of the window
      */
-    public static void project(Coord pos, float ar) {
+    public static void project(Pair pos, float ar) {
         if (ar > 1.0f) pos.x *= ar; // widen x if necessary
         else pos.y /= ar; // thin y if necessary
     }
@@ -88,7 +88,7 @@ public class Transformation {
      * @param pos the coordinates to convert
      * @param ar the aspect ratio of the window
      */
-    public static void unproject(Coord pos, float ar) {
+    public static void unproject(Pair pos, float ar) {
         if (ar > 1.0f) pos.x /= ar; // slim x if necessary
         else pos.y *= ar; // widen y if necessary
     }
@@ -98,7 +98,7 @@ public class Transformation {
      * @param pos the coordinates to convert
      * @param cam the camera
      */
-    public static void useCam(Coord pos, Camera cam) {
+    public static void useCam(Pair pos, Camera cam) {
         pos.x = (pos.x / cam.getZoom()) + cam.getX(); // account for zoom and camera x
         pos.y = (pos.y / cam.getZoom()) + cam.getY(); // account for zoom and camera y
     }
@@ -108,7 +108,7 @@ public class Transformation {
      * @param pos the coordinates to convert
      * @param cam the camera
      */
-    public static void removeCam(Coord pos, Camera cam) {
+    public static void removeCam(Pair pos, Camera cam) {
         pos.x = (pos.x - cam.getX()) * cam.getZoom(); // account for camera zoom and x
         pos.y = (pos.y - cam.getY()) * cam.getZoom(); // account for camera zoom and y
     }
@@ -118,17 +118,17 @@ public class Transformation {
      * This assumes a grid in which each cell is the standard square size as defined by the Model class
      * @param pos the coordinates to convert
      */
-    public static void alignToGrid(Coord pos) {
-        pos.x += pos.x < 0 ? (-Model.STD_SQUARE_SIZE / 2) : (Model.STD_SQUARE_SIZE / 2); /* the positions of all of the
+    public static void alignToGrid(Pair pos) {
+        pos.x += pos.x < 0 ? (-Global.GRID_CELL_SIZE / 2) : (Global.GRID_CELL_SIZE / 2); /* the positions of all of the
                                                                                             objects in this game have
                                                                                             (0, 0) at the center of
                                                                                             their models. This basically
                                                                                             nudges them over slightly so
                                                                                             as to make the truncation
                                                                                             correct*/
-        pos.y += pos.y < 0 ? (-Model.STD_SQUARE_SIZE / 2) : (Model.STD_SQUARE_SIZE / 2); // see above comment
-        pos.x = (int)(pos.x / Model.STD_SQUARE_SIZE); // align to grid where cell width is Model's standard square size
-        pos.y = (int)(pos.y / Model.STD_SQUARE_SIZE); // align to grid where cell height is Model's standard square size
+        pos.y += pos.y < 0 ? (-Global.GRID_CELL_SIZE / 2) : (Global.GRID_CELL_SIZE / 2); // see above comment
+        pos.x = (int)(pos.x / Global.GRID_CELL_SIZE); // align to grid where cell width is Model's standard square size
+        pos.y = (int)(pos.y / Global.GRID_CELL_SIZE); // align to grid where cell height is Model's standard square size
     }
 
     /**
@@ -136,13 +136,13 @@ public class Transformation {
      * This assumes a grid in which each cell is the standard square size as defined by the Model class
      * @param pos the coordinates to convert
      */
-    public static void unalignFromGrid(Coord pos) {
-        pos.x *= Model.STD_SQUARE_SIZE; // un-align where cell width is Model's standard square size
-        pos.y *= Model.STD_SQUARE_SIZE; // un-align where cell height is Model's standard square size
-        pos.x += pos.x < 0 ? (Model.STD_SQUARE_SIZE / 2) : (-Model.STD_SQUARE_SIZE / 2); /* move slightly over so that
+    public static void unalignFromGrid(Pair pos) {
+        pos.x *= Global.GRID_CELL_SIZE; // un-align where cell width is Model's standard square size
+        pos.y *= Global.GRID_CELL_SIZE; // un-align where cell height is Model's standard square size
+        pos.x += pos.x < 0 ? (Global.GRID_CELL_SIZE / 2) : (-Global.GRID_CELL_SIZE / 2); /* move slightly over so that
                                                                                             the origin corresponds to
                                                                                             the middle of the model. See
                                                                                             alignToGrid() */
-        pos.y += pos.y < 0 ? (Model.STD_SQUARE_SIZE / 2) : (-Model.STD_SQUARE_SIZE / 2); // see above comment
+        pos.y += pos.y < 0 ? (Global.GRID_CELL_SIZE / 2) : (-Global.GRID_CELL_SIZE / 2); // see above comment
     }
 }

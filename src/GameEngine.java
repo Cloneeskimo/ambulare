@@ -144,7 +144,7 @@ public class GameEngine {
      */
     private void mouseInput(float x, float y, int action) {
         if (action == GLFW_HOVERED) { // if hover,
-            Coord pos = new Coord(x, y); // bundle into coordinate object
+            Pair pos = new Pair(x, y); // bundle into coordinate object
             Transformation.normalize(pos, window.getWidth(), window.getHeight()); // normalize mouse position
             Transformation.project(pos, (float) window.getWidth() / (float) window.getHeight()); // project position
             x = pos.x; y = pos.y; // extract x and y

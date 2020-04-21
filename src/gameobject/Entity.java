@@ -63,7 +63,7 @@ public class Entity extends Tile implements MouseInteractable {
                 if (c.getName().equals("speed")) this.speed = Float.parseFloat(c.getValue()); // speed
                 else if (c.getName().equals("max_hp")) this.maxHP = Integer.parseInt(c.getValue()); // max hp
                 else if (c.getName().equals("hp")) this.HP = Integer.parseInt(c.getValue()); // starting hp
-                else if (c.getName().equals("wanders")) this.wanders = Boolean.parseBoolean(c.getValue()); // wanders setting
+                else if (c.getName().equals("wanders")) this.wanders = Boolean.parseBoolean(c.getValue()); // wanders
                 else if (c.getName().equals("min_wait_time"))
                     this.minWaitTime = Float.parseFloat(c.getValue()); // minimum wait time between wanders
                 else if (c.getName().equals("max_wait_time"))
@@ -92,7 +92,7 @@ public class Entity extends Tile implements MouseInteractable {
     private void initNameplate(float[] color) {
         this.nameplate = color == null ? new TextObject(Global.FONT, this.name) : // default color if color is null
             new TextObject(Global.FONT, this.name, color, 0f, 0f); // custom color if color provided
-        this.nameplate.setScale(0.28f); // scale it appropriately
+        this.nameplate.setScale(0.28f, 0.28f); // scale it appropriately
         this.nameplate.setVisibility(false); // invisible by default
         this.positionNameplate(); // position kit
     }
@@ -130,24 +130,6 @@ public class Entity extends Tile implements MouseInteractable {
      * @param interval the amount of time to account for
      */
     private void updateWanderAI(float interval) {
-        this.acc += interval; // account for time
-        if (this.wandering) { // if wandering
-            if (this.acc > wanderLength) { // if wander is over
-                this.vx = this.vy = 0; // reset velocity to 0
-                this.nextWanderTime = Utils.genRandFloat(minWaitTime, maxWaitTime); // generate the next wander time
-                this.acc = 0; // reset accumulator
-                this.wandering = false; // set wandering flag to false
-            }
-        } else { // if waiting for the next wander
-            if (this.acc > nextWanderTime) { // if wait is up
-                float angle = Utils.genRandFloat(0, (float)Math.toRadians(360)); // generate an angle to wander at
-                this.setRotRad(angle); // set rotation angle
-                this.moveForward(); // set velocities accordingly
-                this.wanderLength = Utils.genRandFloat(minWanderTime, maxWanderTime); // generate length of wander
-                this.acc = 0; // reset accumulator
-                this.wandering = true; // set wandering flag to true
-            }
-        }
     }
 
     /**
@@ -158,14 +140,6 @@ public class Entity extends Tile implements MouseInteractable {
     public void render(ShaderProgram sp) {
         super.render(sp); // render game object
         this.nameplate.render(sp); // render nameplate
-    }
-
-    /**
-     * Sets the x and y velocity components according to rotation
-     */
-    public void moveForward() {
-        this.vx = (float)Math.cos(this.getRot()) * this.speed; // get the x component of velocity
-        this.vy = (float)Math.sin(this.getRot()) * this.speed; // get the y component of velocity
     }
 
     /**
@@ -190,7 +164,7 @@ public class Entity extends Tile implements MouseInteractable {
      */
     @Override
     public void onHover(float x, float y) {
-        this.nameplate.setVisibility(true);
+        this.nameplate.setVisibility(true); // when hovered over, show nameplate
     }
 
     /**
@@ -198,30 +172,20 @@ public class Entity extends Tile implements MouseInteractable {
      */
     @Override
     public void onDoneHovering() {
-        this.nameplate.setVisibility(false);
+        this.nameplate.setVisibility(false); // when hovering ends, hide nameplate
     }
+
+    /**
+     * Called when a mouse button presses on the entity
+     */
+    @Override
+    public void onPress() {}
 
     /**
      * Called when a mouse button releases on the entity
      */
     @Override
-    public void onPress() {
-        this.givePosAnim(new PositionalAnimation(0f, 0f, 0f, 0.5f)); // animate a full 360
-    }
-
-    /**
-     * Called when a mouse button releases on the entity
-     */
-    @Override
-    public void onRelease() {
-    }
-
-    /**
-     * Gets the appropriate bounds to consider when checking for hovering
-     * @return the bounds of the underlying game object
-     */
-    @Override
-    public Bounds getHoverBounds() { return this.getBounds(); }
+    public void onRelease() {}
 
     /**
      * Cleans up the entity

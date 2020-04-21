@@ -2,7 +2,7 @@ package gameobject;
 
 import graphics.PositionalAnimation;
 import graphics.ShaderProgram;
-import utils.Coord;
+import utils.Pair;
 import utils.Transformation;
 import utils.Utils;
 
@@ -47,9 +47,6 @@ public class HUD {
         this.sp.registerUniform("arAction"); // register aspect ratio action uniform
         this.sp.registerUniform("x"); // register object x uniform
         this.sp.registerUniform("y"); // register object y uniform
-        this.sp.registerUniform("scaleX"); // register x scale uniform
-        this.sp.registerUniform("scaleY"); // register y scale uniform
-        this.sp.registerUniform("rot"); // register rotation uniform
         this.sp.registerUniform("isTextured"); // register texture flag uniform
         this.sp.registerUniform("color"); // register color uniform
         this.sp.registerUniform("blend"); // register blend uniform
@@ -121,7 +118,7 @@ public class HUD {
         HUDItem hi = getHUDItem(i); // attempt to get HUD item
         hi.hps = hps; // update settings
         if (duration > 0f) { // if animated change
-            Coord correctPos = hi.hps.getCorrectPosition(hi.o, this.ar); // get correct position
+            Pair correctPos = hi.hps.getCorrectPosition(hi.o, this.ar); // get correct position
             hi.o.givePosAnim(new PositionalAnimation(correctPos.x, correctPos.y, null, duration)); // and start animation
         } else { // if not an animated change
             hi.ensurePosition(this.ar); // just change position immediately
@@ -234,10 +231,10 @@ public class HUD {
          * @param ar the aspect ratio of the window
          * @return a coordinate containing the correct coordinates
          */
-        public Coord getCorrectPosition(GameObject o, float ar) {
+        public Pair getCorrectPosition(GameObject o, float ar) {
 
             // create Coord object and start with independent object coordinates
-            Coord pos = new Coord(this.ox, this.oy); // create new Coord object with object coordinates to start
+            Pair pos = new Pair(this.ox, this.oy); // create new Coord object with object coordinates to start
             if (px == null || py == null)
                 Transformation.project(pos, ar); // if either x or y is independent, just project them and be done
 
@@ -291,7 +288,7 @@ public class HUD {
          * @param ar the aspect ratio of the window
          */
         public void ensurePosition(float ar) {
-            Coord correctPos = this.hps.getCorrectPosition(this.o, ar); // calculate correct position
+            Pair correctPos = this.hps.getCorrectPosition(this.o, ar); // calculate correct position
             o.setX(correctPos.x); // set x
             o.setY(correctPos.y); // set y
         }

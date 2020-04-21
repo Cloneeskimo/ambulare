@@ -7,6 +7,7 @@ uniform sampler2D texSampler; // texture sampler
 uniform vec4 color; // color
 uniform int isTextured; // texture flag
 uniform int blend; // blend flag
+uniform float y;
 
 // data
 in vec2 fTexCoords; // texture coordinates passed in from vertex shader

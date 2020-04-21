@@ -20,13 +20,22 @@ public class Utils {
      */
     public static float genRandFloat(float min, float max) { return (float)(min + Math.random() * (max - min)); }
 
-    public static Coord rotatePoint(float cx, float cy, float x, float y, float rot) {
+    /**
+     * Rotates a given point around a given center point
+     * @param cx the center point's x
+     * @param cy the center point's y
+     * @param x the x of the point to rotate
+     * @param y the y of the point to rotate
+     * @param r the amount to rotate (in radians)
+     * @return the rotated point as a pair
+     */
+    public static Pair rotatePoint(float cx, float cy, float x, float y, float r) {
         double dx = x - cx, dy = y - cy; // calculate distance from center point (un-translate)
-        double rdx = (dx * Math.cos(rot) - dy * Math.sin(rot)); // rotate the x component of the point in question
-        double rdy = (dy * Math.cos(rot) + dx * Math.sin(rot)); // rotate the y component of the point in question
+        double rdx = (dx * Math.cos(r) - dy * Math.sin(r)); // rotate the x component of the point in question
+        double rdy = (dy * Math.cos(r) + dx * Math.sin(r)); // rotate the y component of the point in question
         double rx = cx + rdx; // re-translate rotated x
         double ry = cy + rdy; // re-translate rotated y
-        return new Coord((float)rx, (float)ry); // put into a coordinate and return
+        return new Pair((float)rx, (float)ry); // put into a coordinate and return
     }
 
     /**

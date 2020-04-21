@@ -4,8 +4,7 @@ import graphics.Material;
 import graphics.Model;
 import graphics.PositionalAnimation;
 import graphics.ShaderProgram;
-import utils.Bounds;
-import utils.Coord;
+import utils.Frame;
 
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
 import static org.lwjgl.opengl.GL11.glBindTexture;
@@ -24,14 +23,11 @@ public class GameObject {
      * Data
      */
     private float x = 0f, y = 0f; // position
-    private float sx = 1f, sy = 1f; // x scale and y scale
-    private float rot = 0f; // rotation - in radians
     protected boolean visible = true; // visibility
     protected float vx = 0f, vy = 0f; // velocity
     protected Model model; // model to use when rendering
     protected Material material; // material to use when rendering
     protected PositionalAnimation posAnim; // positional animation which can be set to animate positional changes
-
 
     /**
      * Constructs the game object at the default starting position (see above)
@@ -69,22 +65,16 @@ public class GameObject {
             this.posAnim.update(interval); // update animation
             this.x = this.posAnim.getX(); // set x position
             this.y = this.posAnim.getY(); // set y position
-            this.rot = this.posAnim.getR(); // set rotation
+            this.setRotRad(this.posAnim.getR()); // set rotation
             this.onMove(); // call onMove()
             if (this.posAnim.finished()) { // if animation is over
                 this.x = this.posAnim.getFinalX(); // make sure at the correct ending x
                 this.y = this.posAnim.getFinalY(); // make sure at the correct ending y
-                this.rot = this.posAnim.getFinalR(); // make sure at the correct ending rotation
+                this.setRotRad(this.posAnim.getFinalR()); // make sure at the correct ending rotation
                 this.posAnim = null; // delete the animation
             }
         }
     }
-
-    /**
-     * This is called whenever x, y, rotation, or scale is changed. The point is for extending classes to be able to
-     * override this in order to react to a changes in position/rotation/scale
-     */
-    protected void onMove() {}
 
     /**
      * Renders this game object using the given shader program
@@ -108,11 +98,23 @@ public class GameObject {
                 : 2)); // set blend uniform
         sp.setUniform("x", this.x); // set x
         sp.setUniform("y", this.y); // set y
-        sp.setUniform("scaleX", this.sx); // set x scaling
-        sp.setUniform("scaleY", this.sy); // set y scaling
-        sp.setUniform("rot", this.rot); // set rotation
         this.model.render(); // render model
     }
+
+    /**
+     * Sets the game object's velocities to 0
+     * @param stopPosAnim whether or not to stop any positional animation that may be happening
+     */
+    public void stop(boolean stopPosAnim) {
+        this.vx = this.vy = 0; // reset velocities
+        if (stopPosAnim) this.posAnim = null; // delete positional animation if flag set
+    }
+
+    /**
+     * This is called whenever x, y, rotation, or scale is changed. The point is for extending classes to be able to
+     * override this in order to react to a changes in position/rotation/scale
+     */
+    protected void onMove() {}
 
     /**
      * Gives this game object a positional animation to undergo immediately
@@ -121,7 +123,7 @@ public class GameObject {
      */
     public void givePosAnim(PositionalAnimation pa) {
         this.posAnim = pa; // save animation
-        this.posAnim.start(this.getX(), this.getY(), this.getRot()); // start animation
+        this.posAnim.start(this.getX(), this.getY(), this.getRotationRad()); // start animation
     }
 
     /**
@@ -130,7 +132,7 @@ public class GameObject {
     public boolean posAnimating() { return this.posAnim != null; }
 
     /**
-     * @return this game object's x
+     * @return this game object's x position
      */
     public float getX() { return this.x; }
 
@@ -138,15 +140,14 @@ public class GameObject {
      * @return this game object's width
      */
     public float getWidth() {
-        return this.sy * (float)(this.model.getWidth()  * Math.abs(Math.cos(rot)) +
-                                 this.model.getHeight() * Math.abs(Math.sin(rot))); // take rotation into account
+        return this.model.getWidth(); // return model width
     }
 
     /**
      * @return this game object's width without taking rotation into consideration
      */
     public float getUnrotatedWidth() {
-        return this.sx * this.model.getWidth();
+        return this.model.getUnrotatedWidth(); // return unrotated model width
     }
 
     /**
@@ -168,10 +169,13 @@ public class GameObject {
     public void incrementVX(float dvx) { this.vx += dvx; }
 
     /**
-     * Updates this game object's horizontal scaling
-     * @param sx the new horizontal scaling
+     * Sets the x scaling factor of the game object to the given x scaling factor
+     * @param x the x scaling factor to use
      */
-    public void setScaleX(float sx) { this.sx = sx; this.onMove(); }
+    public void setXScale(float x) {
+        this.model.setXScale(x); // scale model
+        this.onMove(); // call on move
+    }
 
     /**
      * @return this game object's y position
@@ -182,15 +186,14 @@ public class GameObject {
      * @return this game object's height
      */
     public float getHeight() {
-        return this.sy * (float)(this.model.getHeight() * Math.abs(Math.cos(rot)) +
-                                 this.model.getWidth()  * Math.abs(Math.sin(rot))); // take rotation into account
+        return this.model.getHeight(); // return model's height
     }
 
     /**
      * @return this game object's height without taking rotation into consideration
      */
     public float getUnrotatedHeight() {
-        return this.sy * this.model.getHeight();
+        return this.model.getUnrotatedHeight(); // return model's unrotated height
     }
 
     /**
@@ -212,40 +215,56 @@ public class GameObject {
     public void incrementVY(float dvy) { this.vy += dvy; }
 
     /**
-     * Updates this game object's vertical scaling
-     * @param sy the new horizontal scaling
+     * Sets the y scaling factor of the game object to the given y scaling factor
+     * @param y the y scaling factor to use
      */
-    public void setScaleY(float sy) { this.sy = sy; this.onMove(); }
-
-    /**
-     * Updates this game object's horizontal and vertical scaling
-     * @param s the new scaling
-     */
-    public void setScale(float s) { this.sx = this.sy = s; this.onMove(); }
+    public void setYScale(float y) {
+        this.model.setYScale(y); // scale model
+        this.onMove(); // call on move
+    }
 
     /**
      * Updates the position of this game object
      * @param x the new x
      * @param y the new y
      */
-    public void setPos(float x, float y) { this.x = x; this.y = y; this.onMove(); }
+    public void setPos(float x, float y) {
+        this.x = x; // save x
+        this.y = y; // save y
+        this.onMove(); // call on move
+    }
+
+    /**
+     * Sets the scaling factors of the game object to the given scaling factors
+     * @param x the x scaling factor to use
+     * @param y the y scaling factor to use
+     */
+    public void setScale(float x, float y) {
+        this.model.setScale(x, y); // tell model to scale
+        this.onMove(); // call on move
+    }
 
     /**
      * @return this game object's rotation in radians
      */
-    public float getRot() { return this.rot; }
+    public float getRotationRad() { return this.model.getRotationRad(); }
 
     /**
      * Updates the rotation of this game object
-     * @param rot the new rotation value in degrees
+     * @param r the new rotation value in degrees
      */
-    public void setRotDeg(float rot) { this.rot = (float)Math.toRadians(rot % 360); this.onMove(); }
+    public void setRotDeg(float r) {
+        this.setRotRad((float)Math.toRadians(r)); // convert to radians and call other method
+    }
 
     /**
      * Updates the rotation of this game object
-     * @param rot the new rotation value in radians
+     * @param r the new rotation value in radians
      */
-    public void setRotRad(float rot) { this.rot = rot % (float)(Math.PI * 2); this.onMove(); }
+    public void setRotRad(float r) {
+        this.model.setRotationRad(r); // rotate model
+        this.onMove(); // call on-move
+    }
 
     /**
      * Sets the visibility flag of this game object
@@ -253,15 +272,13 @@ public class GameObject {
      */
     public void setVisibility(boolean v) { this.visible = v; }
 
-    public Bounds getBounds() { return new Bounds(this.x, this.y, this.getUnrotatedWidth(), this.getUnrotatedHeight(), this.rot); }
-
     /**
-     * Sets the game object's velocities to 0
-     * @param stopPosAnim whether or not to stop any positional animation that may be happening
+     * Calculates the frame for this game object by getting the model's frame and translating to this game object's
+     * position
+     * @return the aforementioned frame
      */
-    public void stop(boolean stopPosAnim) {
-        this.vx = this.vy = 0; // reset velocities
-        if (stopPosAnim) this.posAnim = null; // delete positional animation if flag set
+    public Frame getFrame() {
+        return model.getFrame().translate(this.x, this.y); // get model's frame and translate
     }
 
     /**
