@@ -226,6 +226,12 @@ public class GameObject {
     public void setVisibility(boolean v) { this.visible = v; }
 
     /**
+     * Updates the game object's material
+     * @param m the new material to use
+     */
+    public void setMaterial(Material m) { this.material = m; }
+
+    /**
      * @return whether the game object is currently undergoing a positional animation
      */
     public boolean posAnimating() { return this.posAnim != null; }

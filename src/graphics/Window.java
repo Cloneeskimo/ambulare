@@ -106,7 +106,7 @@ public class Window {
         GL.createCapabilities(); // allows interaction between GLFW and GL. Nothing will work without this
         glEnable(GL_BLEND); // essentially allows transparency
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // defines how the blending will create transparency
-        glClearColor(0.4f, 0.7f, 1.0f, 0.0f); // set clear color
+        glClearColor(1.0f, 1.0f, 1.0f, 0.0f); // set clear color
     }
 
     /**

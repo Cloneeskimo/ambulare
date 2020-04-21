@@ -280,25 +280,23 @@ public class Model {
 
     /**
      * Calculates a frame for this model. If this is a rectangular model (i.e, have 4 vertices), it will create a
-     * rotated frame that perfectly fits the rectangle. Otherwise, it will create the smallest possible un-rotated
-     * rectangle that will fit all of the vertices
+     * rotated frame that perfectly fits the rectangle. Otherwise, it will create the smallest possible bounding box to
+     * fit all model coordinates
      * @return the frame described above
      */
     public Frame getFrame() {
-        float w2 = 0, h2 = 0; // values to hold half of the width and height to use
         if (this.modelCoords.length == 8) { // if rectangular
-            w2 = this.getUnrotatedWidth() / 2; // use unrotated width (frame will take care of rotation)
-            h2 = this.getUnrotatedHeight() / 2; // use unrotated height (frame will take care of rotation)
+            float[] corners = new float[this.modelCoords.length]; // create corners array
+            for (int i = 0; i < corners.length; i+=2) { // fill it with model coords
+                corners[i] = modelCoords[i]; // copy x
+                corners[i + 1] = modelCoords[i + 1]; // copy negative y
+            }
+            return new Frame(corners, this.r, 0f, 0f); // return the frame with the appropriate r value
         } else { // if not rectangular
-            w2 = this.getWidth() / 2; // use entire width to capture all points
-            h2 = this.getHeight() / 2; // use entire height to caputre all points
+            float w2 = this.getWidth() / 2; // calculate half of width of bounding box
+            float h2 = this.getHeight() / 2; // calculate half of height of bounding box
+            return new Frame(new float[] {-w2, h2, -w2, -h2, w2, -h2, w2, h2}, 0f, 0f, 0f); // create frame
         }
-        return new Frame(new float[] {-w2, h2, -w2, -h2, w2, -h2, w2, h2},
-                this.modelCoords.length == 8 ? this.r : 0, 0, 0); /* create the frame and return. Only tell the
-                                                                            frame to consider rotation if this is a
-                                                                            rectangular model. Otherwise, just consider
-                                                                            the unrotated rectangle that fits all
-                                                                            points*/
     }
 
     /**

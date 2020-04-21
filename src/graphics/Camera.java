@@ -72,6 +72,16 @@ public class Camera {
     public void zoom(float dz) { this.setZoom(this.zoom * dz); }
 
     /**
+     * Updates the camera's position
+     * @param x the new x
+     * @param y the new y
+     */
+    public void setPos(float x, float y) {
+        this.x = x; // set x
+        this.y = y; // set y
+    }
+
+    /**
      * @return the camera's x
      */
     public float getX() { return this.x; }
