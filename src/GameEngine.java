@@ -3,7 +3,6 @@ import logic.GameLogic;
 import utils.*;
 
 import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.glfw.GLFW.glfwSetMouseButtonCallback;
 import static org.lwjgl.opengl.GL11.*;
 
 /**
@@ -146,7 +145,7 @@ public class GameEngine {
         if (action == GLFW_HOVERED) { // if hover,
             Pair pos = new Pair(x, y); // bundle into coordinate object
             Transformation.normalize(pos, window.getWidth(), window.getHeight()); // normalize mouse position
-            Transformation.project(pos, (float) window.getWidth() / (float) window.getHeight()); // project position
+            Transformation.deaspect(pos, (float) window.getWidth() / (float) window.getHeight()); // project position
             x = pos.x; y = pos.y; // extract x and y
         }
         logic.mouseInput(x, y, action); // notify logic of input

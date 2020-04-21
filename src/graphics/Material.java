@@ -3,7 +3,7 @@ package graphics;
 import utils.Utils;
 
 /**
- * Represents a Material that defines how a game object will render.
+ * Defines how a game object will render.
  */
 public class Material {
 
@@ -31,8 +31,8 @@ public class Material {
     /**
      * Data
      */
-    private float[] color; // the color of this material if it has one
-    private Texture texture; // the texture of this material if it has one
+    private float[] color;        // the color of this material if it has one
+    private Texture texture;      // the texture of this material if it has one
     private BLEND_MODE blendMode; // how this Material blends its texture and color when it has both
 
     /**

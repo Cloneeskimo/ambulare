@@ -18,7 +18,7 @@ out vec2 fTexCoords; // texture coordinates are just passed through to fragment 
 
 /**
  *  Applies camera zoom and position to an object
- *  Converts object coordinates into camera-view
+ *  Converts world coordinates into camera-view
  */
 vec2 toCameraView(vec2 coords) {
     return vec2(camZoom * (coords.x - camX), camZoom * (coords.y - camY)); // apply position, then zoom
@@ -26,9 +26,9 @@ vec2 toCameraView(vec2 coords) {
 
 /**
  *  Applies aspect ratio properties to an object
- *  Converts object coordinates or camera-view coordinates into projected coordinates
+ *  Converts world coordinates or camera-view coordinates into aspect coordinates
  */
-vec2 toProjected(vec2 coords) {
+vec2 aspect(vec2 coords) {
     if (arAction == 1) coords.y = coords.y * ar; //apply aspect ratio to y
     else coords.x = coords.x / ar; // apply aspect ratio to x
     return coords; // return result
@@ -38,9 +38,9 @@ vec2 toProjected(vec2 coords) {
  *  Applies all necessary transformations to the model coordinates get them projected correectly
  */
 void main() {
-    vec2 coords = vec2(modelCoords.x + x, modelCoords.y + y); // convert model coordinates to object coordinates
-    if (camZoom != 0) coords = toCameraView(coords); // convert object coordinates to camera-view if there is a camera
-    coords = toProjected(coords); // convert object or camera-view coordinates to project coordinates
-    gl_Position = vec4(coords, 0.0, 1.0); // pass through projected coordinates as a vec4
+    vec2 pos = vec2(modelCoords.x + x, modelCoords.y + y); // convert model coordinates to world coordinates
+    if (camZoom != 0) pos = toCameraView(pos); // convert world coordinates to camera-view if there is a camera
+    pos = aspect(pos); // convert world or camera-view coordinates to aspect coordinates
+    gl_Position = vec4(pos, 0.0, 1.0); // pass through aspect coordinates as a vec4
     fTexCoords = texCoords; // pass texture coordinates through to fragment shader
 }

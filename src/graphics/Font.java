@@ -10,12 +10,12 @@ import java.util.Map;
  * Represents a font by having a font sheet texture containing all the characters of the font in ASCII order. Correctly
  * formatted font sheets can start at any character, but they may NOT skip characters, and the sheet must be a perfect
  * grid where each cell is the same size. A node-file is required to load a font in order to specify certain things
- * about it. The node-file must contain the following children:
+ * about it. The node-file must contain the following parameters:
  * - chars_per_row: how many characters are in each row
  * - chars_per_col: how many characters are in each column
  * - starting_char: the first character in the font sheet (at the top-left)
- * - char_cutoffs: how much horizontal cutoff to apply to each character to avoid empty space. This child can then
- *                 contain a child for (1) each character with a unique cutoff where the name is the character (except
+ * - char_cutoffs: how much horizontal cutoff to apply to each character to avoid empty space. This parameter can then
+ *                 contain pamaeters for (1) each character with a unique cutoff where the name is the character (except
  *                 for color, the name should be 'colon' for obvious reasons), and the value is the amount of pixels to
  *                 cut off, and (2) a child named 'standard' to define a standard cutoff for characters not otherwise
  *                 listed - default is 0
@@ -26,10 +26,10 @@ public class Font {
      * Data
      */
     private Map<Character, Integer> charCutoffs; // map from ASCII characters to the amount of horizontal cutoff
-    private Texture sheet; // font sheet
-    private int charsPerRow, charsPerCol; // amount of characters per row and column of the font sheet
-    private int stdCharCutoff; // standard cutoff for a character if none specified
-    private char startingChar; // the first character of the font sheet (top left)
+    private Texture sheet;                       // font sheet
+    private int charsPerRow, charsPerCol;        // amount of characters per row and column of the font sheet
+    private int stdCharCutoff;                   // standard cutoff for a character if none specified
+    private char startingChar;                   // the first character of the font sheet (top left)
 
     /**
      * Constructor

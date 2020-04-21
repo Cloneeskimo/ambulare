@@ -172,6 +172,19 @@ public class Model {
     }
 
     /**
+     * Renders the model
+     */
+    public void render() {
+        glBindVertexArray(this.ids[0]); // bind vao
+        glEnableVertexAttribArray(0); // enable model coordinate vbo
+        glEnableVertexAttribArray(1); // enable texture coordinate vbo
+        glDrawElements(GL_TRIANGLES, this.idx, GL_UNSIGNED_INT, 0); // draw model
+        glDisableVertexAttribArray(0); // disable model coordinate vbo
+        glDisableVertexAttribArray(1); // disable texture coordinate vbo
+        glBindVertexArray(0); // disable vao
+    }
+
+    /**
      * Sets the scaling factors of the model to the given scaling factors
      * @param x the x scaling factor to use
      * @param y the y scaling factor to use
@@ -286,19 +299,6 @@ public class Model {
                                                                             rectangular model. Otherwise, just consider
                                                                             the unrotated rectangle that fits all
                                                                             points*/
-    }
-
-    /**
-     * Renders the model
-     */
-    public void render() {
-        glBindVertexArray(this.ids[0]); // bind vao
-        glEnableVertexAttribArray(0); // enable model coordinate vbo
-        glEnableVertexAttribArray(1); // enable texture coordinate vbo
-        glDrawElements(GL_TRIANGLES, this.idx, GL_UNSIGNED_INT, 0); // draw model
-        glDisableVertexAttribArray(0); // disable model coordinate vbo
-        glDisableVertexAttribArray(1); // disable texture coordinate vbo
-        glBindVertexArray(0); // disable vao
     }
 
     /**

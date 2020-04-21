@@ -15,8 +15,8 @@ public class Node {
      */
     private static char DIVIDER_CHAR = ':'; // the character that divides a line in a node-file into the name and value
     private static char INDENT_CHAR = '\t'; // the character used for indenting in a node-file
-    private List<Node> children; // list of child nodes
-    private String name, value; // name and values - names are ALWAYS lowercase while values are case-sensitive
+    private List<Node> children;            // list of child nodes
+    private String name, value;             // name and values. Names are ALWAYS lowercase but values are case-sensitive
 
     /**
      * Constructs this node by giving it all of its properties

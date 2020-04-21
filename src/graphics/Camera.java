@@ -10,12 +10,12 @@ public class Camera {
     /**
      * Data
      */
-    private final static float MIN_ZOOM = 0.05f; // minimum zoom
-    private final static float MAX_ZOOM = 1.8f; // maximum zoom
+    private final static float MIN_ZOOM = 0.05f;    // minimum zoom
+    private final static float MAX_ZOOM = 1.8f;     // maximum zoom
     private final static float DEFAULT_ZOOM = 0.7f; // default zoom
-    private float x, y, vx, vy; // position and velocity
-    private float zoom; // zoom
-    private GameObject following; // a game object to follow, if assigned
+    private float x, y, vx, vy;                     // position and velocity
+    private float zoom;                             // zoom
+    private GameObject following;                   // a game object to follow, if assigned
 
     /**
      * Constructs the camera with a specified zoom
@@ -61,6 +61,17 @@ public class Camera {
     public void follow(GameObject o) { this.following = o; }
 
     /**
+     * Sets the zoom to the given zoom, or the minimum/maximum bound that it surpasses
+     * @param z the value to set it to
+     */
+    public void setZoom(float z) { this.zoom = Math.min(Camera.MAX_ZOOM, Math.max(Camera.MIN_ZOOM, z)); }
+
+    /**
+     * Change the zoom by the given magnitude in a multiplicative manner
+     */
+    public void zoom(float dz) { this.setZoom(this.zoom * dz); }
+
+    /**
      * @return the camera's x
      */
     public float getX() { return this.x; }
@@ -74,15 +85,4 @@ public class Camera {
      * @return the camera's zoom
      */
     public float getZoom() { return this.zoom; }
-
-    /**
-     * Sets the zoom to the given zoom, or the minimum/maximum bound that it surpasses
-     * @param z the value to set it to
-     */
-    public void setZoom(float z) { this.zoom = Math.min(Camera.MAX_ZOOM, Math.max(Camera.MIN_ZOOM, z)); }
-
-    /**
-     * Change the zoom by the given magnitude in a multiplicative manner
-     */
-    public void zoom(float dz) { this.setZoom(this.zoom * dz); }
 }

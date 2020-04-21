@@ -128,23 +128,6 @@ public class Window {
     }
 
     /**
-     * Determines if a given key is pressed
-     * Note that this can create unexpected behavior if this is called for toggle-type settings every loop because this
-     * will remain true until the key is lifted caused toggling to occur many times in a row. Use the KeyControl
-     * interface to better define and control keyboard reactions
-     * @param key the key to check
-     * @return whether the given key is pressed
-     */
-    public boolean isKeyPressed(int key) { return glfwGetKey(this.handle, key) == GLFW_PRESS; }
-
-    public Pair getMousePos() {
-        double[] x = new double[1];
-        double[] y = new double[1];
-        glfwGetCursorPos(this.handle, x, y);
-        return new Pair((float)x[0], (float)y[0]);
-    }
-
-    /**
      * Determine if the window was resized
      * @param resetFlag whether to reset the flag after checking (to false)
      * @return whether the window was resized
@@ -181,6 +164,26 @@ public class Window {
      * @return this window's GLFW handle
      */
     public long getHandle() { return this.handle; }
+
+    /**
+     * Determines if a given key is pressed
+     * Note that this can create unexpected behavior if this is called for toggle-type settings every loop because this
+     * will remain true until the key is lifted caused toggling to occur many times in a row. Use the KeyControl
+     * interface to better define and control keyboard reactions
+     * @param key the key to check
+     * @return whether the given key is pressed
+     */
+    public boolean isKeyPressed(int key) { return glfwGetKey(this.handle, key) == GLFW_PRESS; }
+
+    /**
+     * @return the mouse position as window coordinates
+     */
+    public Pair getMousePos() {
+        double[] x = new double[1]; // create array to hold x
+        double[] y = new double[1]; // create array to hold y
+        glfwGetCursorPos(this.handle, x, y); // put position in each array
+        return new Pair((float)x[0], (float)y[0]); // put into a pair and return
+    }
 
     /**
      * Represents a keyboard control that can be registered to a window

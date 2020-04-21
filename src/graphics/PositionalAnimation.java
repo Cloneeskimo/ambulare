@@ -12,12 +12,12 @@ public class PositionalAnimation {
      * Data
      */
     boolean x = true, y = true, r = true; // flags representing which components are being animated
-    float x0, y0, r0; // starting position and rotation of owning game object
-    float xf, yf, rf; // ending position and rotation of owning game object
-    float dx, dy, dr; // difference between ending and starting position and rotation of owning game object
-    float duration; // duration (in seconds) of the animation
-    float animProg; // animation progress
-    float time; // current amount of time that animating has occured (in seconds)
+    float x0, y0, r0;                     // starting position and rotation of owning game object
+    float xf, yf, rf;                     // ending position and rotation of owning game object
+    float dx, dy, dr;                     // difference between end and start pos and rotation of owning game object
+    float duration;                       // duration (in seconds) of the animation
+    float animProg;                       // animation progress (0-1)
+    float time;                           // current amount of time that animating has occurred (in seconds)
 
     /**
      * Constructs this animation

@@ -10,9 +10,9 @@ import java.util.List;
 import static org.lwjgl.glfw.GLFW.*;
 
 /**
- * MouseInteractable Hover State Bundle
+ * MIHSB stands for Mouse Interactable Hover State Bundle
  * This class stores a collection of MouseInteractable objects and parallel hover states for each one so as to
- * abstract and generalize that away from world and HUD
+ * abstract and generalize the handling of mouse input away from both the ROC and the objects themselves
  */
 public class MIHSB {
 
@@ -20,7 +20,7 @@ public class MIHSB {
      * Data
      */
     private List<MouseInteractable> mis; // list of objects able to be interacted with via mouse
-    private List<Boolean> hoverStates; // the hover states for each object in mis (kept as a parallel list)
+    private List<Boolean> hoverStates;   // the hover states for each object in mis (kept as a parallel list)
 
     /**
      * Constructs the MIHSB
@@ -43,8 +43,6 @@ public class MIHSB {
                 Pair pos = new Pair(x, y); // combine into a coordinate
                 Transformation.useCam(pos, cam); // convert to camera-view coordinates
                 x = pos.x; y = pos.y; // extract x and y
-                System.out.println("(" + x + ", " + y + ")");
-                if (this.mis.size() > 0) System.out.println(((GameObject)this.mis.get(0)).getX() + ", " + ((GameObject)this.mis.get(0)).getY());
             }
             for (int i = 0; i < this.mis.size(); i++) { // for each that can be interacted with by a mouse
                 if (mis.get(i).getFrame().contains(x, y)) { // if it is being hovered

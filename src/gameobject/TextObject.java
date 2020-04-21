@@ -14,33 +14,30 @@ public class TextObject extends GameObject {
     /**
      * Data
      */
-    private static final float[] DEFAULT_COLOR = new float[] { 1.0f, 1.0f, 1.0f, 1.0f }; // default color
-    private static final float DEFAULT_X = 0f, DEFAULT_Y = 0f; // default position
-    private String text; // the current text
-    private Font font; // the font used
+    private static final float[] DEFAULT_COLOR = new float[] {1.0f, 1.0f, 1.0f, 1.0f}; // default text color
+    private String text;                                                               // the current text
+    private Font font;                                                                 // the font used
 
     /**
-     * Constructor this text object at a specified position
+     * Constructs the text object with the given color
      * @param font the font to use when rendering the text
      * @param text the text to display
      * @param color the color the text should be
-     * @param x the x position
-     * @param y the y position
      */
-    public TextObject(Font font, String text, float[] color, float x, float y) {
-        super(x, y, new Model(new float[]{}, new float[]{}, new int[]{}),
+    public TextObject(Font font, String text, float[] color) {
+        super(0f, 0f, new Model(new float[]{}, new float[]{}, new int[]{}),
                 new Material(font.getSheet(), color, Material.BLEND_MODE.MULTIPLICATIVE)); // call super
         this.font = font; // save font
         this.setText(text); // set text
     }
 
     /**
-     * Constructs this text object at the default position
-     * @param font the font to use when rendering text
+     * Constructs the text object with the default color
+     * @param font the font to use when rendering the text
      * @param text the text to display
      */
     public TextObject(Font font, String text) {
-        this(font, text, TextObject.DEFAULT_COLOR, DEFAULT_X, DEFAULT_Y); // call other constructor
+        this(font, text, DEFAULT_COLOR); // call other constructor
     }
 
     /**

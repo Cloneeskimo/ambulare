@@ -15,10 +15,10 @@ public class ShaderProgram {
     /**
      * Data
      */
-    private final int progID; // program id of the shader program
+    private final int progID;                    // program id of the shader program
     private final Map<String, Integer> uniforms; // map of uniform names to locations
-    private int vShaderID; // program id of the vertex shader
-    private int fShaderID; // program id of the fragment shader
+    private int vShaderID;                       // program id of the vertex shader
+    private int fShaderID;                       // program id of the fragment shader
 
     /**
      * Constructor
