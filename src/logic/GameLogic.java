@@ -4,6 +4,7 @@ import gameobject.RenderableObjectCollection;
 import gameobject.TextObject;
 import graphics.Window;
 import utils.Global;
+import utils.Pair;
 
 /**
  * The game logic define how the engine will interact with the game. To aid in the process of designing a game world,
@@ -31,7 +32,7 @@ public abstract class GameLogic {
      * @param window the window
      */
     public final void init(Window window) {
-        float ar = (float)window.getWidth() / (float)window.getHeight(); // calculate aspect ratio
+        float ar = (float)window.getFBWidth() / (float)window.getFBHeight(); // calculate aspect ratio
         boolean arAction = (ar < 1.0f); /* this stores what actions need to be done to compensate for aspect ratio. If
                                             ar < 1.0f (height > width) then we will make objects shorter to compensate
                                             and if ar > 1.0f, the opposite is true */

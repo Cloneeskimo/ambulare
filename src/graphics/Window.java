@@ -24,6 +24,7 @@ public class Window {
     private List<KeyControl> keyControls; // list of key controls (see KeyControl definition below)
     private final String title; // window title
     private int w, h; // window width and height
+    private int fbw, fbh; // frame buffer width and height
     private long handle; // the window handle - how GLFW knows this window by
     private boolean resized = false; // whether or not the window has been resized (false by default)
     private boolean vSync; // whether or not to use v-sync
@@ -70,6 +71,7 @@ public class Window {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2); // request GL 3.2
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // request core profile
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // request forward compatibility
+        glfwWindowHint(GLFW_SCALE_TO_MONITOR, GL_TRUE);
 
         // check window size
         GLFWVidMode vidmode = glfwGetVideoMode(glfwGetPrimaryMonitor()); // get resolution info for main monitor
@@ -80,12 +82,23 @@ public class Window {
         this.handle = glfwCreateWindow(this.w, this.h, this.title, NULL, NULL); // create window with specified config
         if (this.handle == NULL) Utils.handleException(new Exception("Failed to create the GLFW window"),
                 "graphics.Window", "init()", true); // throw exception if cannot create window
+        int[] fbw = new int[1]; // create array to get frame buffer width
+        int[] fbh = new int[1]; // create array to get frame buffer height
+        glfwGetFramebufferSize(this.handle, fbw, fbh); // get frame buffer size
+        this.fbw = fbw[0]; // save frame buffer width
+        this.fbh = fbh[0]; // save frame buffer height
 
-        // setup resizing callback
+        // setup frame buffer resizing callback
         glfwSetFramebufferSizeCallback(this.handle, (window, w, h) -> {
-           this.w = w; // update width
-           this.h = h; // update height
-           this.resized = true; // flag resize - this is what the engine checks for every loop to see if a resize occurs
+            this.fbw = w;
+            this.fbh = h;
+            this.resized = true; // flag resize - this is what the engine checks for every loop to see if a resize occurs
+        });
+
+        // setup window resizing callback
+        glfwSetWindowSizeCallback(this.handle, (window, w, h) -> {
+            this.w = w;
+            this.h = h;
         });
 
         // setup key callback to look through registered key controls when a key event occurs (see KeyControls below)
@@ -166,6 +179,16 @@ public class Window {
      * @return the height of this window
      */
     public int getHeight() { return this.h; }
+
+    /**
+     * @return the frame buffer width of this window
+     */
+    public int getFBWidth() { return this.fbw; }
+
+    /**
+     * @return the frame buffer height of this window
+     */
+    public int getFBHeight() { return this.fbh; }
 
     /**
      * @return this window's GLFW handle

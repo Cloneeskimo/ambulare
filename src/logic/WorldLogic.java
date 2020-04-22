@@ -113,7 +113,9 @@ public class WorldLogic extends GameLogic {
         super.mouseInput(x, y, action); // call super mouse input
         if (action == GLFW_HOVERED) { // if hover event
             Pair pos = new Pair(x, y); // create pair of mouse position
+            //System.out.println(pos);
             Transformation.useCam(pos, this.roc.getCam()); // transform to camera-view
+
             if (player.getFrame().contains(pos.x, pos.y)) { // if mouse is hovering player
                 player.setMaterial(new Material(new float[]{(float)Math.random(), (float)Math.random(),
                         (float)Math.random(), 1.0f})); // change player color when mouse hovers

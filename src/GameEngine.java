@@ -145,7 +145,7 @@ public class GameEngine {
         if (action == GLFW_HOVERED) { // if hover,
             Pair pos = new Pair(x, y); // bundle into coordinate object
             Transformation.normalize(pos, window.getWidth(), window.getHeight()); // normalize mouse position
-            Transformation.deaspect(pos, (float) window.getWidth() / (float) window.getHeight()); // project position
+            Transformation.deaspect(pos, (float) window.getFBWidth() / (float) window.getFBHeight()); // project position
             x = pos.x; y = pos.y; // extract x and y
         }
         logic.mouseInput(x, y, action); // notify logic of input
@@ -161,10 +161,11 @@ public class GameEngine {
      * Phase 3 of loop: rendering the game
      */
     private void render() {
+        //System.out.println(new Pair(this.window.getWidth(), this.window.getHeight()));
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the screen
         if (this.window.resized(true)) { // if the window was resized
-            glViewport(0, 0, this.window.getWidth(), this.window.getHeight()); // change the GL viewport to match
-            this.logic.resized(this.window.getWidth(), this.window.getHeight()); // notify the logic of the resize
+            glViewport(0, 0, this.window.getFBWidth(), this.window.getFBHeight()); // change the GL viewport to match
+            this.logic.resized(this.window.getFBWidth(), this.window.getFBHeight()); // notify the logic of the resize
         }
         this.logic.render(); // allow the logic to render
         this.window.swapBuffers(); // refresh the window
