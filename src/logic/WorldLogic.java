@@ -22,7 +22,7 @@ public class WorldLogic extends GameLogic {
     /**
      * Data
      */
-    PhysicsObject player, ball;         // some physics objects
+    PhysicsObject player, ball, ball2;  // some physics objects
     boolean exitButtonPressed = false;  // whether exit has been pressed
 
     /**
@@ -37,32 +37,41 @@ public class WorldLogic extends GameLogic {
         player = new PhysicsObject(Model.getStdGridRect(1, 2),
                 new Material(new float[] {0.2f, 0.2f, 1.0f, 1.0f})); // create player
         player.setPos(5 * Global.GRID_CELL_SIZE, 3f); // set player's position
+        player.getPhysicsSettings().bounciness = 0f; // disable bounce on player
         this.roc.addObject(player); // add to ROC
         this.roc.getCam().follow(player); // tell camera to follow it
 
         // create and add "ball"
-        ball = new PhysicsObject(Model.getStdGridRect(1, 1), new Material(new float[] {0f, 0f, 0f,
-                1.0f})); // create ball object
+        ball = new PhysicsObject(Model.getStdGridRect(1, 1), new Material(new Texture(
+                "/textures/ball.png"))); // create ball object
         ball.setScale(0.4f, 0.4f); // scale it down
-        ball.setBounciness(0.9f); // make it very bouncy
-        ball.setRotDeg(45); // rotate it 45 degrees
+        ball.getPhysicsSettings().bounciness = 0.9f; // make ball bouncy
         ball.setPos(1f, 3f); // move it to the left of the player
-        ball.setMass(0.5f); // make it half the player's mass
+        ball.getPhysicsSettings().mass = 0.5f; // make it half the player's mass
         this.roc.addObject(ball); // and add to ROC
+
+        // create and add "ball"s
+        ball2 = new PhysicsObject(Model.getStdGridRect(1, 1), new Material(new Texture(
+                "/textures/ball.png"))); // create ball object
+        ball2.setScale(0.4f, 0.4f); // scale it down
+        ball2.getPhysicsSettings().bounciness = 0.9f; // make ball bouncy
+        ball2.setPos(2f, 3f); // move it to the left of the player
+        ball2.getPhysicsSettings().mass = 2; // make it half the player's mass
+        this.roc.addObject(ball2); // and add to ROC
 
         // create and add dirt floor and walls
         Material dirt = new Material(new Texture("/textures/dirt.png")); // dirt material
         for (int i = 0; i < 10; i++) { // this loop builds the dirt floor and walls
             PhysicsObject po = new PhysicsObject(Model.getStdGridRect(1, 1), dirt); // create floor dirt
-            po.setGravity(0f); // disable gravity on dirt
+            po.getPhysicsSettings().gravity = 0f; // disable gravity on dirt
             po.setX(i * Global.GRID_CELL_SIZE); // calculate x
-            po.setRigid(true); // make dirt rigid
+            po.getPhysicsSettings().rigid = true; // make dirt rigid
             this.roc.addObject(po); // add to ROC
             po = new PhysicsObject(Model.getStdGridRect(1, 1), dirt); // create wall dirt
-            po.setGravity(0f); // disable gravity on dirt
+            po.getPhysicsSettings().gravity = 0f; // disable gravity on dirt
             po.setX(i > 4 ? 9 * Global.GRID_CELL_SIZE : 0 * Global.GRID_CELL_SIZE); // calculate x
             po.setY(1 + (i > 4 ? ((i - 4) * Global.GRID_CELL_SIZE) : i * Global.GRID_CELL_SIZE)); // calculate y
-            po.setRigid(true); // make dirt rigid
+            po.getPhysicsSettings().rigid = true; // make dirt rigid
             this.roc.addObject(po); // add to ROC
         }
 
@@ -100,6 +109,9 @@ public class WorldLogic extends GameLogic {
             ball.setPos(1f, 3f); // reset ball position
             ball.setVY(0f); // reset its vertical velocity
             ball.setVX((float)Math.random() * 3f - 1.5f); // give it a random horizontal velocity from -1.5f to 1.5f
+            ball2.setPos(2f, 3f); // reset ball position
+            ball2.setVY(0f); // reset its vertical velocity
+            ball2.setVX((float)Math.random() * 3f - 1.5f); // give it a random horizontal velocity from -1.5f to 1.5f
         }
     }
 

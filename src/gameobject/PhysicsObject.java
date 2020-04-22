@@ -2,7 +2,8 @@ package gameobject;
 
 import graphics.Material;
 import graphics.Model;
-import utils.CollisionDetector;
+import utils.Frame;
+import utils.PhysicsEngine;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,14 +22,8 @@ public class PhysicsObject extends GameObject {
     /**
      * Data
      */
-    private List<PhysicsObject> collidables; // a reference to the list of other objects to consider for collision
-    float gravity = 9.8f;                    // how affected this physics object is by gravity
-    float bounciness = 0.5f;                 /* how much reverse velocity will be applied when colliding */
-    float mass = 1.0f;                       /* used in momentum calculations when two non-rigid objects collide.
-                                                more mass means more transference of momentum to the other object */
-    boolean rigid = false;                   /* whether to disallow this object to move in any reactionary way to
-                                                collision */
-    boolean collision = true;                // whether to enable collision checking at all for this object
+    private List<PhysicsObject> collidables;  // a reference to the list of other objects to consider for collision
+    private PhysicsEngine.PhysicsSettings ps; // the settings which describe how this object interacts with physics
 
     /**
      * Constructor
@@ -36,8 +31,9 @@ public class PhysicsObject extends GameObject {
      * @param material the material to use
      */
     public PhysicsObject(Model model, Material material) {
-        super(model, material); // call super
-        this.collidables = new ArrayList<>(); // initialize collidables to empty list
+        super(model, material);                        // call super
+        this.collidables = new ArrayList<>();          // initialize collidables to empty list
+        this.ps = new PhysicsEngine.PhysicsSettings(); // start physics settings at default
     }
 
     /**
@@ -46,8 +42,8 @@ public class PhysicsObject extends GameObject {
      */
     @Override
     public void update(float interval) {
-        // apply gravity but do not go below terminal velocity
-        this.vy = Math.max(this.vy - (this.gravity * interval), TERMINAL_VELOCITY);
+                                // apply gravity but do not go below terminal velocity
+        this.vy = Math.max(this.vy - (this.ps.gravity * interval), TERMINAL_VELOCITY);
         super.update(interval); // call super
     }
 
@@ -60,52 +56,38 @@ public class PhysicsObject extends GameObject {
      */
     @Override
     public boolean move(float dx, float dy) {
-        if (this.collision) { // if this physics object checks for collision
-            boolean xResult = super.move(dx, 0); // move just x
-            if (xResult) { // if an actual movement
+        if (this.ps.collidable) { // if this physics object is collidable
+            boolean xMoved = super.move(dx, 0); // move just x
+            Frame f = null; // null so that we can avoid calculating Frame until absolutely necessary
+            if (xMoved) { // if an actual movement occurred
                 for (PhysicsObject po : this.collidables) { // look through collidable objects
-                    if (po.collision && this != po) { // if the other has collision on and isn't this
-                        if (CollisionDetector.colliding(this, po)) { // check for collision. if colliding,
-                            if (this.rigid && !po.rigid) { // if other is rigid but this is not
-                                po.setVX(-po.vx * po.bounciness); // reverse just this object's velocity by bounciness
-                            } else if (po.rigid && !this.rigid) { // if this is rigid but other is not
-                                this.setVX(-this.vx * this.bounciness); // reverse just other's velocity by bounciness
-                            } else if (!this.rigid) { // if neither are rigid
-                                float tMom = this.vx * this.mass; // calculate this object's momentum
-                                float oMom = po.vx * po.mass; // calculate other object's momentum
-                                po.setVX(po.bounciness * (tMom / po.mass)); // apply this momentum to other object
-                                this.setVX(this.bounciness * (oMom / this.mass)); // apply other's momentum to this
-                            }
+                    if (po.ps.collidable && this != po) { // if the other is collidable and isn't this
+                        if (f == null) f = this.getFrame(); // get frame if don't have it yet
+                        if (PhysicsEngine.colliding(f, po.getFrame())) { // check for collision. if colliding,
+                            PhysicsEngine.performCollisionRxn(this, po, false); // react to the collision
                             this.setX(this.getX() - dx); // move back to original x
-                            xResult = false; // set xResult to false because, effectively, no x position change occurred
+                            xMoved = false; // set x move flag to false because we denied the movement
                             break; // break from collision checking loop
                         }
                     }
                 }
             }
-            boolean yResult = super.move(0, dy); // then move just y
-            if (yResult) { // if an actual movement
+            f = null; // reset frame to null because we will want to recalculate it for y collisions
+            boolean yMoved = super.move(0, dy); // then move just y
+            if (yMoved) { // if an actual movement occurred
                 for (PhysicsObject po : this.collidables) { // look through collidable objects
-                    if (po.collision && this != po) { // if the other has collision on and isn't this
-                        if (CollisionDetector.colliding(this, po)) { // check for collision. if colliding,
-                            if (this.rigid && !po.rigid) { // if other is rigid but this is not
-                                po.setVY(-po.vy * po.bounciness); // reverse just this object's velocity by bounciness
-                            } else if (po.rigid && !this.rigid) { // if other is rigid but this is not
-                                this.setVY(-this.vy * this.bounciness); // reverse just other's velocity by bounciness
-                            } else if (!this.rigid) { // if neither are rigid
-                                float tMom = this.vy * this.mass; // calculate this object's momentum
-                                float oMom = po.vy * po.mass; // calculate other object's momentum
-                                po.setVY(po.bounciness * (tMom / po.mass)); // apply this momentum to other object
-                                this.setVY(this.bounciness * (oMom / this.mass)); // apply other momentum to this
-                            }
+                    if (po.ps.collidable && this != po) { // if the other is collidable and isn't this
+                        if (f == null) f = this.getFrame(); // get frame if don't have it yet
+                        if (PhysicsEngine.colliding(f, po.getFrame())) { // check for collision. if colliding,
+                            PhysicsEngine.performCollisionRxn(this, po, true); // react to the collision
                             this.setY(this.getY() - dy); // move back to original y
-                            xResult = false; // set yResult to false because, effectively, no y position change occurred
+                            yMoved = false; // set y move flag to false because we denied the movement
                             break; // break from collision checking loop
                         }
                     }
                 }
             }
-            return xResult || yResult; // if either y movement or x movement actually occurred, return true
+            return xMoved || yMoved; // if either y movement or x movement actually occurred, return true
         }
         return super.move(dx, dy); // if collision for this object is off, handle movement normally
     }
@@ -119,9 +101,11 @@ public class PhysicsObject extends GameObject {
      */
     public boolean somethingUnder(float precision) {
         this.setY(this.getY() - precision); // move y down based on precision
+        Frame f = null; // start at null so as to avoid calculating frame until absolutely necessary
         for (PhysicsObject po : this.collidables) { // for each collidable object
-            if (po.collision && po != this) { // if the object has collision on and isn't this
-                if (CollisionDetector.colliding(this, po)) { // if they collide
+            if (po.ps.collidable && po != this) { // if the object has collision on and isn't this
+                if (f == null) f = this.getFrame(); // calculate frame if not done yet
+                if (PhysicsEngine.colliding(this.getFrame(), po.getFrame())) { // if they collide
                     this.setY(this.getY() + precision); // return y to original position
                     return true; // there is something underneath
                 }
@@ -132,35 +116,15 @@ public class PhysicsObject extends GameObject {
     }
 
     /**
-     * Sets the gravity value of the physics object. This, multiplied by interval, will be negatively applied to the
-     * object's vertical velocity each update
-     * @param gravity the gravity value to apply
-     */
-    public void setGravity(float gravity) { this.gravity = gravity; }
-
-    /**
-     * Sets the bounciness value of the physics object. See members above for a description of bounciness
-     * @param bounciness the bounciness value
-     */
-    public void setBounciness(float bounciness) { this.bounciness = bounciness; }
-
-    /**
-     * Sets the rigidity flag status of the physics object. See members above for a description of rigidity
-     * @param rigid the rigidity flag
-     */
-    public void setRigid(boolean rigid) { this.rigid = rigid; }
-
-    /**
-     * Sets the mass of the physics object. See members above for a description of mass
-     * @param mass the mass
-     */
-    public void setMass(float mass) { this.mass = mass; }
-
-    /**
      * Sets the list of collidables to check for collisions
      * @param collidables the list of collidables
      */
     public void setCollidables(List<PhysicsObject> collidables) {
         this.collidables = collidables;
     }
+
+    /**
+     * @return the physics settings for the object
+     */
+    public PhysicsEngine.PhysicsSettings getPhysicsSettings() { return this.ps; }
 }
