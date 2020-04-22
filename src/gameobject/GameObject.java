@@ -64,23 +64,28 @@ public class GameObject {
      */
     public void update(float interval) {
         if (this.posAnim == null) { // if not in the middle of a positional animation
-            this.x += this.vx * interval; // update x position based on velocity
-            this.y += this.vy * interval; // update y position based on velocity
-            if (this.vx != 0f || this.vy != 0f) this.onMove(); // if actual movement, call onMove()
-        } else { // if in the middle of a positional animation
-            this.posAnim.update(interval); // update animation
-            this.x = this.posAnim.getX(); // set x position
-            this.y = this.posAnim.getY(); // set y position
-            this.setRotRad(this.posAnim.getR()); // set rotation
-            this.onMove(); // call onMove()
-            if (this.posAnim.finished()) { // if animation is over
-                this.x = this.posAnim.getFinalX(); // make sure at the correct ending x
-                this.y = this.posAnim.getFinalY(); // make sure at the correct ending y
-                this.setRotRad(this.posAnim.getFinalR()); // make sure at the correct ending rotation
-                this.posAnim = null; // delete the animation
-            }
-        }
+            if (this.move(this.vx * interval, this.vy * interval)) // move according to velocity and interval
+                this.onMove(); // call onMove if an actual move occurred
+        } else this.updatePosAnim(interval); // otherwise, update positional animation
         if (this.frameCount > 0) this.updateTexAnim(interval); // update texture animation if there is one
+    }
+
+    /**
+     * Updates the positional animation fo the game object if there is one and sets the position accordingly
+     * @param interval the amount of time, in seconds, to account for
+     */
+    protected void updatePosAnim(float interval) {
+        this.posAnim.update(interval); // update animation
+        this.x = this.posAnim.getX(); // set x position
+        this.y = this.posAnim.getY(); // set y position
+        this.setRotRad(this.posAnim.getR()); // set rotation
+        this.onMove(); // call onMove()
+        if (this.posAnim.finished()) { // if animation is over
+            this.x = this.posAnim.getFinalX(); // make sure at the correct ending x
+            this.y = this.posAnim.getFinalY(); // make sure at the correct ending y
+            this.setRotRad(this.posAnim.getFinalR()); // make sure at the correct ending rotation
+            this.posAnim = null; // delete the animation
+        }
     }
 
     /**
@@ -122,6 +127,18 @@ public class GameObject {
         sp.setUniform("x", this.x); // set x
         sp.setUniform("y", this.y); // set y
         this.model.render(); // render model
+    }
+
+    /**
+     * Moves the game object by the given offset
+     * @param dx the x offset
+     * @param dy the y offset
+     * @return whether or not an actual move occurred
+     */
+    public boolean move(float dx, float dy) {
+        this.x += dx; // update x
+        this.y += dy; // update y
+        return (dx != 0 || dy != 0); // call onMove() if an actual move occurred
     }
 
     /**
@@ -306,6 +323,16 @@ public class GameObject {
     public float getUnrotatedHeight() {
         return this.model.getUnrotatedHeight(); // return model's unrotated height
     }
+
+    /**
+     * @return the game object's horizontal velocity
+     */
+    public float getVX() { return this.vx; }
+
+    /**
+     * @return the game object's vertical velocity
+     */
+    public float getVY() { return this.vy; }
 
     /**
      * @return the game object's rotation in radians

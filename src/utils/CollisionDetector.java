@@ -32,7 +32,6 @@ public class CollisionDetector {
         }
         return true; // if all of the projections overlapped, the objects are colliding
     }
-
     /**
      * Projects a shape onto an vector/axis
      * @param shape the shape to project, defined by a set of points

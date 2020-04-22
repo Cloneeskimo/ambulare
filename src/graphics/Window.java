@@ -128,6 +128,13 @@ public class Window {
     }
 
     /**
+     * Closes the window
+     */
+    public void close() {
+        glfwSetWindowShouldClose(this.handle, true); // close the window
+    }
+
+    /**
      * Determine if the window was resized
      * @param resetFlag whether to reset the flag after checking (to false)
      * @return whether the window was resized

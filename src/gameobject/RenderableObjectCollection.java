@@ -29,6 +29,7 @@ public class RenderableObjectCollection {
                                                  these are HUD items */
     private List<GameObject> worldObjects;    /* a list of objects that will react to a camera. In other words, these
                                                  are world objects */
+    private List<PhysicsObject> collidables;  // a list of PhysicsObjects for collision detection
     private Camera cam;                       // the camera to use to render world objects
     private MIHSB mihsb;                      // mouse interactable hover state bundle to abstract away mouse input
     private ShaderProgram spw, sps;           // the shader programs used to render
@@ -46,6 +47,7 @@ public class RenderableObjectCollection {
         this.arAction = arAction; // save aspect ratio action as member
         this.staticObjects = new ArrayList<>(); // create static object list
         this.worldObjects = new ArrayList<>(); // create world object list
+        this.collidables = new ArrayList<>(); // create collidables list
         this.cam = new Camera(); // create camera
         this.mihsb = new MIHSB(); // create MIHSB
         this.createSPs(); // create and initialize shader programs
@@ -192,6 +194,10 @@ public class RenderableObjectCollection {
         this.worldObjects.add(o); // add to game objects
         // if object is interactable with a mouse, add it to the MIHSB with the camera usage flag true (world object)
         if (o instanceof MIHSB.MouseInteractable) this.mihsb.add((MIHSB.MouseInteractable)o, true);
+        if (o instanceof PhysicsObject) { // if object is a physics object
+            this.collidables.add((PhysicsObject)o); // add it to collidables
+            ((PhysicsObject)o).setCollidables(this.collidables); // and tell it to pay attention to ROC's collidables
+        }
     }
 
     /**
