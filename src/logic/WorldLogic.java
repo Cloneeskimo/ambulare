@@ -81,7 +81,8 @@ public class WorldLogic extends GameLogic {
         this.roc.addObject(new TextButton(Global.FONT, "Exit", 1),
                 new RenderableObjectCollection.PositionSettings(1f, -1f, true,
                 0.02f)); // create text button
-        this.roc.getStaticGameObject(4).setScale(0.1f, 0.1f); // scale button  down
+        this.roc.getStaticGameObject(4).setScale(0.1f, 0.1f); // scale button down
+        this.roc.ensureAllPlacements();
     }
 
     /**
