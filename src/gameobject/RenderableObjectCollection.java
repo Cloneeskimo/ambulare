@@ -92,9 +92,10 @@ public class RenderableObjectCollection {
      * @param x the normalized and de-aspected x position of the mouse if hover event, 0 otherwise
      * @param y the normalized and de-aspected y position of the mouse if hover event, 0 otherwise
      * @param action the nature of the mouse input (GLFW_PRESS, GLFW_RELEASE, or GLFW_HOVERED)
+     * @return an array containing the mouse interactable IDs of all mouse interactable objects that were clicked
      */
-    public void mouseInput(float x, float y, int action) {
-        this.mihsb.mouseInput(x, y, this.cam, action); // delegate to MIHSB
+    public int[] mouseInput(float x, float y, int action) {
+        return this.mihsb.mouseInput(x, y, this.cam, action); // delegate to MIHSB
     }
 
     /**
@@ -189,7 +190,8 @@ public class RenderableObjectCollection {
      */
     public void addObject(GameObject o) {
         this.worldObjects.add(o); // add to game objects
-        if (o instanceof MouseInteractable) this.mihsb.add((MouseInteractable)o); // add to MIHSB if MouseInteractable
+        // if object is interactable with a mouse, add it to the MIHSB with the camera usage flag true (world object)
+        if (o instanceof MIHSB.MouseInteractable) this.mihsb.add((MIHSB.MouseInteractable)o, true);
     }
 
     /**
@@ -199,7 +201,8 @@ public class RenderableObjectCollection {
      */
     public void addObject(GameObject o, PositionSettings settings) {
         StaticObject so = new StaticObject(o, settings); // wrap object and settings into single object
-        if (o instanceof MouseInteractable) this.mihsb.add((MouseInteractable)o); // add to MIHSB if MouseInteractable
+        // if object is interactable with a mouse, add it to the MIHSB with the camera usage flag false (static object)
+        if (o instanceof MIHSB.MouseInteractable) this.mihsb.add((MIHSB.MouseInteractable)o, false);
         so.ensurePosition(this.ar); // position the object according to its settings
         this.staticObjects.add(so); // add object to static objects list
     }
@@ -334,7 +337,7 @@ public class RenderableObjectCollection {
                     else if (pos.x > 0f) pos.x -= (o.getWidth() / 2 + padding); // if on right side, nudge to the left
                 } // if size does not need to be accounted for, we are done calculating x
             } else pos.x = px.getX() + this.ox * ((o.getWidth() / 2) + (px.getWidth() / 2)) +
-                    padding; // otherwise calculate x relative to parent
+                    Math.signum(this.ox) * padding; // otherwise calculate x relative to parent
 
             // calculate y
             if (py == null) { // if y is independent
@@ -343,7 +346,7 @@ public class RenderableObjectCollection {
                     else if (pos.y > 0f) pos.y -= (o.getHeight() / 2 + padding); // if on top side, nudge downwards
                 }
             } else pos.y = py.getY() + this.oy * ((o.getHeight() / 2) + (py.getHeight() / 2)) +
-                    padding; // otherwise calculate y relative to parent
+                    Math.signum(this.oy) * padding; // otherwise calculate y relative to parent
 
             // return calculate position
             return pos; // return

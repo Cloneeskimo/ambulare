@@ -69,6 +69,12 @@ public class Material {
     public Material(float[] color) { this(null, color, BLEND_MODE.NONE); } // call other constructor
 
     /**
+     * Updates the material's color
+     * @param color the new color
+     */
+    public void setColor(float[] color) { this.color = color; }
+
+    /**
      * @return whether the material is textured
      */
     public boolean isTextured() { return this.texture != null; }

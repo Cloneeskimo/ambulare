@@ -1,12 +1,7 @@
 package logic;
 
-import gameobject.GameObject;
-import gameobject.RenderableObjectCollection;
-import gameobject.TextObject;
-import graphics.Material;
-import graphics.Model;
-import graphics.Texture;
-import graphics.Window;
+import gameobject.*;
+import graphics.*;
 import utils.CollisionDetector;
 import utils.Global;
 import utils.Pair;
@@ -32,22 +27,41 @@ public class WorldLogic extends GameLogic {
     protected void initOthers(Window window) {
         super.initOthers(window); // call super so that FPS displaying objects are added to HUD
 
-        // create world objects
+        // create and add player
         player = new GameObject(Model.getStdGridRect(1, 2),
                 new Material(new float[] {1.0f, 0.2f, 0.2f, 1.0f})); // create player rectangle
         player.setRotRad((float)Math.PI / 4); // rotate
         this.roc.addObject(player); // add to ROC
         this.roc.getCam().follow(player); // tell camera to follow it
-        dirt = new GameObject(Model.getStdGridRect(2, 2),
-                new Material(new Texture("/textures/dirt.png"))); // add some dirt
+
+        // create and add dirt
+        dirt = new GameObject(MultiTexCoordModel.getStdMultiTexGridRect(2, 2, 4),
+                new Material(new Texture("/textures/dirt_anim.png"))); // add some dirt
         dirt.setY(2f); // move up a little
         dirt.setX(2f); // and to the right
+        dirt.giveTexAnim(4, 0.2f); // give texture animation
         this.roc.addObject(dirt); // add to ROC
 
-        // create HUD object
-        this.roc.addObject(new TextObject(Global.FONT, "(0, 0)", new float[] {0f, 0f, 0f, 1f}), // player pos text
+        // create and add player position text
+        this.roc.addObject(new TextObject(Global.FONT, "(0, 0)"), // player pos text
                 new RenderableObjectCollection.PositionSettings(-1f, -1f, true, 0.02f));
         this.roc.getStaticGameObject(2).setScale(0.15f, 0.15f); // scale text down
+
+        // create and add text button
+        this.roc.addObject(new TextButton(Global.FONT, "Button", 2),
+                new RenderableObjectCollection.PositionSettings(1f, 1f, true,
+                0.02f)); // create text button
+        this.roc.getStaticGameObject(3).setScale(0.2f, 0.2f); // scale down
+        this.roc.ensurePlacement(3);
+
+        // create and add texture button
+        this.roc.addObject(new TexturedButton(1, 1, "/textures/button_anim.png", 3,
+                4, 5, 0.5f, 2),
+                new RenderableObjectCollection.PositionSettings(null,
+                this.roc.getStaticGameObject(3), 1.0f,
+                -1f, 0.02f)); // create textured button
+        this.roc.getStaticGameObject(4).setScale(0.25f, 0.25f); // scale down texture button
+        this.roc.ensurePlacement(4);
     }
 
     /**
@@ -80,6 +94,15 @@ public class WorldLogic extends GameLogic {
                         (float)Math.random(), 1.0f})); // change player color when mouse hovers
             }
         }
+    }
+
+    /**
+     * Responds to button clicks by printing out the MIID of the button
+     * @param MIID the ID of the object that was clicked
+     */
+    @Override
+    public void clicked(int MIID) {
+        System.out.println("MIID Clicked: " + MIID); // print the ID of the clicked button
     }
 
     /**

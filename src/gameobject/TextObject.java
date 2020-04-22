@@ -12,11 +12,15 @@ import utils.Global;
 public class TextObject extends GameObject {
 
     /**
+     * Static Data
+     */
+    private static final float[] DEFAULT_COLOR = new float[] {0.0f, 0.0f, 0.0f, 1.0f}; // default text color
+
+    /**
      * Data
      */
-    private static final float[] DEFAULT_COLOR = new float[] {1.0f, 1.0f, 1.0f, 1.0f}; // default text color
-    private String text;                                                               // the current text
-    private Font font;                                                                 // the font used
+    private String text; // the current text
+    private Font font;   // the font used
 
     /**
      * Constructs the text object with the given color
@@ -91,7 +95,7 @@ public class TextObject extends GameObject {
         }
         float sx = this.model.getXScale(), sy = this.model.getYScale(); // get scaling factor of previous model
         this.model = new Model(modelCoords, texCoords, idx); // create and set new model
-        this.model.setScale(sx, sy); // re-apply scale
+        this.setScale(sx, sy); // re-apply scale
     }
 
     /**

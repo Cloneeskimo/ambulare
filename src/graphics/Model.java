@@ -24,7 +24,7 @@ public class Model {
     /**
      * Data
      */
-    private final int ids[];             /* integer array to store the various GL object ids: [0] - VAO ID,
+    protected final int ids[];           /* integer array to store the various GL object ids: [0] - VAO ID,
                                             [1] - model coordinate VBO ID, [2] - texture coordinate VBO ID,
                                             [4] - index VBO ID */
     private final int idx;               // the amount of vertices this shape has
@@ -106,6 +106,7 @@ public class Model {
         // process model coordinate data
         this.updateModelCoordsVBO(); // update model coordinates
         glBindVertexArray(this.ids[0]); // bind the vertex array object
+
         // process texture coordinate data
         fb = MemoryUtil.memAllocFloat(texCoords.length); // allocate buffer space for tex coord data
         fb.put(texCoords).flip(); // put texture coordinate data into buffer
@@ -168,6 +169,7 @@ public class Model {
         glBindBuffer(GL_ARRAY_BUFFER, this.ids[1]); // bind position vertex buffer object
         glBufferData(GL_ARRAY_BUFFER, b, GL_STATIC_DRAW); // put position data into position VBO
         glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, 0); // put VBO into VAO
+        glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind VBO
         glBindVertexArray(0); // unbind the vertex array object
     }
 
@@ -295,7 +297,7 @@ public class Model {
         } else { // if not rectangular
             float w2 = this.getWidth() / 2; // calculate half of width of bounding box
             float h2 = this.getHeight() / 2; // calculate half of height of bounding box
-            return new Frame(new float[] {-w2, h2, -w2, -h2, w2, -h2, w2, h2}, 0f, 0f, 0f); // create frame
+            return new Frame(new float[] {-w2, -h2, -w2, h2, w2, h2, w2, -h2}, 0f, 0f, 0f); // create frame
         }
     }
 

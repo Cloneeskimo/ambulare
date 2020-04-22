@@ -43,14 +43,24 @@ public class Frame {
     public boolean contains(float x, float y) {
         Pair[] rps = new Pair[4]; // create pair array
         for (int i = 0; i < 4; i++) { // for each corner
-            rps[i] = Utils.rotatePoint(this.cx, this.cy, this.corners[i * 2], this.corners[i * 2 + 1],
-                    -this.r); // un-rotate the corner
+            if (this.r != 0) rps[i] = Utils.rotatePoint(this.cx, this.cy, this.corners[i * 2], this.corners[i * 2 + 1],
+                    -this.r); // un-rotate the corner the it is rotated
+            else rps[i] = new Pair(this.corners[i * 2], this.corners[i * 2 + 1]); // don't do rot calc if not rotated
         }
         Pair rp = Utils.rotatePoint(this.cx, this.cy, x, y, -this.r); // and then rotate the point
         return (rps[0].x < rp.x && rps[0].y < rp.y && // check top left
                 rps[1].x < rp.x && rps[1].y > rp.y && // check bottom left
                 rps[2].x > rp.x && rps[2].y > rp.y && // check bottom right
                 rps[3].x > rp.x && rps[3].y < rp.y);  // check top right
+    }
+
+    /**
+     * Checks if the frame contains the given point
+     * @param pos the point to check for
+     * @return whether the frame contains the given point
+     */
+    public boolean contains(Pair pos) {
+        return this.contains(pos.x, pos.y); // call other method with pair deconstructed
     }
 
     /**

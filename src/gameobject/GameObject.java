@@ -1,9 +1,6 @@
 package gameobject;
 
-import graphics.Material;
-import graphics.Model;
-import graphics.PositionalAnimation;
-import graphics.ShaderProgram;
+import graphics.*;
 import utils.Frame;
 
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
@@ -21,9 +18,17 @@ import static org.lwjgl.opengl.GL13C.glActiveTexture;
 public class GameObject {
 
     /**
-     * Data
+     * Animation Data
      */
     private PositionalAnimation posAnim; // positional animation which can be set to animate positional changes
+    protected float frameTime = 0;       // the amount of time (in seconds) an animated texture frame should last
+    protected float frameTimeLeft = 0;   // the amount of time (in seconds) left for the current animated texture frame
+    protected int frameCount = -1;       // amount of animated texture frames
+    protected int frame = 0;             // the current animated texture frame
+
+    /**
+     * Other Data
+     */
     private float x = 0f, y = 0f;        // position
     protected Material material;         // material to use when rendering
     protected Model model;               // model to use when rendering
@@ -73,6 +78,23 @@ public class GameObject {
                 this.y = this.posAnim.getFinalY(); // make sure at the correct ending y
                 this.setRotRad(this.posAnim.getFinalR()); // make sure at the correct ending rotation
                 this.posAnim = null; // delete the animation
+            }
+        }
+        if (this.frameCount > 0) this.updateTexAnim(interval); // update texture animation if there is one
+    }
+
+    /**
+     * Updates the texture animation of the game object by keeping track of time per frame and advancing when necessary
+     * @param interval the amount of time, in seconds, to account for
+     */
+    protected void updateTexAnim(float interval) {
+        this.frameTimeLeft -= interval; // update frame time left
+        if (this.frameTimeLeft <= 0f) { // if frame is over
+            this.frameTimeLeft += this.frameTime; // reset time
+            this.frame++; // iterate frame
+            if (this.frame >= this.frameCount) this.frame = 0; // if end of frames, start over
+            if (this.model instanceof MultiTexCoordModel) { // if the model supports multiple texture coordinates
+                ((MultiTexCoordModel)this.model).setFrame(this.frame); // update model texture coordinates
             }
         }
     }
@@ -125,6 +147,17 @@ public class GameObject {
     public void givePosAnim(PositionalAnimation pa) {
         this.posAnim = pa; // save animation
         this.posAnim.start(this.getX(), this.getY(), this.getRotationRad()); // start animation
+    }
+
+    /**
+     * Tells the game object to try to use texture animations. This will only work if the game object's model is one
+     * that supports multiple texture coordinates (see MultiTexCoordModel class)
+     * @param frameCount the amount of horizontal frames to flip through
+     * @param frameTime the amount of time (is seconds) to give each frame
+     */
+    public void giveTexAnim(int frameCount, float frameTime) {
+        this.frameCount = frameCount; // save frame count as member
+        this.frameTime = this.frameTimeLeft = frameTime; // save frame time as member
     }
 
     /**
