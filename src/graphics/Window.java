@@ -21,7 +21,6 @@ public class Window {
     /**
      * Data
      */
-    private List<KeyControl> keyControls; // list of key controls (see KeyControl definition below)
     private final String title;           // window title
     private int w, h;                     // window width and height
     private int fbw, fbh;                 // frame buffer width and height
@@ -37,7 +36,6 @@ public class Window {
      * @param vSync whether to enable vertical sync
      */
     public Window(String title, int w, int h, boolean vSync) {
-        this.keyControls = new ArrayList<>(); // create KeyControl list
         this.title = title; // set title
         this.w = w; // set width
         this.h = h; // set height
@@ -92,13 +90,6 @@ public class Window {
             this.h = h;
         });
 
-        // setup key callback to look through registered key controls when a key event occurs (see KeyControls below)
-        glfwSetKeyCallback(this.handle, (window, key, scancode, action, mods) -> {
-            for (KeyControl kc : this.keyControls) { // for each KeyControl
-                if (key == kc.key() && action == kc.action()) kc.reaction(); // if key and action match, react
-            }
-        });
-
         // finishing touches on window
         glfwSetWindowPos(this.handle, (vidmode.width() - this.fbw) / 2,
                 (vidmode.height() - this.fbh) / 2); // set position to be middle of screen
@@ -122,14 +113,6 @@ public class Window {
      * Swaps the window buffers
      */
     public void swapBuffers() { glfwSwapBuffers(this.handle); } // swap the buffers
-
-    /**
-     * Registers a keyboard control to this window
-     * @param keyControl the keyboard control to register to the window (see KeyControl interface defined below)
-     */
-    public void registerKeyControl(KeyControl keyControl) {
-        this.keyControls.add(keyControl); // add key control to list of key controls
-    }
 
     /**
      * Closes the window
@@ -208,14 +191,5 @@ public class Window {
         double[] y = new double[1]; // create array to hold y
         glfwGetCursorPos(this.handle, x, y); // put position in each array
         return new Pair((float)x[0], (float)y[0]); // put into a pair and return
-    }
-
-    /**
-     * Represents a keyboard control that can be registered to a window
-     */
-    public interface KeyControl {
-        int key(); // the key to trigger this control
-        int action(); // the action to trigger this control (key press, release, etc.)
-        void reaction(); // what do to when the control is used
     }
 }

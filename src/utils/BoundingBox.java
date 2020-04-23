@@ -4,7 +4,7 @@ package utils;
  * Defines a rectangle that should describe the object it corresponds to. Frames are used to check if a point is within
  * the object it represents and to detect
  */
-public class Frame {
+public class BoundingBox {
 
     /**
      * Data
@@ -24,10 +24,10 @@ public class Frame {
      * @param cx the center point x
      * @param cy the center point y
      */
-    public Frame(float[] corners, float r, float cx, float cy) {
+    public BoundingBox(float[] corners, float r, float cx, float cy) {
         if (corners.length != 8) // if invalid amount of corners
-            Utils.handleException(new Exception("Invalid corners given for Frame. Length should be 8, is actually " +
-                    corners.length), "Frame", "Frame(float[]", true); // throw exception
+            Utils.handleException(new Exception("Invalid corners given for BoundingBox. Length should be 8, is actually " +
+                    corners.length), "BoundingBox", "BoundingBox(float[]", true); // throw exception
         this.corners = corners; // save corners as member
         this.r = r; // save rotation as member
         this.cx = cx; // save center point x as member
@@ -70,7 +70,7 @@ public class Frame {
      * @param y the y to translate by
      * @return the frame after translation has occurred
      */
-    public Frame translate(float x, float y) {
+    public BoundingBox translate(float x, float y) {
         this.cx += x; // translate center point x
         this.cy += y; // translate center point y
         for (int i = 0; i < corners.length; i++) corners[i] += i % 2 == 0 ? x : y; // translate each corner
@@ -78,7 +78,7 @@ public class Frame {
     }
 
     /**
-     * @return the rotation of the Frame
+     * @return the rotation of the BoundingBox
      */
     public float getR() { return this.r; }
 

@@ -40,7 +40,7 @@ public class Utils {
 
     /**
      * Converts a string to a float array containing color data. A properly formatted string has all four components
-     * separated by a space and each component is a proper float value. example: "1f 0.5f 0.1f 1f"
+     * separated by a space and each component is a proper float value. Example: "1f 0.5f 0.1f 1f"
      * @param colorData the string to convert
      * @return the converted float array with four color components ([r, g, b, and a]) or null if the string was not
      * properly formatted
@@ -48,24 +48,23 @@ public class Utils {
     public static float[] strToColor(String colorData) {
         String[] components = colorData.split(" "); // split by spaces
         if (components.length != 4) return null; // if incorrect length, return null
-        float[] color = new float[4]; // create float array
+        float[] color = new float[4]; // create array for color components
         for (int i = 0; i < color.length; i++) { // loop through each string
             try { color[i] = Float.parseFloat(components[i]); } // parse each as a float
-            catch (Exception e) { // if exception
+            catch (Exception e) {
                 Utils.handleException(e, "utils.Utils", "strToColor(String)", false); // log exception but don't crash
-                return null; // and then return null
+                return null; // and return null
             }
         }
         return color; // return color
     }
 
     /**
-     * @return the directory of the folder where all game data should be stored
+     * @return the directory of the folder where all game data should be stored. This won't include a slash at the end
      */
     public static String getDataDir() {
-        return System.getProperty("user.home") + "/Ambulare"; /* user home plus Ambulare folder. usually the user.home
-                                                                 ends up being the folder containing the documents
-                                                                 folder */
+        // use user.home plus Ambulare folder. Usually user.home is the folder containing the documents folder
+        return System.getProperty("user.home") + "/Ambulare";
     }
 
     /**
@@ -75,14 +74,14 @@ public class Utils {
      * @param dataDirRelative whether the given directory is relative to the data directory (see getDataDir())
      */
     public static void ensureDirs(String directory, boolean dataDirRelative) {
-        for (int i = directory.length() - 1; i >= 0; i--) { // remove anything after the last slash
-            if (directory.charAt(i) == '/') { // starting at the end, if we see a slash
+        for (int i = directory.length() - 1; i >= 0; i--) { // loop through directory starting at the end
+            if (directory.charAt(i) == '/') { // if we see a slash
                 directory = directory.substring(0, i); // remove everything after the slash
                 break; // break from loop - only remove stuff after last slash
             }
         }
         File dir = new File((dataDirRelative ? getDataDir() : "") + directory); // create file object
-        boolean outcome = dir.mkdirs(); // attempt to create necessary directories
+        dir.mkdirs(); // attempt to create necessary directories
    }
 
     /**
@@ -91,14 +90,14 @@ public class Utils {
      * @return the loaded resource as a string
      */
     public static String resToString(String resPath) {
-        String result = ""; // create empty string
+        String result = "";
         try (InputStream in = Class.forName(Utils.class.getName()).getResourceAsStream(resPath); // try to open resource
-             Scanner scanner = new Scanner(in, "UTF-8")) { // try to then use a Scanner to read it
+             Scanner scanner = new Scanner(in, "UTF-8")) { // try to then use a scanner to read it
             result = scanner.useDelimiter("\\A").next(); // read results into single string
-        } catch (Exception e) { // if exception
-            handleException(e, "utils.Utils", "resToString(String)", true); // handle exception
+        } catch (Exception e) {
+            handleException(e, "utils.Utils", "resToString(String)", true);
         }
-        return result; // return string read from resource
+        return result;
     }
 
     /**
@@ -110,12 +109,12 @@ public class Utils {
         List<String> file = new ArrayList<>(); // create empty ArrayList
         try (BufferedReader in = new BufferedReader(new InputStreamReader(Class.forName(Utils.class.getName())
                 .getResourceAsStream(resPath)))) { // attempt to open resource
-            String line; // variable for each line
+            String line;
             while ((line = in.readLine()) != null) file.add(line); // read each line until eof
-        } catch (Exception e) { // if exception
-            handleException(e, "utils.Utils", "resToStringList(String)", true); // handle exception
+        } catch (Exception e) {
+            handleException(e, "utils.Utils", "resToStringList(String)", true);
         }
-        return file; // return list of strings from resource
+        return file;
     }
 
     /**
@@ -155,18 +154,17 @@ public class Utils {
         }
 
         //print to console and attempt to print to log file
-        System.out.println(lli + info); // print to console
+        System.out.println(lli + info);
         String fileName = getLogFileName(); // get name of log file
         ensureDirs(fileName, false); // make sure appropriate directories exist
-        PrintWriter out; // create PrintWriter to write to log file
+        PrintWriter out;
         try {
             out = new PrintWriter(new FileOutputStream(new File(fileName), true)); // try to open file
-            out.println(lli + info); // print
-            out.close(); // close
-        } catch (Exception e) { // if exception
+            out.println(lli + info);
+            out.close();
+        } catch (Exception e) {
             e.printStackTrace(); /* just print corresponding exception and hope for the best because attempting to
-                                    handle this exception using Utils.handleException() would likely cause an infinite
-                                    loop */
+                handle this exception using Utils.handleException() would likely cause an infinite loop */
         }
     }
 
@@ -188,7 +186,7 @@ public class Utils {
      * @return the appropriate file name/directory for a log file at the given date and time
      */
     private static String getLogFileName() {
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MM-dd-yy"); // format the date
-        return getDataDir() + "/logs/ " + dtf.format(LocalDateTime.now()) + ".txt"; // create and return log file name
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MM-dd-yy"); // create date/time formatter
+        return getDataDir() + "/logs/ " + dtf.format(LocalDateTime.now()) + ".txt"; // compile file name and return
     }
 }

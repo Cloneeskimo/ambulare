@@ -1,38 +1,43 @@
 package utils;
 
 /**
- * Used by GameEngine to keep track of timing for loop calculations
+ * Keeps track of time and allows for easily getting elapsed time for things like game loops
  */
 public class Timer {
 
     /**
-     * Data
+     * Members
      */
-    private double lastLoop; // time of the last loop
+    private double timestamp; // latest timestamp
 
     /**
      * Initializes the timer
      */
-    public void init() { lastLoop = getTime(); } // set last loop time to current time
+    public void init() {
+        timestamp = getTime(); // start timestamp at current time
+    }
 
     /**
      * @return the current time in seconds
      */
-    public static double getTime() { return System.nanoTime() / 1000_000_000.0; } // calculate seconds from nano seconds
+    public static double getTime() {
+        return System.nanoTime() / 1000_000_000.0; // convert ns to s
+    }
 
     /**
-     * @return the time of the last loop or the time that this Timer was initialized (whichever was later)
+     * @return the current timestamp of the timer
      */
-    public double getLastLoop() { return this.lastLoop; }
+    public double getTimestamp() { return this.timestamp; }
 
     /**
-     * @return the amount of elapsed time since lastLoop (either when this timer was initialized, or the last time
-     * this function was called) in seconds
+     * Calculates the elapsed time since the last timestamp
+     * @param mark whether to overwrite the timestamp with the current time
+     * @return the amount of elapsed time since the timestamp in seconds
      */
-    public float getElapsedTime() {
+    public float getElapsedTime(boolean mark) {
         double time = getTime(); // get current time
-        float et = (float)(time - this.lastLoop); // get elapsed time
-        this.lastLoop = time; // record new time
+        float et = (float)(time - this.timestamp); // get elapsed time
+        if (mark) this.timestamp = time; // record new time if param set to true
         return et; // return calculated elapsed time
     }
 }

@@ -3,7 +3,7 @@ package gameobject.gameworld;
 import gameobject.GameObject;
 import graphics.Material;
 import graphics.Model;
-import utils.Frame;
+import utils.BoundingBox;
 import utils.PhysicsEngine;
 
 import java.util.ArrayList;
@@ -59,7 +59,7 @@ public class PhysicsObject extends GameObject {
     public boolean move(float dx, float dy) {
         if (this.ps.collidable) { // if this physics object is collidable
             boolean xMoved = super.move(dx, 0); // move just x
-            Frame f = null; // null so that we can avoid calculating Frame until absolutely necessary
+            BoundingBox f = null; // null so that we can avoid calculating BoundingBox until absolutely necessary
             if (xMoved) { // if an actual movement occurred
                 for (PhysicsObject po : this.collidables) { // look through collidable objects
                     if (po.ps.collidable && this != po) { // if the other is collidable and isn't this
@@ -102,7 +102,7 @@ public class PhysicsObject extends GameObject {
      */
     public boolean somethingUnder(float precision) {
         this.setY(this.getY() - precision); // move y down based on precision
-        Frame f = null; // start at null so as to avoid calculating frame until absolutely necessary
+        BoundingBox f = null; // start at null so as to avoid calculating frame until absolutely necessary
         for (PhysicsObject po : this.collidables) { // for each collidable object
             if (po.ps.collidable && po != this) { // if the object has collision on and isn't this
                 if (f == null) f = this.getFrame(); // calculate frame if not done yet

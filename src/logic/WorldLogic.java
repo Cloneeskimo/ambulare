@@ -12,6 +12,8 @@ import utils.Global;
 import utils.Pair;
 import utils.Transformation;
 
+import javax.xml.crypto.dsig.Transform;
+
 import static org.lwjgl.glfw.GLFW.*;
 
 /**
@@ -22,8 +24,9 @@ public class WorldLogic extends GameLogic {
     /**
      * Data
      */
-    PhysicsObject player, ball, ball2;  // some physics objects
-    boolean exitButtonPressed = false;  // whether exit has been pressed
+    Window window; // reference to the window for exit button
+    PhysicsObject player, ball, ball2; // some physics objects
+    boolean exitButtonPressed = false; // whether exit has been pressed
 
     /**
      * Initializes any members
@@ -32,6 +35,7 @@ public class WorldLogic extends GameLogic {
     @Override
     protected void initOthers(Window window) {
         super.initOthers(window); // call super so that FPS displaying objects are added to HUD
+        this.window = window; // save reference to window
 
         // create and add player
         player = new PhysicsObject(Model.getStdGridRect(1, 2),
@@ -95,17 +99,16 @@ public class WorldLogic extends GameLogic {
     }
 
     /**
-     * Gets keyboard input and reacts to it
-     * @param window the window
+     * Responds to keyboard input by moving the player
+     * @param key the key in question
+     * @param action the action of the key (GLFW_PRESS, GLFW_RELEASE, GLFW_REPEAT)
      */
     @Override
-    public void input(Window window) {
-        if (exitButtonPressed) window.close();
-        player.setVX(0);
-        if (window.isKeyPressed(GLFW_KEY_D)) player.incrementVX(4); // rightwards movement
-        if (window.isKeyPressed(GLFW_KEY_A)) player.incrementVX(-4); // leftwards movement
-        if (window.isKeyPressed(GLFW_KEY_SPACE) && player.somethingUnder(0.1f)) player.setVY(10f); // jump
-        if (window.isKeyPressed(GLFW_KEY_ENTER)) { // if enter is pressed
+    public void keyboardInput(int key, int action) {
+        if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
+            if (player.somethingUnder(0.1f)) player.setVY(10f); // jum
+        }
+        else if (key == GLFW_KEY_ENTER && action == GLFW_PRESS) { // if enter is release
             ball.setPos(1f, 3f); // reset ball position
             ball.setVY(0f); // reset its vertical velocity
             ball.setVX((float)Math.random() * 3f - 1.5f); // give it a random horizontal velocity from -1.5f to 1.5f
@@ -152,8 +155,14 @@ public class WorldLogic extends GameLogic {
     @Override
     public void update(float interval) {
         super.update(interval); // call super update
-        if (((TextObject)this.roc.getStaticGameObject(2)).setText("(" + String.format("%.2f", player.getX()) +
-                ", " + String.format("%.2f", player.getY()) + ")")) // change player pos text
+        Pair pos = new Pair(player.getX(), player.getY());
+        Transformation.alignToGrid(pos);
+        if (((TextObject)this.roc.getStaticGameObject(2)).setText("(" + String.format("%.2f", pos.x) +
+                ", " + String.format("%.2f", pos.y) + ")")) // change player pos text
             this.roc.ensurePlacement(2); // update placement if changed
+        player.setVX(0);
+        if (exitButtonPressed) window.close();
+        if (window.isKeyPressed(GLFW_KEY_D)) player.incrementVX(4); // rightwards movement
+        if (window.isKeyPressed(GLFW_KEY_A)) player.incrementVX(-4); // leftwards movement
     }
 }

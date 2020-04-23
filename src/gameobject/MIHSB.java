@@ -1,7 +1,7 @@
 package gameobject;
 
 import graphics.Camera;
-import utils.Frame;
+import utils.BoundingBox;
 import utils.Pair;
 import utils.Transformation;
 
@@ -133,7 +133,7 @@ public class MIHSB {
         /**
          * @return the appropriate bounds to use to consider whether or not the implementing object is being hovered
          */
-        Frame getFrame();
+        BoundingBox getFrame();
     }
 
 }

@@ -1,7 +1,7 @@
 package gameobject;
 
 import graphics.*;
-import utils.Frame;
+import utils.BoundingBox;
 
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
 import static org.lwjgl.opengl.GL11.glBindTexture;
@@ -344,7 +344,7 @@ public class GameObject {
      * position
      * @return the frame corresponding to the game object
      */
-    public Frame getFrame() {
+    public BoundingBox getFrame() {
         return model.getFrame().translate(this.x, this.y); // get model's frame and translate
     }
 

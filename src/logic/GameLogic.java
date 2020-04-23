@@ -61,6 +61,14 @@ public abstract class GameLogic {
     }
 
     /**
+     * Receives keyboard input from the engine
+     * Extending classes should certainly override this method to repsond to keyboard events
+     * @param key the key in question
+     * @param action the action of the key (GLFW_PRESS, GLFW_RELEASE, GLFW_REPEAT)
+     */
+    public void keyboardInput(int key, int action) {}
+
+    /**
      * Receives mouse input from the engine and notifies the ROC of the input
      * Extending classes can certainly override this method to change how they react to mouse input. If super is not
      * called, or the ROC is not manually notified, it may not work as intended
@@ -80,13 +88,6 @@ public abstract class GameLogic {
      * @param MIID the ID of the object that was clicked
      */
     public void clicked(int MIID) {}
-
-    /**
-     * Extending classes should override this and use the window reference to respond to any input they so desire to
-     * respond to
-     * @param window the window
-     */
-    public void input(Window window) {}
 
     /**
      * Updates this logic by updating the ROC

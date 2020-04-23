@@ -4,21 +4,20 @@ import graphics.Camera;
 
 /**
  * This class provides methods to transform between various coordinate systems such as those listed and described below:
- * All coordinates list below, except for window and grid, are normalized such that, if vertices were rendered at that
+ * All coordinates listed below, except for window and grid, are normalized such that, if vertices were rendered at that
  * coordinate, they would have to be within the range of [-1, 1] (for both x and y) to actually be rendered. Aspect
  * coordinates used for rendering are the result of many transformations and calculations. Any of the normalized
  * coordinates can be converted into window coordinates
  *
- * WINDOW COORDINATES: non-normalized coordinates corresponding to the pixels of the window
+ * WINDOW COORDINATES: non-normalized coordinates corresponding to window position
  * - can be converted into normalized coordinates
  *
  * MODEL: normalized coordinates corresponding to a model's vertices. In this code, models are directly manipulated
  *   for scaling and rotating. That is, rotated and scaled model coordinates are still model coordinates, just of a
- *   different model
+ *   different model than their unrotated and unscaled counterparts
  * - can be directly converted into world coordinates
- * - can be directly converted into camera-view coordinates if there are no object properties to take into account
- * - can be directly converted into aspect coordinates if there are no object properties or camera properties to take
- *   into account
+ * - can be directly converted into camera-view coordinates if there is no position to take into account
+ * - can be directly converted into aspect coordinates if there is not position or camera to take into account
  *
  * WORLD COORDINATES: normalized coordinates corresponding to model coordinates with position taken into account
  * - can be directly converted into model coordinates
@@ -34,10 +33,10 @@ import graphics.Camera;
  * ASPECT COORDINATES: coordinates where the window's aspect ratio has been taken into account
  * - can be directly converted into camera-view coordinates
  * - can be directly converted into world coordinates if there is no camera to take into account
- * - can be directly converted into model coordinates if there is no camera or object properties to take into account
+ * - can be directly converted into model coordinates if there is no camera or position to take into account
  *
- * GRID COORDINATES: camera-view coordinates restricted to a grid. In Ambulare, this grid is defined by cells whose size
- *   match Global.GRID_CELL_SIZE
+ * GRID COORDINATES: world coordinates restricted to a grid. In Ambulare, this grid is such that all cells' widths
+ * and heights are 1.0f (in world coordinates)
  * - can be directly converted into world coordinates
  *
  * The conversions made to render are: model -> world (done in GameObject) -> (if rendering with a camera) camera-view
@@ -114,26 +113,10 @@ public class Transformation {
      * @param pos the coordinates to convert
      */
     public static void alignToGrid(Pair pos) {
-        pos.x += pos.x < 0 ? (-Global.GRID_CELL_SIZE / 2) : (Global.GRID_CELL_SIZE / 2); /* the positions of all of the
-                                                         objects in this game have (0, 0) at the center of their models.
-                                                         This basically nudges them over slightly so  as to make the
-                                                         truncation correct*/
-        pos.y += pos.y < 0 ? (-Global.GRID_CELL_SIZE / 2) : (Global.GRID_CELL_SIZE / 2); // see above comment
-        pos.x = (int)(pos.x / Global.GRID_CELL_SIZE); // align to grid where cell width is Model's standard square size
-        pos.y = (int)(pos.y / Global.GRID_CELL_SIZE); // align to grid where cell height is Model's standard square size
-    }
-
-    /**
-     * Converts the given grid coordinates ito world coordinates coordinates
-     * This assumes a grid in which each cell is size defined by Global.GRID_CELL_SIZE
-     * @param pos the coordinates to convert
-     */
-    public static void unalignFromGrid(Pair pos) {
-        pos.x *= Global.GRID_CELL_SIZE; // un-align where cell width is Model's standard square size
-        pos.y *= Global.GRID_CELL_SIZE; // un-align where cell height is Model's standard square size
-        pos.x += pos.x < 0 ? (Global.GRID_CELL_SIZE / 2) : (-Global.GRID_CELL_SIZE / 2); /* move slightly over so that
-                                                        the origin corresponds to the middle of the model. See
-                                                        alignToGrid() */
-        pos.y += pos.y < 0 ? (Global.GRID_CELL_SIZE / 2) : (-Global.GRID_CELL_SIZE / 2); // see above comment
+        // nude the positions over by 0.5f to make truncations correct (all objects have their position as their center)
+        pos.x += pos.x < 0 ? -0.5f : 0.5f;
+        pos.y += pos.y < 0 ? -0.5f : 0.5f;
+        pos.x = (int)(pos.x);
+        pos.y = (int)(pos.y);
     }
 }

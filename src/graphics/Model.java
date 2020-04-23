@@ -1,7 +1,7 @@
 package graphics;
 
 import org.lwjgl.system.MemoryUtil;
-import utils.Frame;
+import utils.BoundingBox;
 import utils.Global;
 import utils.Pair;
 import utils.Utils;
@@ -46,10 +46,10 @@ public class Model {
      */
     public static float[] getGridRectModelCoords(int w, int h) {
         return new float[] {
-                -w * Global.GRID_CELL_SIZE / 2, -h * Global.GRID_CELL_SIZE / 2, // top left
-                -w * Global.GRID_CELL_SIZE / 2,  h * Global.GRID_CELL_SIZE / 2, // bottom left
-                 w * Global.GRID_CELL_SIZE / 2,  h * Global.GRID_CELL_SIZE / 2, // bottom right
-                 w * Global.GRID_CELL_SIZE / 2, -h * Global.GRID_CELL_SIZE / 2 // top right
+                -w * Global.GRID_CELL_SIZE / 2, -h * Global.GRID_CELL_SIZE / 2, // bottom left
+                -w * Global.GRID_CELL_SIZE / 2,  h * Global.GRID_CELL_SIZE / 2, // top left
+                 w * Global.GRID_CELL_SIZE / 2,  h * Global.GRID_CELL_SIZE / 2, // top right
+                 w * Global.GRID_CELL_SIZE / 2, -h * Global.GRID_CELL_SIZE / 2  // bottom right
         };
     }
 
@@ -61,7 +61,7 @@ public class Model {
                 0.0f, 1.0f, // top left
                 0.0f, 0.0f, // bottom left
                 1.0f, 0.0f, // bottom right
-                1.0f, 1.0f // top right
+                1.0f, 1.0f  // top right
         };
     }
 
@@ -69,7 +69,8 @@ public class Model {
      * @return the standard rectangle indices
      */
     public static int[] getStdRectIdx() {
-        return new int[] { 0, 1, 3, 3, 1, 2 };
+        return new int[] { 0, 1, 3,   // first triangle  - bottom left, top left, bottom right
+                           3, 1, 2 }; // second triangle - bottom right, top left, top right
     }
 
     /**
@@ -286,18 +287,18 @@ public class Model {
      * fit all model coordinates
      * @return the frame described above
      */
-    public Frame getFrame() {
+    public BoundingBox getFrame() {
         if (this.modelCoords.length == 8) { // if rectangular
             float[] corners = new float[this.modelCoords.length]; // create corners array
             for (int i = 0; i < corners.length; i+=2) { // fill it with model coords
                 corners[i] = modelCoords[i]; // copy x
                 corners[i + 1] = modelCoords[i + 1]; // copy negative y
             }
-            return new Frame(corners, this.r, 0f, 0f); // return the frame with the appropriate r value
+            return new BoundingBox(corners, this.r, 0f, 0f); // return the frame with the appropriate r value
         } else { // if not rectangular
             float w2 = this.getWidth() / 2; // calculate half of width of bounding box
             float h2 = this.getHeight() / 2; // calculate half of height of bounding box
-            return new Frame(new float[] {-w2, -h2, -w2, h2, w2, h2, w2, -h2}, 0f, 0f, 0f); // create frame
+            return new BoundingBox(new float[] {-w2, -h2, -w2, h2, w2, h2, w2, -h2}, 0f, 0f, 0f); // create frame
         }
     }
 
