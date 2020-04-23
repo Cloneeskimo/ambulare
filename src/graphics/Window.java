@@ -22,18 +22,18 @@ public class Window {
      * Data
      */
     private List<KeyControl> keyControls; // list of key controls (see KeyControl definition below)
-    private final String title; // window title
-    private int w, h; // window width and height
-    private int fbw, fbh; // frame buffer width and height
-    private long handle; // the window handle - how GLFW knows this window by
-    private boolean resized = false; // whether or not the window has been resized (false by default)
-    private boolean vSync; // whether or not to use v-sync
+    private final String title;           // window title
+    private int w, h;                     // window width and height
+    private int fbw, fbh;                 // frame buffer width and height
+    private long handle;                  // the window handle - how GLFW knows this window by
+    private boolean resized = false;      // whether or not the window has been resized (false by default)
+    private boolean vSync;                // whether or not to use v-sync
 
     /**
      * Constructs the window
      * @param title the title to give to the GLFW window
-     * @param w the width to make the GLFW window. If -1, will cover 80% of the width of the screen
-     * @param h the height to make the GLFW window. If -1, will cover 80% of the height of screen
+     * @param w the width to make the GLFW window. If -1, will cover 80% of the width of the screen when initialized
+     * @param h the height to make the GLFW window. If -1, will cover 80% of the height of screen when initialized
      * @param vSync whether to enable vertical sync
      */
     public Window(String title, int w, int h, boolean vSync) {
@@ -42,15 +42,6 @@ public class Window {
         this.w = w; // set width
         this.h = h; // set height
         this.vSync = vSync; // set vertical sync setting
-    }
-
-    /**
-     * Constructs the window to take 80% of the monitor's width and height
-     * @param title the title to give to the window
-     * @param vSync whether to enable vertical sync
-     */
-    public Window(String title, boolean vSync) {
-        this(title, -1, -1, vSync); // call other constructor
     }
 
     /**
@@ -71,7 +62,6 @@ public class Window {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2); // request GL 3.2
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // request core profile
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // request forward compatibility
-        glfwWindowHint(GLFW_SCALE_TO_MONITOR, GL_TRUE);
 
         // check window size
         GLFWVidMode vidmode = glfwGetVideoMode(glfwGetPrimaryMonitor()); // get resolution info for main monitor
@@ -80,6 +70,7 @@ public class Window {
 
         // create window
         this.handle = glfwCreateWindow(this.w, this.h, this.title, NULL, NULL); // create window with specified config
+        glfwSetWindowSize(this.handle, this.w, this.h);
         if (this.handle == NULL) Utils.handleException(new Exception("Failed to create the GLFW window"),
                 "graphics.Window", "init()", true); // throw exception if cannot create window
         int[] fbw = new int[1]; // create array to get frame buffer width
@@ -109,8 +100,8 @@ public class Window {
         });
 
         // finishing touches on window
-        glfwSetWindowPos(this.handle, (vidmode.width() - this.w) / 2,
-                (vidmode.height() - this.h) / 2); // set position to be middle of screen
+        glfwSetWindowPos(this.handle, (vidmode.width() - this.fbw) / 2,
+                (vidmode.height() - this.fbh) / 2); // set position to be middle of screen
         glfwMakeContextCurrent(this.handle); // set this context to be current
         if (this.vSync) glfwSwapInterval(1); // enable vsync if setting is true
 
@@ -179,6 +170,10 @@ public class Window {
      * @return the height of this window
      */
     public int getHeight() { return this.h; }
+
+    public void setSize(int w, int h) {
+        glfwSetWindowSize(this.handle, w, h);
+    }
 
     /**
      * @return the frame buffer width of this window

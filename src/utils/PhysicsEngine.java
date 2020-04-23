@@ -1,7 +1,6 @@
 package utils;
 
-import gameobject.GameObject;
-import gameobject.PhysicsObject;
+import gameobject.gameworld.PhysicsObject;
 
 /**
  * Uses the Separating Axis Theorem to detect collision
@@ -149,7 +148,7 @@ public class PhysicsEngine {
                                                     the opposite component of velocity will remain. For example, during
                                                     a y collision, the object's horizontal (x) velocity will be
                                                     multiplied by its friction resistance, and vice-versa */
-        public float gravity = 9.8f;             /* this determines how much the object is affected by gravity */
+        public float gravity = 19.6f;            /* this determines how much the object is affected by gravity */
         public boolean rigid = false;            /* if an object is rigid, it is unable to be affected by a collision.
                                                     It is still able to collide and will cause collisions, but its own
                                                     velocity and position will be unaffected. It will, however, still be

@@ -1,7 +1,7 @@
 package logic;
 
-import gameobject.PhysicsObject;
-import gameobject.RenderableObjectCollection;
+import gameobject.gameworld.PhysicsObject;
+import gameobject.ROC;
 import gameobject.TextButton;
 import gameobject.TextObject;
 import graphics.Material;
@@ -38,26 +38,26 @@ public class WorldLogic extends GameLogic {
                 new Material(new float[] {0.2f, 0.2f, 1.0f, 1.0f})); // create player
         player.setPos(5 * Global.GRID_CELL_SIZE, 3f); // set player's position
         player.getPhysicsSettings().bounciness = 0f; // disable bounce on player
-        this.roc.addObject(player); // add to ROC
-        this.roc.getCam().follow(player); // tell camera to follow it
+        this.roc.getGameWorld().addObject(player); // add to ROC
+        this.roc.getGameWorld().getCam().follow(player); // tell camera to follow it
 
         // create and add "ball"
-        ball = new PhysicsObject(Model.getStdGridRect(1, 1), new Material(new Texture(
-                "/textures/ball.png"))); // create ball object
+        ball = new PhysicsObject(Model.getStdGridRect(1, 1), new Material(new float[] {0f, 1f, 1f, 1f})); // create
+        // ball object
         ball.setScale(0.4f, 0.4f); // scale it down
         ball.getPhysicsSettings().bounciness = 0.9f; // make ball bouncy
-        ball.setPos(1f, 3f); // move it to the left of the player
+        ball.setPos(2f, 3f); // move it to the left of the player
         ball.getPhysicsSettings().mass = 0.5f; // make it half the player's mass
-        this.roc.addObject(ball); // and add to ROC
+        this.roc.getGameWorld().addObject(ball); // and add to ROC
 
         // create and add "ball"s
-        ball2 = new PhysicsObject(Model.getStdGridRect(1, 1), new Material(new Texture(
-                "/textures/ball.png"))); // create ball object
+        ball2 = new PhysicsObject(Model.getStdGridRect(1, 1), new Material(new float[] {0f, 1f, 1f, 1f})); // create
+        // ball object
         ball2.setScale(0.4f, 0.4f); // scale it down
         ball2.getPhysicsSettings().bounciness = 0.9f; // make ball bouncy
-        ball2.setPos(2f, 3f); // move it to the left of the player
+        ball2.setPos(3f, 3f); // move it to the left of the player
         ball2.getPhysicsSettings().mass = 2; // make it half the player's mass
-        this.roc.addObject(ball2); // and add to ROC
+        this.roc.getGameWorld().addObject(ball2); // and add to ROC
 
         // create and add dirt floor and walls
         Material dirt = new Material(new Texture("/textures/dirt.png")); // dirt material
@@ -66,31 +66,31 @@ public class WorldLogic extends GameLogic {
             po.getPhysicsSettings().gravity = 0f; // disable gravity on dirt
             po.setX(i * Global.GRID_CELL_SIZE); // calculate x
             po.getPhysicsSettings().rigid = true; // make dirt rigid
-            this.roc.addObject(po); // add to ROC
+            this.roc.getGameWorld().addObject(po); // add to ROC
             po = new PhysicsObject(Model.getStdGridRect(1, 1), dirt); // create wall dirt
             po.getPhysicsSettings().gravity = 0f; // disable gravity on dirt
             po.setX(i > 4 ? 9 * Global.GRID_CELL_SIZE : 0 * Global.GRID_CELL_SIZE); // calculate x
             po.setY(1 + (i > 4 ? ((i - 4) * Global.GRID_CELL_SIZE) : i * Global.GRID_CELL_SIZE)); // calculate y
             po.getPhysicsSettings().rigid = true; // make dirt rigid
-            this.roc.addObject(po); // add to ROC
+            this.roc.getGameWorld().addObject(po); // add to ROC
         }
 
         // create and add player position text
-        this.roc.addObject(new TextObject(Global.FONT, "(0, 0)"), // player pos text
-                new RenderableObjectCollection.PositionSettings(-1f, -1f, true, 0.02f));
-        this.roc.getStaticGameObject(2).setScale(0.15f, 0.15f); // scale text down
+        this.roc.addStaticObject(new TextObject(Global.FONT, "(0, 0)"), // player pos text
+                new ROC.PositionSettings(-1f, -1f, true, 0.02f));
+        this.roc.getStaticGameObject(2).setScale(0.075f, 0.075f); // scale text down
 
         // create and add controls text
-        this.roc.addObject(new TextObject(Global.FONT, "SPACE - jump  A/D - move  ENTER - reset ball"),
-                new RenderableObjectCollection.PositionSettings(0f, -1f, true,
+        this.roc.addStaticObject(new TextObject(Global.FONT, "SPACE - jump  A/D - move  ENTER - reset ball"),
+                new ROC.PositionSettings(0f, -1f, true,
                         0.02f)); // create controls text
-        this.roc.getStaticGameObject(3).setScale(0.1f, 0.1f); // scale text down
+        this.roc.getStaticGameObject(3).setScale(0.05f, 0.05f); // scale text down
 
         // create and add text button
-        this.roc.addObject(new TextButton(Global.FONT, "Exit", 1),
-                new RenderableObjectCollection.PositionSettings(1f, -1f, true,
+        this.roc.addStaticObject(new TextButton(Global.FONT, "Exit", 1),
+                new ROC.PositionSettings(1f, -1f, true,
                 0.02f)); // create text button
-        this.roc.getStaticGameObject(4).setScale(0.1f, 0.1f); // scale button down
+        this.roc.getStaticGameObject(4).setScale(0.05f, 0.05f); // scale button down
         this.roc.ensureAllPlacements();
     }
 
@@ -102,9 +102,9 @@ public class WorldLogic extends GameLogic {
     public void input(Window window) {
         if (exitButtonPressed) window.close();
         player.setVX(0);
-        if (window.isKeyPressed(GLFW_KEY_D)) player.incrementVX(2); // rightwards movement
-        if (window.isKeyPressed(GLFW_KEY_A)) player.incrementVX(-2); // leftwards movement
-        if (window.isKeyPressed(GLFW_KEY_SPACE) && player.somethingUnder(0.1f)) player.setVY(5f); // jump
+        if (window.isKeyPressed(GLFW_KEY_D)) player.incrementVX(4); // rightwards movement
+        if (window.isKeyPressed(GLFW_KEY_A)) player.incrementVX(-4); // leftwards movement
+        if (window.isKeyPressed(GLFW_KEY_SPACE) && player.somethingUnder(0.1f)) player.setVY(10f); // jump
         if (window.isKeyPressed(GLFW_KEY_ENTER)) { // if enter is pressed
             ball.setPos(1f, 3f); // reset ball position
             ball.setVY(0f); // reset its vertical velocity
@@ -127,7 +127,7 @@ public class WorldLogic extends GameLogic {
         if (action == GLFW_HOVERED) { // if hover event
             Pair pos = new Pair(x, y); // create pair of mouse position
             //System.out.println(pos);
-            Transformation.useCam(pos, this.roc.getCam()); // transform to camera-view
+            Transformation.useCam(pos, this.roc.getGameWorld().getCam()); // transform to camera-view
 
             if (player.getFrame().contains(pos.x, pos.y)) { // if mouse is hovering player
                 player.setMaterial(new Material(new float[]{(float)Math.random(), (float)Math.random(),

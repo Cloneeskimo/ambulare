@@ -12,7 +12,7 @@ public class Camera {
      */
     private final static float MIN_ZOOM = 0.05f;    // minimum zoom
     private final static float MAX_ZOOM = 1.8f;     // maximum zoom
-    private final static float DEFAULT_ZOOM = 0.7f; // default zoom
+    private final static float DEFAULT_ZOOM = 0.1f; // default zoom
     private float x, y, vx, vy;                     // position and velocity
     private float zoom;                             // zoom
     private GameObject following;                   // a game object to follow, if assigned

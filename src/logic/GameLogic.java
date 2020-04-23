@@ -1,15 +1,16 @@
 package logic;
 
-import gameobject.RenderableObjectCollection;
+import gameobject.ROC;
 import gameobject.TextObject;
 import graphics.Window;
 import utils.Global;
-import utils.Pair;
+
+import static utils.Global.ar;
 
 /**
  * The game logic define how the engine will interact with the game. To aid in the process of designing a game world,
  * this abstract class has an easy way to store and render game objects in a wide variety of ways without being too
- * intensive, by using an ROC (see RenderableObjectCollection class). If the extending class doesn't want to use an ROC,
+ * intensive, by using an ROC (see ROC class). If the extending class doesn't want to use an ROC,
  * a flag to enable/disable rendering of the ROC exist as well
  */
 public abstract class GameLogic {
@@ -17,7 +18,7 @@ public abstract class GameLogic {
     /**
      * Data
      */
-    protected RenderableObjectCollection roc; // holds and renders all game objects
+    protected ROC roc; // holds and renders all game objects
     protected boolean renderROC = true;       /* extending classes can disable ROC rendering if they want to render in
                                                  some other manner*/
     private boolean FPSItemsAdded = false;    /* flag representing whether the FPS HUD items have been added. It is
@@ -32,11 +33,11 @@ public abstract class GameLogic {
      * @param window the window
      */
     public final void init(Window window) {
-        float ar = (float)window.getFBWidth() / (float)window.getFBHeight(); // calculate aspect ratio
-        boolean arAction = (ar < 1.0f); /* this stores what actions need to be done to compensate for aspect ratio. If
+        Global.ar = (float)window.getFBWidth() / (float)window.getFBHeight(); // calculate aspect ratio
+        Global.arAction = (Global.ar < 1.0f); /* this stores what actions need to be done to compensate for aspect ratio. If
                                             ar < 1.0f (height > width) then we will make objects shorter to compensate
                                             and if ar > 1.0f, the opposite is true */
-        this.roc = new RenderableObjectCollection(ar, arAction, window.getHandle()); // create ROC
+        this.roc = new ROC(window.getHandle()); // create ROC
         this.initOthers(window); // allow extending classes to initialize other members
     }
 
@@ -52,9 +53,9 @@ public abstract class GameLogic {
         FPSCount.setScale(0.1f, 0.1f); // scale actual FPS count text
         FPSStatic.setVisibility(false); // invisible to start
         FPSCount.setVisibility(false); // invisible to start
-        this.roc.addObject(FPSStatic, new RenderableObjectCollection.PositionSettings(-1f, 1f, true,
+        this.roc.addStaticObject(FPSStatic, new ROC.PositionSettings(-1f, 1f, true,
                 0.02f)); // add static FPS text to ROC as a static object
-        this.roc.addObject(FPSCount, new RenderableObjectCollection.PositionSettings(FPSStatic, FPSStatic, 1f,
+        this.roc.addStaticObject(FPSCount, new ROC.PositionSettings(FPSStatic, FPSStatic, 1f,
                 0f, 0f)); // add actual FPS text to ROC as a static object
         this.FPSItemsAdded = true; // save that these FPS items have been added
     }
@@ -118,13 +119,9 @@ public abstract class GameLogic {
      * Reacts to the window resizing by calculating the new aspect ratio and aspect ratio action (see GameLogic.init)
      * and then notifying the ROC
      * Extending classes cannot override this method
-     * @param w the new window width
-     * @param h the new window height
      */
-    public final void resized(int w, int h) {
-        float ar = (float)w / (float)h; // calculate aspect ratio
-        boolean arAction = (ar < 1.0f); // calculate aspect ratio action (see GameLogic.init)
-        this.roc.resized(ar, arAction); // notify ROC of resize
+    public final void resized() {
+        this.roc.resized(); // notify ROC of resize
     }
 
     /**

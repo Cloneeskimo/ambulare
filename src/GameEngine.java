@@ -24,7 +24,13 @@ public class GameEngine {
      * @param logic the starting logic to follow
      */
     public GameEngine(GameLogic logic) {
-        this.window = new Window(Global.WINDOW_TITLE, Global.V_SYNC); // window with correct name and v-sync setting
+        int w = -1, h = -1; // window width and height will be default sizes at firs
+        Node wd = Node.fileToNode("wd.amb", true); // try to load window data
+        if (wd != null) { // if window data was found
+            w = Integer.parseInt(wd.getChild("width").getValue()); // use saved width of window
+            h = Integer.parseInt(wd.getChild("height").getValue()); // ues saved height of window
+        }
+        this.window = new Window(Global.WINDOW_TITLE, w, h, Global.V_SYNC); // create window
         this.timer = new Timer(); // create timer
         this.logic = logic; // save logic reference
         FPSReportControl FPSRC = new FPSReportControl(); /* this is an implementation of the Window.KeyControl interface
@@ -96,11 +102,12 @@ public class GameEngine {
                 this.update(interval); // do an game update
                 accumulator -= interval; // account for a single loop interval amount of time
             }
-            this.render(); // render - we render outside of the above loop to avoid rendering outdated frames
-            if (!this.window.usesVSync()) this.sync(1 / (float)Global.TARGET_FPS); /* sync loop - V-Sync will do
-                                                                                             this for us if it's
-                                                                                             enabled */
+            this.render();  // render - we render outside of the above loop to avoid rendering outdated frames
+                            // sync loop - V-Sync will do this is for us if it's enabled
+            if (!this.window.usesVSync()) this.sync(1 / (float)Global.TARGET_FPS);
         }
+        this.cleanup(); // cleanup
+
     }
 
     /**
@@ -145,7 +152,7 @@ public class GameEngine {
         if (action == GLFW_HOVERED) { // if hover,
             Pair pos = new Pair(x, y); // bundle into coordinate object
             Transformation.normalize(pos, window.getWidth(), window.getHeight()); // normalize mouse position
-            Transformation.deaspect(pos, (float) window.getFBWidth() / (float) window.getFBHeight()); // project position
+            Transformation.deaspect(pos, Global.ar); // project position
             x = pos.x; y = pos.y; // extract x and y
         }
         logic.mouseInput(x, y, action); // notify logic of input
@@ -165,7 +172,7 @@ public class GameEngine {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the screen
         if (this.window.resized(true)) { // if the window was resized
             glViewport(0, 0, this.window.getFBWidth(), this.window.getFBHeight()); // change the GL viewport to match
-            this.logic.resized(this.window.getFBWidth(), this.window.getFBHeight()); // notify the logic of the resize
+            this.logic.resized(); // notify the logic of the resize
         }
         this.logic.render(); // allow the logic to render
         this.window.swapBuffers(); // refresh the window
@@ -188,7 +195,13 @@ public class GameEngine {
     /**
      * Cleans up the engine after the loop ends
      */
-    private void cleanup() { this.logic.cleanup(); }
+    private void cleanup() {
+        Node wd = new Node("window data"); // create a node to hold window data
+        wd.addChild("width", Integer.toString(window.getWidth())); // add window width
+        wd.addChild("height", Integer.toString(window.getHeight())); // add window height
+        Node.nodeToFile(wd, "/wd.amb", true); // and save node
+        this.logic.cleanup();
+    }
 
     /**
      * A KeyControl that allows notification of the engine's logic when the fps changes and when the setting is toggled

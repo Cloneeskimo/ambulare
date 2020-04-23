@@ -1,8 +1,11 @@
 package gameobject;
 
+import gameobject.gameworld.GameWorld;
+import gameobject.gameworld.PhysicsObject;
 import graphics.Camera;
 import graphics.PositionalAnimation;
 import graphics.ShaderProgram;
+import utils.Global;
 import utils.Pair;
 import utils.Transformation;
 import utils.Utils;
@@ -14,11 +17,12 @@ import static org.lwjgl.glfw.GLFW.glfwSetScrollCallback;
 
 /**
  * Holds a collection of game objects and renders them all in one method call. This class divides the game objects it
- * contains into static objects, which are bound to certain positions in the window, and world objects, which react to
- * a camera. In other words, game objects in the collection are either HUD or world items. This class contains
- * powerful positioning tools to position static objects to create HUDs very easily
+ * contains into:
+ * (1) HUD Objects: bound to certain positions in the window and have extensive positioning settings and
+ * customization
+ * (2) World Objects: objects that are directly given to a GameWorld to manage
  */
-public class RenderableObjectCollection {
+public class ROC {
 
     /**
      * Data
@@ -27,53 +31,27 @@ public class RenderableObjectCollection {
                                                  Instead, they are bound to positioning settings that determine where
                                                  in the window they should be rendered at all times. In other words,
                                                  these are HUD items */
-    private List<GameObject> worldObjects;    /* a list of objects that will react to a camera. In other words, these
-                                                 are world objects */
-    private List<PhysicsObject> collidables;  // a list of PhysicsObjects for collision detection
-    private Camera cam;                       // the camera to use to render world objects
+    private GameWorld gameWorld;
     private MIHSB mihsb;                      // mouse interactable hover state bundle to abstract away mouse input
-    private ShaderProgram spw, sps;           // the shader programs used to render
-    private float ar;                         // the window's aspect ratio
-    private boolean arAction;                 // aspect ratio action (see GameLogic.init)
+    private ShaderProgram sp;                 // the shader programs used to render
 
     /**
      * Constructor
-     * @param ar the window's aspect ratio
-     * @param arAction aspect ratio action (see GameLogic.init)
      * @param windowHandle the window's GLFW handle
      */
-    public RenderableObjectCollection(float ar, boolean arAction, long windowHandle) {
-        this.ar = ar; // save aspect ratio as member
-        this.arAction = arAction; // save aspect ratio action as member
+    public ROC(long windowHandle) {
         this.staticObjects = new ArrayList<>(); // create static object list
-        this.worldObjects = new ArrayList<>(); // create world object list
-        this.collidables = new ArrayList<>(); // create collidables list
-        this.cam = new Camera(); // create camera
+        this.gameWorld = new GameWorld(windowHandle); // create GameWorld
         this.mihsb = new MIHSB(); // create MIHSB
-        this.createSPs(); // create and initialize shader programs
-        glfwSetScrollCallback(windowHandle, (w, x, y) -> { // when the user scrolls
-            this.cam.zoom(y > 0 ? 1.15f : 0.85f); // zoom on camera
-        });
-    }
-
-    /**
-     * Creates the two shader programs (one for static objects, one for world objects) and then initializes them
-     */
-    protected void createSPs() {
-        this.sps = new ShaderProgram("/shaders/vertex.glsl",
-                "/shaders/fragment.glsl"); // create static object shader program
-        this.spw = new ShaderProgram("/shaders/vertex.glsl",
-                "/shaders/fragment.glsl"); // create world object shader program
-        this.initSP(sps, false); // initialize static object shader program with no camera uniforms
-        this.initSP(spw, true); // initialize world object shader program with camera uniforms
+        this.mihsb.useCam(this.gameWorld.getCam());
+        this.initSP(); // create and initialize shader programs
     }
 
     /**
      * Initializes the given shader program by registering the appropriate uniforms
-     * @param sp the shader program to initialize
-     * @param camera whether the shader program will use a camera
      */
-    protected void initSP(ShaderProgram sp, boolean camera) {
+    protected void initSP() {
+        this.sp = new ShaderProgram("/shaders/vertex.glsl", "/shaders/fragment.glsl");
         sp.registerUniform("ar"); // register aspect ratio uniform
         sp.registerUniform("arAction"); // register aspect ratio action uniform
         sp.registerUniform("x"); // register object x uniform
@@ -82,11 +60,6 @@ public class RenderableObjectCollection {
         sp.registerUniform("color"); // register color uniform
         sp.registerUniform("blend"); // register blend uniform
         sp.registerUniform("texSampler"); // register texture sampler uniform
-        if (camera) { // only register camera uniforms if camera enabled for that shader program
-            sp.registerUniform("camX"); // register camera x uniform
-            sp.registerUniform("camY"); // register camera y uniform
-            sp.registerUniform("camZoom"); // register camera zoom uniform
-        }
     }
 
     /**
@@ -97,17 +70,13 @@ public class RenderableObjectCollection {
      * @return an array containing the mouse interactable IDs of all mouse interactable objects that were clicked
      */
     public int[] mouseInput(float x, float y, int action) {
-        return this.mihsb.mouseInput(x, y, this.cam, action); // delegate to MIHSB
+        return this.mihsb.mouseInput(x, y, action); // delegate to MIHSB
     }
 
     /**
      * Handles a resize of the window
-     * @param ar the new aspect ratio
-     * @param arAction the new aspect ratio action (see GameEngine.init)
      */
-    public void resized(float ar, boolean arAction) {
-        this.ar = ar; // save new aspect ratio
-        this.arAction = arAction; // save new aspect ratio action (see GameEngine.init)
+    public void resized() {
         this.ensureAllPlacements(); // make sure static objects are correctly positioned
     }
 
@@ -116,50 +85,27 @@ public class RenderableObjectCollection {
      * @param interval the amount of time to account for
      */
     public void update(float interval) {
+        this.getGameWorld().update(interval);
         for (StaticObject so : this.staticObjects) so.o.update(interval); // update static objects
-        for (GameObject wo : this.worldObjects) wo.update(interval); // update world objects
-        this.cam.update(); // update camera
-    }
-
-    /**
-     * Renders the world objects (the world) and then the static objects (the HUD)
-     */
-    public void render() {
-        this.renderWOs(); // render world objects first
-        this.renderSOs(); // render static objects next
     }
 
     /**
      * Renders all the static objects
      */
-    private void renderSOs() {
-        this.sps.bind(); // bind shader program
-        this.sps.setUniform("texSampler", 0); // set texture sampler uniform to use texture unit 0
-        this.sps.setUniform("ar", this.ar); // set aspect ratio uniform
-        this.sps.setUniform("arAction", this.arAction ? 1 : 0); // set aspect ratio action uniform
-        for (StaticObject so : this.staticObjects) so.o.render(this.sps); // render static objects
-        this.sps.unbind(); // unbind shader program
-    }
-
-    /**
-     * Renders all the world objects
-     */
-    private void renderWOs() {
-        this.spw.bind(); // bind shader program
-        this.spw.setUniform("texSampler", 0); // set texture sampler uniform to use texture unit 0
-        this.spw.setUniform("ar", this.ar); // set aspect ratio uniform
-        this.spw.setUniform("arAction", this.arAction ? 1 : 0); // set aspect ratio action uniform
-        this.spw.setUniform("camX", this.cam.getX()); // set camera x uniform
-        this.spw.setUniform("camY", this.cam.getY()); // set camera y uniform
-        this.spw.setUniform("camZoom", this.cam.getZoom()); // set camera zoom uniform
-        for (GameObject wo : this.worldObjects) wo.render(this.spw); // render world objects
-        this.spw.unbind(); // unbind shader program
+    public void render() {
+        this.gameWorld.render();
+        this.sp.bind(); // bind shader program
+        this.sp.setUniform("texSampler", 0); // set texture sampler uniform to use texture unit 0
+        this.sp.setUniform("ar", Global.ar); // set aspect ratio uniform
+        this.sp.setUniform("arAction", Global.arAction ? 1 : 0); // set aspect ratio action uniform
+        for (StaticObject so : this.staticObjects) so.o.render(this.sp); // render static objects
+        this.sp.unbind(); // unbind shader program
     }
 
     /**
      * Ensures the positions of all static objects in the order that they were added
      */
-    public void ensureAllPlacements() { for (StaticObject so : this.staticObjects ) so.ensurePosition(this.ar); }
+    public void ensureAllPlacements() { for (StaticObject so : this.staticObjects ) so.ensurePosition(Global.ar); }
 
     /**
      * Ensures the static object at the given index is positioned according to its position settings. This is good to
@@ -167,7 +113,7 @@ public class RenderableObjectCollection {
      * Model, etc.)
      * @param i the index of the object whose placement should be ensured
      */
-    public void ensurePlacement(int i) { getStaticObject(i).ensurePosition(this.ar); }
+    public void ensurePlacement(int i) { getStaticObject(i).ensurePosition(Global.ar); }
 
     /**
      * Changes the positioning settings of the static object at the given index
@@ -179,10 +125,10 @@ public class RenderableObjectCollection {
         StaticObject so = getStaticObject(i); // attempt to get static object
         so.settings = settings; // update settings
         if (duration > 0f) { // if animated change
-            Pair pos = so.settings.getCorrectPosition(so.o, this.ar); // get correct position
+            Pair pos = so.settings.getCorrectPosition(so.o, Global.ar); // get correct position
             so.o.givePosAnim(new PositionalAnimation(pos.x, pos.y, null, duration)); // start animation
         } else { // if not an animated change
-            so.ensurePosition(this.ar); // just change position immediately
+            so.ensurePosition(Global.ar); // just change position immediately
         }
     }
 
@@ -190,14 +136,10 @@ public class RenderableObjectCollection {
      * Adds the given game object to the collection as a world object
      * @param o the game object to add
      */
-    public void addObject(GameObject o) {
-        this.worldObjects.add(o); // add to game objects
+    public void addToWorld(PhysicsObject o) {
+        this.gameWorld.addObject(o);
         // if object is interactable with a mouse, add it to the MIHSB with the camera usage flag true (world object)
         if (o instanceof MIHSB.MouseInteractable) this.mihsb.add((MIHSB.MouseInteractable)o, true);
-        if (o instanceof PhysicsObject) { // if object is a physics object
-            this.collidables.add((PhysicsObject)o); // add it to collidables
-            ((PhysicsObject)o).setCollidables(this.collidables); // and tell it to pay attention to ROC's collidables
-        }
     }
 
     /**
@@ -205,11 +147,11 @@ public class RenderableObjectCollection {
      * @param o the game object to add
      * @param settings the settings to use to place the game objet
      */
-    public void addObject(GameObject o, PositionSettings settings) {
+    public void addStaticObject(GameObject o, PositionSettings settings) {
         StaticObject so = new StaticObject(o, settings); // wrap object and settings into single object
         // if object is interactable with a mouse, add it to the MIHSB with the camera usage flag false (static object)
         if (o instanceof MIHSB.MouseInteractable) this.mihsb.add((MIHSB.MouseInteractable)o, false);
-        so.ensurePosition(this.ar); // position the object according to its settings
+        so.ensurePosition(Global.ar); // position the object according to its settings
         this.staticObjects.add(so); // add object to static objects list
     }
 
@@ -221,7 +163,7 @@ public class RenderableObjectCollection {
         try { // try to get item
             return this.staticObjects.get(i); // and return it
         } catch (Exception e) { // if exception
-            Utils.handleException(e, "gameobjects.RenderableObjectCollection", "getStaticObject(i)", true); // handle
+            Utils.handleException(e, "gameobjects.ROC", "getStaticObject(i)", true); // handle
         }
         return null; // this is here to make the compiler be quiet
     }
@@ -236,32 +178,17 @@ public class RenderableObjectCollection {
     }
 
     /**
-     * Attempts to acquire the world game object at the given index
-     * @param i the index to look at
-     * @return the world game object at the corresponding index
-     */
-    public GameObject getWorldGameObject(int i) {
-        try { // try to get object
-            return this.worldObjects.get(i); // and return it
-        } catch (Exception e) { // if exception
-            Utils.handleException(e, "gameobjects.RenderableObjectCollection", "getWorldGameObject(i)", true); // handle
-        }
-        return null; // this is here to make the compiler be quiet
-    }
-
-    /**
      * @return the camera
      */
-    public Camera getCam() { return this.cam; }
+    public GameWorld getGameWorld() { return this.gameWorld; }
 
     /**
      * Cleans up the HUD
      */
     public void cleanup() {
-        if (this.sps != null) this.sps.cleanup(); // cleanup static object shader program
-        if (this.spw != null) this.spw.cleanup(); // cleanup world object shader program
+        if (this.sp != null) this.sp.cleanup(); // cleanup static object shader program
+        this.gameWorld.cleanup();
         for (StaticObject so : this.staticObjects) so.o.cleanup(); // cleanup static objects
-        for (GameObject wo : this.worldObjects) wo.cleanup(); // cleanup world objects
     }
 
     /**

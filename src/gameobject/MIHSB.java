@@ -24,6 +24,7 @@ public class MIHSB {
     private List<MouseInteractable> mis; // list of objects able to be interacted with via mouse
     private List<Boolean> hoverStates;   // the hover states for each object in mis (kept as a parallel list)
     private List<Boolean> useCam;        // whether to transform the mouse input into camera-view coordinates for each
+    private Camera cam;
     private boolean pressed;             // whether the mouse is currently pressed down
 
     /**
@@ -39,11 +40,10 @@ public class MIHSB {
      * Reacts to mouse input
      * @param x the normalized and projected x position of the mouse if hover event, 0 otherwise
      * @param y the normalized and projected y position of the mouse if hover event, 0 otherwise
-     * @param cam a reference to the camera to use to calculate hovers or null if no camera should be used
      * @param action the nature of the mouse input (GLFW_PRESS, GLFW_RELEASE, or GLFW_HOVERED)
      * @return an array containing the IDs of all items that were clicked (mouse released)
      */
-    public int[] mouseInput(float x, float y, Camera cam, int action) {
+    public int[] mouseInput(float x, float y, int action) {
         List<Integer> clickedIDs = new ArrayList<>(); // create a list to store the IDs of the objects that were clicked
         if (action == GLFW_HOVERED) { // if hover
             Pair pos = new Pair(x, y); // bundle into a pair
@@ -90,6 +90,8 @@ public class MIHSB {
         this.hoverStates.add(false); // create new hover states
         this.useCam.add(useCam); // save camera usage flag
     }
+
+    public void useCam(Camera cam) { this.cam = cam; }
 
     /**
      * An interface to be implemented by objects that want to react to being interacted with by a mouse through a MIHSB

@@ -1,5 +1,6 @@
-package gameobject;
+package gameobject.gameworld;
 
+import gameobject.GameObject;
 import graphics.Material;
 import graphics.Model;
 import utils.Frame;

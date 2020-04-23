@@ -187,7 +187,7 @@ public class Node {
      * Converts a node-file at the given path to a node (if the node-file is properly formatted)
      * @param path the path to the node-file
      * @param dataDirRelative whether the given path is relative to the data directory
-     * @return the created node
+     * @return the created node or null if there is no node-file at the given path
      */
     public static Node fileToNode(String path, boolean dataDirRelative) {
         try { // try to open and read file
@@ -199,9 +199,8 @@ public class Node {
             parseNode(node, data, 0, 0); // parse read data into root node
             return node; // return read node
         } catch (Exception e) { // if exception
-            Utils.handleException(e, "utils.Node", "fileToNode(String, boolean)", true); // handle exception
+            return null; // return null
         }
-        return null; // just here to make the compiler be quiet
     }
 
     /**
