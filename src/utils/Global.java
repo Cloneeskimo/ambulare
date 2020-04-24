@@ -1,6 +1,7 @@
 package utils;
 
 import graphics.Font;
+import graphics.Window;
 
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F;
 
@@ -10,7 +11,7 @@ import static org.lwjgl.glfw.GLFW.GLFW_KEY_F;
 public class Global {
 
     /**
-     * Members
+     * Static Data
      */
     public static final String WINDOW_TITLE = "Ambulare"; // the window title
     public static final float TIME_BETWEEN_FPS_REPORTS = 1f; // time between FPS reports when reports are enabled
@@ -28,5 +29,16 @@ public class Global {
      */
     public static void init() {
         Global.FONT = new Font("/font.png", "/font_info.txt");
+    }
+
+    /**
+     * Updates the global aspect ratio and aspect ratio variables
+     * @param w the window to use for the calculationsss
+     */
+    public static void updateAr(Window w) {
+        Global.ar = (float)w.getFBWidth() / (float)w.getFBHeight(); // calculate aspect ratio
+        Global.arAction = (Global.ar < 1.0f); /* this stores what actions need to be done to compensate for aspect
+            ratio. If ar < 1.0f (height > width) then we will make objects shorter to compensate and if ar > 1.0f,
+            the opposite is true */
     }
 }

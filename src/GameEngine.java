@@ -2,6 +2,7 @@ import graphics.Window;
 import logic.GameLogic;
 import utils.*;
 
+import static java.util.logging.Logger.global;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
 
@@ -49,6 +50,7 @@ public class GameEngine {
      */
     private void init() {
         this.window.init(); // initialize the window
+        Global.updateAr(this.window); // update global aspect ratio variable
         this.initInput(); // initialize mouse and keyboard input callbacks
         Global.init(); // initialize global members
         this.logic.init(this.window); // initialize starting logic
@@ -181,7 +183,8 @@ public class GameEngine {
     private void render() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the screen
         if (this.window.resized(true)) { // if the window was resized
-            glViewport(0, 0, this.window.getFBWidth(), this.window.getFBHeight()); // change GL viewport to match
+            glViewport(0, 0, this.window.getFBWidth(), this.window.getFBHeight()); // change GL viewport to
+            Global.updateAr(this.window); // update global aspect ratio variable
             this.logic.resized(); // notify the logic of the resize
         }
         this.logic.render(); // allow the logic to render
