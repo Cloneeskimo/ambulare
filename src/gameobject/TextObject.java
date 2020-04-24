@@ -14,6 +14,8 @@ public class TextObject extends GameObject {
     /**
      * Static Data
      */
+    public static final float DEFAULT_SIZE = 0.1f; /* defines the default text size in normalized coordinates. That
+        is, text will, by default, be 0.1f tall and however wide necessary to accomodate all characters */
     private static final float[] DEFAULT_COLOR = new float[] {0.0f, 0.0f, 0.0f, 1.0f}; // default text color
 
     /**
@@ -63,7 +65,7 @@ public class TextObject extends GameObject {
         float width = 0; // total width
         for (int i = 0; i < text.length(); i++) { // for each character
             float cw =  charWidth - (float)(font.getCharCutoff(text.charAt(i)) * 2); // width of particular character
-            float modelcw = (cw / charWidth * Global.GRID_CELL_SIZE); // width in terms of standard square model size
+            float modelcw = (cw / charWidth * DEFAULT_SIZE); // width in terms of standard square model size
             widths[i] = modelcw; // add character width
             width += modelcw; // add to cumulative width
         }
@@ -84,8 +86,8 @@ public class TextObject extends GameObject {
             modelCoords[s + 4] = modelCoords[s + 6] = x; // bottom right and top right x
 
             // model coordinates y
-            modelCoords[s + 1] = modelCoords[s + 7] = (-Global.GRID_CELL_SIZE / 2); // top left and top right y
-            modelCoords[s + 3] = modelCoords[s + 5] = (Global.GRID_CELL_SIZE / 2); // bottom left and bottom right y
+            modelCoords[s + 1] = modelCoords[s + 7] = (-DEFAULT_SIZE / 2); // top left and top right y
+            modelCoords[s + 3] = modelCoords[s + 5] = (DEFAULT_SIZE / 2); // bottom left and bottom right y
 
             // indices
             s = i * 6;

@@ -50,9 +50,10 @@ public class Transformation {
      * @param w the width of the window
      * @param h the height of the window
      */
-    public static void normalize(Pair pos, int w, int h) {
+    public static Pair normalize(Pair pos, int w, int h) {
         pos.x = ((pos.x / (float)w) * 2) - 1; // normalize x
         pos.y = -(((pos.y / (float)h) * 2) - 1); // normalize y and take its inverse
+        return pos;
     }
 
     /**
@@ -61,9 +62,10 @@ public class Transformation {
      * @param w the width of the window
      * @param h the height of the window
      */
-    public static void denormalize(Pair pos, int w, int h) {
+    public static Pair denormalize(Pair pos, int w, int h) {
         pos.x = ((pos.x + 1) / 2) * w; // denormalize x
         pos.y = -((pos.y + 1) / 2) * h; // denormalize y and take its inverse
+        return pos;
     }
 
     /**
@@ -71,9 +73,10 @@ public class Transformation {
      * @param pos the coordinates to convert
      * @param ar the aspect ratio of the window
      */
-    public static void aspect(Pair pos, float ar) {
+    public static Pair aspect(Pair pos, float ar) {
         if (ar > 1.0f) pos.x /= ar; // slim x if necessary
         else pos.y *= ar; // widen y if necessary
+        return pos;
     }
 
     /**
@@ -82,9 +85,10 @@ public class Transformation {
      * @param pos the coordinates to convert
      * @param ar the aspect ratio of the window
      */
-    public static void deaspect(Pair pos, float ar) {
+    public static Pair deaspect(Pair pos, float ar) {
         if (ar > 1.0f) pos.x *= ar; // widen x if necessary
         else pos.y /= ar; // thin y if necessary
+        return pos;
     }
 
     /**
@@ -92,9 +96,10 @@ public class Transformation {
      * @param pos the coordinates to convert
      * @param cam the camera
      */
-    public static void useCam(Pair pos, Camera cam) {
+    public static Pair useCam(Pair pos, Camera cam) {
         pos.x = (pos.x / cam.getZoom()) + cam.getX(); // account for zoom and camera x
         pos.y = (pos.y / cam.getZoom()) + cam.getY(); // account for zoom and camera y
+        return pos;
     }
 
     /**
@@ -102,21 +107,52 @@ public class Transformation {
      * @param pos the coordinates to convert
      * @param cam the camera
      */
-    public static void removeCam(Pair pos, Camera cam) {
+    public static Pair removeCam(Pair pos, Camera cam) {
         pos.x = (pos.x - cam.getX()) * cam.getZoom(); // account for camera zoom and x
         pos.y = (pos.y - cam.getY()) * cam.getZoom(); // account for camera zoom and y
+        return pos;
     }
 
     /**
-     * Converts the given world coordinates to grid coordinates
-     * This assumes a grid in which each cell is size defined by Global.GRID_CELL_SIZE
-     * @param pos the coordinates to convert
+     * Calculates the center position of the given grid cell. For example, for grid cell [-2, 4], the center position
+     * (between cells [-3, 4], [-1, 4], [-2, 3], [-2, 5]) is (-1.5, 4.5)
+     * @param pos the cell to calculate the center position for
      */
-    public static void alignToGrid(Pair pos) {
-        // nude the positions over by 0.5f to make truncations correct (all objects have their position as their center)
-        pos.x += pos.x < 0 ? -0.5f : 0.5f;
-        pos.y += pos.y < 0 ? -0.5f : 0.5f;
-        pos.x = (int)(pos.x);
-        pos.y = (int)(pos.y);
+    public static Pair getCenterOfCell(Pair pos) {
+        // get the centers of each component
+        pos.x = getCenterOfCellComponent((int)pos.x);
+        pos.y = getCenterOfCellComponent((int)pos.y);
+        return pos;
+    }
+
+    /**
+     * Calculates what grid cell the given position lies in
+     * @param pos the position to consider
+     */
+    public static Pair getGridCell(Pair pos) {
+        // get grid cell components of each component
+        pos.x = getGridCellComponent(pos.x);
+        pos.y = getGridCellComponent(pos.y);
+        return pos;
+    }
+
+    /**
+     * Calculates the center position of the given grid cell component. For example, for grid cell 5, the center
+     * position (between cell components 5 and 6) is 5.5f
+     * @param x the cell to calculate the center position for
+     * @return the center position
+     */
+    public static float getCenterOfCellComponent(int x) {
+        return (float)x + 0.5f; // add 0.5f and return as float
+    }
+
+    /**
+     * Calculates what grid cell component the given position component lies in
+     * @param x the position component
+     * @return the grid cell the given position component lies in
+     */
+    public static int getGridCellComponent(float x) {
+        if (x < 0) x--; // for negatives, subtract one (or there would be two zero components)
+        return (int)x; // truncate and return
     }
 }

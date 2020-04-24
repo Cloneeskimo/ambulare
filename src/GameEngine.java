@@ -2,7 +2,6 @@ import graphics.Window;
 import logic.GameLogic;
 import utils.*;
 
-import static java.util.logging.Logger.global;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
 

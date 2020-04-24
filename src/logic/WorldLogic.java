@@ -39,7 +39,7 @@ public class WorldLogic extends GameLogic {
         // create and add player
         player = new WorldObject(Model.getStdGridRect(1, 2),
                 new Material(new float[] {0.0f, 0.0f, 1.0f, 1.0f})); // create as a 1 x 2 blue rectangle
-        player.setPos(5, 2f); // set player's position
+        player.setPos(Transformation.getCenterOfCell(new Pair(3, 3)));
         player.getPhysicsProperties().rigid = true; // make rigid
         this.roc.getGameWorld().addObject(player); // add to ROC
         this.roc.getGameWorld().getCam().follow(player); // tell camera to follow it
@@ -48,36 +48,34 @@ public class WorldLogic extends GameLogic {
         WorldObject o = new WorldObject(Model.getStdGridRect(1, 1), new Material(
                 new float[] {1.0f, 0.0f, 1.0f, 1.0f})); // as a pink square
         // move the object to 3, 1
-        o.setX(3f);
-        o.setY(1f);
+        o.setPos(Transformation.getCenterOfCell(new Pair(-1, 3)));
         this.roc.getGameWorld().addObject(o); // add to ROC
 
         // create and add dirt floor and walls
         Material dirt = new Material(new Texture("/textures/dirt.png")); // dirt material
-        for (int i = 0; i < 10; i++) { // this loop builds the dirt floor and walls
+        for (int i = -5; i < 5; i++) { // this loop builds the dirt floor and walls
             WorldObject po = new WorldObject(Model.getStdGridRect(1, 1), dirt); // create floor dirt
             po.getPhysicsProperties().gravity = 0f; // disable gravity on dirt
-            po.setX(i * Global.GRID_CELL_SIZE); // calculate x
+            po.setPos(Transformation.getCenterOfCell(new Pair(i, 0)));
             po.getPhysicsProperties().rigid = true; // make dirt rigid
             this.roc.getGameWorld().addObject(po); // add to ROC
-            po = new WorldObject(Model.getStdGridRect(1, 1), dirt); // create wall dirt
-            po.getPhysicsProperties().gravity = 0f; // disable gravity on dirt
-            po.setX(i > 4 ? 9 * Global.GRID_CELL_SIZE : 0 * Global.GRID_CELL_SIZE); // calculate x
-            po.setY(1 + (i > 4 ? ((i - 4) * Global.GRID_CELL_SIZE) : i * Global.GRID_CELL_SIZE)); // calculate y
-            po.getPhysicsProperties().rigid = true; // make dirt rigid
-            this.roc.getGameWorld().addObject(po); // add to ROC
+//            po = new WorldObject(Model.getStdGridRect(1, 1), dirt); // create wall dirt
+//            po.getPhysicsProperties().gravity = 0f; // disable gravity on dirt
+//            po.setPos(Transformation.getCenterOfCell(new Pair(-3, i + 6)));
+//            po.getPhysicsProperties().rigid = true; // make dirt rigid
+//            this.roc.getGameWorld().addObject(po); // add to ROC
         }
 
         // create and add player position text
         this.roc.addStaticObject(new TextObject(Global.FONT, "(0, 0)"), // player pos text
                 new ROC.PositionSettings(-1f, -1f, true, 0.02f));
-        this.roc.getStaticGameObject(2).setScale(0.05f, 0.05f); // scale text down
+        this.roc.getStaticGameObject(2).setScale(0.6f, 0.6f); // scale text down
 
         // create and add text button
         this.roc.addStaticObject(new TextButton(Global.FONT, "Exit", 1),
                 new ROC.PositionSettings(1f, -1f, true,
                 0.02f)); // create text button
-        this.roc.getStaticGameObject(3).setScale(0.05f, 0.05f); // scale button down
+        this.roc.getStaticGameObject(3).setScale(0.6f, 0.6f); // scale button down
         this.roc.ensureAllPlacements(); // ensure ROC static object placements
     }
 
@@ -130,7 +128,7 @@ public class WorldLogic extends GameLogic {
         if (exitButtonPressed) window.close(); // if exit was pressed, close window
         super.update(interval);
         Pair pos = new Pair(player.getX(), player.getY()); // pair player position
-        Transformation.alignToGrid(pos); // align position to the grid
+        Transformation.getGridCell(pos);
         if (((TextObject)this.roc.getStaticGameObject(2)).setText("(" + String.format("%.2f", pos.x) +
                 ", " + String.format("%.2f", pos.y) + ")")) // change player pos text
             this.roc.ensurePlacement(2); // update placement if changed

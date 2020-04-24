@@ -43,8 +43,8 @@ public abstract class GameLogic {
     protected void initOthers(Window window) {
         TextObject FPSStatic = new TextObject(Global.FONT, "FPS: "); // separate from FPS count for efficiency
         TextObject FPSCount = new TextObject(Global.FONT, ""); // create actual FPS count object
-        FPSStatic.setScale(0.1f, 0.1f); // scale FPS counter static text
-        FPSCount.setScale(0.1f, 0.1f); // scale actual FPS count text
+        FPSStatic.setScale(0.6f, 0.6f); // scale FPS counter static text
+        FPSCount.setScale(0.6f, 0.6f); // scale actual FPS count text
         FPSStatic.setVisibility(false); // invisible to start
         FPSCount.setVisibility(false); // invisible to start
         this.roc.addStaticObject(FPSStatic, new ROC.PositionSettings(-1f, 1f, true,

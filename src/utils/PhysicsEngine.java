@@ -1,6 +1,5 @@
 package utils;
 
-import gameobject.GameObject;
 import gameobject.gameworld.WorldObject;
 
 import java.util.List;

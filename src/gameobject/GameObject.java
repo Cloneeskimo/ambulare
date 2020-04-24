@@ -2,6 +2,7 @@ package gameobject;
 
 import graphics.*;
 import utils.FittingBox;
+import utils.Pair;
 
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
 import static org.lwjgl.opengl.GL11.glBindTexture;
@@ -244,6 +245,14 @@ public class GameObject {
         this.x = x; // save x
         this.y = y; // save y
         this.onMove(); // call on move
+    }
+
+    /**
+     * Updates the position of the game object
+     * @param pos the new position
+     */
+    public void setPos(Pair pos) {
+        this.setPos(pos.x, pos.y);
     }
 
     /**
