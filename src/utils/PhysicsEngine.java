@@ -1,49 +1,57 @@
 package utils;
 
-import gameobject.gameworld.PhysicsObject;
+import gameobject.gameworld.WorldObject;
 
 import java.util.List;
 
 /**
- * Provides framework for performing physics. Specifically, the physics engine performs moves for physics objects,
+ * Provides framework for performing physics. Specifically, the physics engine performs moves for world objects,
  * checks for collision in doing so, and performs reactions upon collision based on a set of defined physics
- * characteristics unique to each physics object.
+ * characteristics unique to each world object.
  */
 public class PhysicsEngine {
 
     /**
-     * Moves the given physics object by the given x and y components, checking for and reacting to collisions in the
+     * Static Data
+     */
+    public static final float TERMINAL_VELOCITY = -50f; // the minimum vertical velocity from gravity
+    private static final float NEXT_TO_PRECISION = 0.0001f; /* the amount away from game objects to look to determine
+        if there is something there. For example, in somethingUnder(), the object is moved this far down and checked
+        for collisions to determine if there is another object beneath it */
+
+    /**
+     * Moves the given world object by the given x and y components, checking for and reacting to collisions in the
      * process. This method will only use un-rotated bounding boxes for all objects in consideration
      * @param o the object to move
      * @param dx the x factor to move the object by
      * @param dy the y factor to move the object by
      * @return whether or not an actual move occurred
      */
-    public static boolean move(PhysicsObject o, float dx, float dy) {
-        List<PhysicsObject> collidables = o.getCollidables(); // get the collidables to check for
+    public static boolean move(WorldObject o, float dx, float dy) {
+        List<WorldObject> collidables = o.getCollidables(); // get the collidables to check for
         float ox = o.getX(); float oy = o.getY(); // save original position for checking against final position
         BoundingBox bb = null; // don't get the bounding box until absolutely need to
-        PhysicsObject l = null; /* this is to keep track of an object collided with while checking the x component.
+        WorldObject l = null; /* this is to keep track of an object collided with while checking the x component.
             this is so as to avoid checking for collisions for the same object when checking the y component, as that
             can produce strange behavior */
         if (dx != 0) { // if there is actually a movement in x
             o.setX(o.getX() + dx); // perform the move
-            for (PhysicsObject po : collidables) { // then look through all collidable objects
-                if (po.getPhysicsProperties().collidable && po != o) { // if curr is collidable and not the given object
+            for (WorldObject wo : collidables) { // then look through all collidable objects
+                if (wo.getPhysicsProperties().collidable && wo != o) { // if curr is collidable and not the given object
                     if (bb == null) bb = o.getBoundingBox(false); // make sure we have o's bounding box
-                    if (colliding(bb, po.getBoundingBox(false))) { // if the objects are colliding
-                        float horizontalDistance = Math.abs(po.getX() - o.getX()); // find the distance between them
+                    if (colliding(bb, wo.getBoundingBox(false))) { // if the objects are colliding
+                        float horizontalDistance = Math.abs(wo.getX() - o.getX()); // find the distance between them
                         // calculate the minimum amount necessary to push o back to reverse the collision
-                        float horizontalPushback = horizontalDistance - po.getWidth() / 2 - o.getWidth() / 2;
-                        o.setX(o.getX() + (po.getX() > o.getX() ? 1 : -1) * horizontalPushback); // push o back
-                        Pair[] reaction = performReaction(o.getVX(), po.getVX(), o.getPhysicsProperties(),
-                                po.getPhysicsProperties()); // perform a reaction based on the collision
+                        float horizontalPushback = horizontalDistance - wo.getWidth() / 2 - o.getWidth() / 2;
+                        o.setX(o.getX() + (wo.getX() > o.getX() ? 1 : -1) * horizontalPushback); // push o back
+                        Pair[] reaction = performReaction(o.getVX(), wo.getVX(), o.getPhysicsProperties(),
+                                wo.getPhysicsProperties()); // perform a reaction based on the collision
                         // the reaction returns two pairs corresponding to new velocity values/multipliers
                         o.setVX(reaction[0].x); // set o's new velocity
                         o.setVY(o.getVY() * reaction[0].y); // apply o's y velocity multiplier
-                        po.setVX(reaction[1].x); // set po's new velocity
-                        po.setVY(po.getVY() * reaction[1].y); // apply p's y velocity multiplier
-                        l = po; // save the object we collided with so we don't check again for y component
+                        wo.setVX(reaction[1].x); // set wo's new velocity
+                        wo.setVY(wo.getVY() * reaction[1].y); // apply p's y velocity multiplier
+                        l = wo; // save the object we collided with so we don't check again for y component
                     }
                 }
             }
@@ -51,22 +59,22 @@ public class PhysicsEngine {
         if (dy != 0) { // if there is an actual change in y
             o.setY(o.getY() + dy); // perform the move
             bb = null; // reset bounding box to null - it may have changed by now
-            for (PhysicsObject po : collidables) { // go through possible colliding objects
-                if (po.getPhysicsProperties().collidable && po != o && po != l) { // if curr is collidable and different
+            for (WorldObject wo : collidables) { // go through possible colliding objects
+                if (wo.getPhysicsProperties().collidable && wo != o && wo != l) { // if curr is collidable and different
                     if (bb == null) bb = o.getBoundingBox(false); // make sure we have the bounding box
-                    if (colliding(bb, po.getBoundingBox(false))) { // if colliding
-                        float verticalDistance = Math.abs(po.getY() - o.getY()); // calculate the distance between them
+                    if (colliding(bb, wo.getBoundingBox(false))) { // if colliding
+                        float verticalDistance = Math.abs(wo.getY() - o.getY()); // calculate the distance between them
                         // calculate the minimum amount necessary to push o back to reverse the collision
-                        float verticalPushback = Math.abs(verticalDistance - po.getHeight() / 2 - o.getHeight() / 2);
+                        float verticalPushback = Math.abs(verticalDistance - wo.getHeight() / 2 - o.getHeight() / 2);
                         // push o back out of the collision
-                        o.setY(o.getY() + (po.getY() > o.getY() ? -1 : 1) * verticalPushback);
-                        Pair[] reaction = performReaction(o.getVY(), po.getVY(), o.getPhysicsProperties(),
-                                po.getPhysicsProperties()); // perform a reaction based on the collision
+                        o.setY(o.getY() + (wo.getY() > o.getY() ? -1 : 1) * verticalPushback);
+                        Pair[] reaction = performReaction(o.getVY(), wo.getVY(), o.getPhysicsProperties(),
+                                wo.getPhysicsProperties()); // perform a reaction based on the collision
                         // the reaction returns two pairs corresponding to new velocity values/multipliers
                         o.setVY(reaction[0].x); // set o's new y velocity
                         o.setVX(o.getVX() * reaction[0].y); // use o's x velocity multiplier
-                        po.setVY(reaction[1].x); // set po's new y velocity
-                        po.setVX(po.getVX() * reaction[1].y); // use po's x velocity multiplier
+                        wo.setVY(reaction[1].x); // set wo's new y velocity
+                        wo.setVX(wo.getVX() * reaction[1].y); // use wo's x velocity multiplier
                     }
                 }
             }
@@ -99,6 +107,28 @@ public class PhysicsEngine {
             else if (Utils.XOR(proja.y <= projb.x, projb.y <= proja.x)) return false;
         }
         return true;
+    }
+
+    /**
+     * Calculate if there is an object under the given world object
+     * @param wo the world object to look under
+     * @return if there is an object under the given world object
+     */
+    public static boolean somethingUnder(WorldObject wo) {
+        wo.setY(wo.getY() - NEXT_TO_PRECISION); // move y down based on precision
+        List<WorldObject> collidables = wo.getCollidables(); // get possible collisions
+        BoundingBox bb = null; // start at null so as to avoid calculating bounding box until absolutely necessary
+        for (WorldObject o : collidables) { // for each collidable object
+            if (o.getPhysicsProperties().collidable && o != wo) { // if the object has collision on and isn't wo
+                if (bb == null) bb = wo.getBoundingBox(false); // calculate bounding box if not done yet
+                if (PhysicsEngine.colliding(bb, o.getBoundingBox(false))) { // if they collide
+                    wo.setY(wo.getY() + NEXT_TO_PRECISION); // return y to original position
+                    return true; // there is something underneath
+                }
+            }
+        }
+        wo.setY(wo.getY() + NEXT_TO_PRECISION); // return y to original position
+        return false; // nothing underneath
     }
 
     /**
@@ -195,7 +225,7 @@ public class PhysicsEngine {
 
     /**
      * Encapsulates properties necessary to exhibit physics. Specifically, any object must have these physics settings
-     * in order to have a collision reaction calculated for them in this class. PhysicsObject is the extension of
+     * in order to have a collision reaction calculated for them in this class. WorldObject is the extension of
      * GameObject where physics properties become included. Each setting is described in depth below
      */
     public static class PhysicsProperties {

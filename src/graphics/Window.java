@@ -68,7 +68,7 @@ public class Window {
 
         // create window
         this.handle = glfwCreateWindow(this.w, this.h, this.title, NULL, NULL); // create window with specified config
-        glfwSetWindowSize(this.handle, this.w, this.h);
+        glfwSetWindowSize(this.handle, this.w, this.h); // make sure it is the correct size
         if (this.handle == NULL) Utils.handleException(new Exception("Failed to create the GLFW window"),
                 "graphics.Window", "init()", true); // throw exception if cannot create window
         int[] fbw = new int[1]; // create array to get frame buffer width
@@ -81,7 +81,7 @@ public class Window {
         glfwSetFramebufferSizeCallback(this.handle, (window, w, h) -> {
             this.fbw = w;
             this.fbh = h;
-            this.resized = true; // flag resize - this is what the engine checks for every loop to see if a resize occurs
+            this.resized = true; // flag resize - engine checks this every loop to see if a resize occurs
         });
 
         // setup window resizing callback
@@ -154,10 +154,6 @@ public class Window {
      */
     public int getHeight() { return this.h; }
 
-    public void setSize(int w, int h) {
-        glfwSetWindowSize(this.handle, w, h);
-    }
-
     /**
      * @return the frame buffer width of this window
      */
@@ -176,19 +172,22 @@ public class Window {
     /**
      * Determines if a given key is pressed
      * Note that this can create unexpected behavior if this is called for toggle-type settings every loop because this
-     * will remain true until the key is lifted caused toggling to occur many times in a row. Use the KeyControl
-     * interface to better define and control keyboard reactions
+     * will remain true until the key is lifted caused toggling to occur many times in a row. Instead, properly react
+     * to key events by using keyboardInput() (the engine and all sets of game logic have this method)
      * @param key the key to check
      * @return whether the given key is pressed
      */
     public boolean isKeyPressed(int key) { return glfwGetKey(this.handle, key) == GLFW_PRESS; }
 
     /**
+     * Note that, like with keyboard input, mouse input can be react to on an event-to-event basis by using mouseInput()
+     * which is a method that the engine and sets of game logic have
      * @return the mouse position as window coordinates
      */
     public Pair getMousePos() {
-        double[] x = new double[1]; // create array to hold x
-        double[] y = new double[1]; // create array to hold y
+        // create arrays to hold mouse position
+        double[] x = new double[1];
+        double[] y = new double[1];
         glfwGetCursorPos(this.handle, x, y); // put position in each array
         return new Pair((float)x[0], (float)y[0]); // put into a pair and return
     }

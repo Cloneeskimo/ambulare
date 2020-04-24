@@ -1,8 +1,7 @@
 package gameobject;
 
 import gameobject.gameworld.GameWorld;
-import gameobject.gameworld.PhysicsObject;
-import graphics.Camera;
+import gameobject.gameworld.WorldObject;
 import graphics.PositionalAnimation;
 import graphics.ShaderProgram;
 import utils.Global;
@@ -13,26 +12,25 @@ import utils.Utils;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.lwjgl.glfw.GLFW.glfwSetScrollCallback;
-
 /**
  * Holds a collection of game objects and renders them all in one method call. This class divides the game objects it
  * contains into:
- * (1) HUD Objects: bound to certain positions in the window and have extensive positioning settings and
- * customization
- * (2) World Objects: objects that are directly given to a GameWorld to manage
+ * (1) StaticObjects: bound to certain positions in the window and have extensive positioning settings and customization
+ * (useful for HUD creation)
+ * (2) WorldObjects: objects with physics that are directly given to a game world to manage
+ * ROCs also provide extensive support for mouse interaction through having an MIHSB
  */
 public class ROC {
 
     /**
-     * Data
+     * Members
      */
     private List<StaticObject> staticObjects; /* a list of game objects that will not used the camera when rendered.
                                                  Instead, they are bound to positioning settings that determine where
                                                  in the window they should be rendered at all times. In other words,
                                                  these are HUD items */
-    private GameWorld gameWorld;
-    private MIHSB mihsb;                      // mouse interactable hover state bundle to abstract away mouse input
+    private GameWorld gameWorld;              // the game world to render underneath the static objects
+    private MIHSB mihsb;                      // mouse interaction hover state bundle to abstract away mouse input
     private ShaderProgram sp;                 // the shader programs used to render
 
     /**
@@ -40,10 +38,10 @@ public class ROC {
      * @param windowHandle the window's GLFW handle
      */
     public ROC(long windowHandle) {
-        this.staticObjects = new ArrayList<>(); // create static object list
-        this.gameWorld = new GameWorld(windowHandle); // create GameWorld
-        this.mihsb = new MIHSB(); // create MIHSB
-        this.mihsb.useCam(this.gameWorld.getCam());
+        this.staticObjects = new ArrayList<>();
+        this.gameWorld = new GameWorld(windowHandle);
+        this.mihsb = new MIHSB();
+        this.mihsb.useCam(this.gameWorld.getCam()); // tell the MIHSB to use the game world's cam for calculations
         this.initSP(); // create and initialize shader programs
     }
 
@@ -51,6 +49,7 @@ public class ROC {
      * Initializes the given shader program by registering the appropriate uniforms
      */
     protected void initSP() {
+        // create the shader program
         this.sp = new ShaderProgram("/shaders/vertex.glsl", "/shaders/fragment.glsl");
         sp.registerUniform("ar"); // register aspect ratio uniform
         sp.registerUniform("arAction"); // register aspect ratio action uniform
@@ -67,14 +66,14 @@ public class ROC {
      * @param x the normalized and de-aspected x position of the mouse if hover event, 0 otherwise
      * @param y the normalized and de-aspected y position of the mouse if hover event, 0 otherwise
      * @param action the nature of the mouse input (GLFW_PRESS, GLFW_RELEASE, or GLFW_HOVERED)
-     * @return an array containing the mouse interactable IDs of all mouse interactable objects that were clicked
+     * @return an array containing the mouse interactions IDs of all mouse interaction objects that were clicked
      */
     public int[] mouseInput(float x, float y, int action) {
         return this.mihsb.mouseInput(x, y, action); // delegate to MIHSB
     }
 
     /**
-     * Handles a resize of the window
+     * Handles a resize of the window by ensuring all positions
      */
     public void resized() {
         this.ensureAllPlacements(); // make sure static objects are correctly positioned
@@ -93,7 +92,7 @@ public class ROC {
      * Renders all the static objects
      */
     public void render() {
-        this.gameWorld.render();
+        this.gameWorld.render(); // render the world first, underneath the static objects
         this.sp.bind(); // bind shader program
         this.sp.setUniform("texSampler", 0); // set texture sampler uniform to use texture unit 0
         this.sp.setUniform("ar", Global.ar); // set aspect ratio uniform
@@ -133,13 +132,16 @@ public class ROC {
     }
 
     /**
-     * Adds the given game object to the collection as a world object
-     * @param o the game object to add
+     * Adds the given game object to the collection as a world object. This should be called as opposed to getting the
+     * world first and then adding directly to the world, in case the object being added is able to be interacted with
+     * by a mouse. If not added through the ROC, it also won't be added to the MIHSB and mouse interaction will not
+     * occur properly
+     * @param wo the world object to add
      */
-    public void addToWorld(PhysicsObject o) {
-        this.gameWorld.addObject(o);
+    public void addToWorld(WorldObject wo) {
+        this.gameWorld.addObject(wo);
         // if object is interactable with a mouse, add it to the MIHSB with the camera usage flag true (world object)
-        if (o instanceof MIHSB.MouseInteractable) this.mihsb.add((MIHSB.MouseInteractable)o, true);
+        if (wo instanceof MIHSB.MouseInteractable) this.mihsb.add((MIHSB.MouseInteractable)wo, true);
     }
 
     /**
@@ -183,11 +185,11 @@ public class ROC {
     public GameWorld getGameWorld() { return this.gameWorld; }
 
     /**
-     * Cleans up the HUD
+     * Cleans up the ROC by cleaning up static objects and the game world
      */
     public void cleanup() {
-        if (this.sp != null) this.sp.cleanup(); // cleanup static object shader program
-        this.gameWorld.cleanup();
+        if (this.sp != null) this.sp.cleanup(); // cleanup shader program
+        this.gameWorld.cleanup(); // cleanup game world
         for (StaticObject so : this.staticObjects) so.o.cleanup(); // cleanup static objects
     }
 
@@ -303,8 +305,8 @@ public class ROC {
          * @param settings the settings
          */
         public StaticObject(GameObject o, PositionSettings settings) {
-            this.o = o; // save game object as member
-            this.settings = settings; // save settings as member
+            this.o = o;
+            this.settings = settings;
         }
 
         /**

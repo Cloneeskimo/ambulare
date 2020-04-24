@@ -16,13 +16,13 @@ import static org.lwjgl.opengl.GL30.*;
 
 /**
  * Represents a model with model coordinates, texture coordinates, and indices
- * This model supports scaling and rotating. However, in order for these to work as intended, the center of the model
- * MUST be (0, 0)
+ * This model supports scaling, rotating, and bounding box generation. However, in order for these to work as intended,
+ * the center of the model MUST be (0, 0)
  */
 public class Model {
 
     /**
-     * Data
+     * Members
      */
     protected final int ids[];           /* integer array to store the various GL object ids: [0] - VAO ID,
                                             [1] - model coordinate VBO ID, [2] - texture coordinate VBO ID,
@@ -32,24 +32,25 @@ public class Model {
     private float sx = 1f, sy = 1f;      // horizontal and vertical scale
     private float r = 0f;                // rotation in radians
     private float w = 0, h = 0;          // width and height of the model in model coordinates
-    private float uw = 0, uh = 0;        // width and height of the model when not rotated
+    private float uw, uh;                // width and height of the model when not rotated
     private boolean outdatedSize = true; /* whenever scale or rotation of the model is changed, this flag will be set
                                             to true but the model won't re-calculate width and height until the
                                             corresponding methods are called while this flag is true to save computing
                                             power */
 
     /**
-     * Returns the model coordinates appropriate for a rectangular model with the given width/height in cells
+     * Returns the model coordinates appropriate for a rectangular model with the given width/height in grid cells
      * @param w the width of the rectangular model in cells
      * @param h the height of the rectangular model in cells
-     * @return the standard rectangular model coordinates
+     * @return the standard rectangular model coordinates in the following order: bottom left, top left, top right,
+     *         bottom right
      */
     public static float[] getGridRectModelCoords(int w, int h) {
         return new float[] {
-                -w * Global.GRID_CELL_SIZE / 2, -h * Global.GRID_CELL_SIZE / 2, // bottom left
-                -w * Global.GRID_CELL_SIZE / 2,  h * Global.GRID_CELL_SIZE / 2, // top left
-                 w * Global.GRID_CELL_SIZE / 2,  h * Global.GRID_CELL_SIZE / 2, // top right
-                 w * Global.GRID_CELL_SIZE / 2, -h * Global.GRID_CELL_SIZE / 2  // bottom right
+                -(float)w / 2, -(float)h / 2, // bottom left
+                -(float)w / 2,  (float)h / 2, // top left
+                 (float)w / 2,  (float)h / 2, // top right
+                 (float)w / 2, -(float)h / 2  // bottom right
         };
     }
 
@@ -58,10 +59,10 @@ public class Model {
      */
     public static float[] getStdRectTexCoords() {
         return new float[] {
-                0.0f, 1.0f, // top left
-                0.0f, 0.0f, // bottom left
-                1.0f, 0.0f, // bottom right
-                1.0f, 1.0f  // top right
+                0.0f, 1.0f,
+                0.0f, 0.0f,
+                1.0f, 0.0f,
+                1.0f, 1.0f
         };
     }
 
@@ -139,7 +140,7 @@ public class Model {
      * Updates the width and height members of the model
      */
     private void calculateSize() {
-        if (modelCoords.length == 0) { // if empty Model
+        if (modelCoords.length == 0) { // if empty model
             this.w = this.h = 0; // set width and height to 0
         } else { // otherwise
             float minX = modelCoords[0], minY = modelCoords[1]; // initialize minimum x and y to the first x and y
@@ -188,7 +189,8 @@ public class Model {
     }
 
     /**
-     * Sets the scaling factors of the model to the given scaling factors
+     * Sets the scaling factors of the model to the given scaling factors. . This assumes the center of the model is
+     * (0, 0)
      * @param x the x scaling factor to use
      * @param y the y scaling factor to use
      */
@@ -204,7 +206,8 @@ public class Model {
     }
 
     /**
-     * Sets the x scaling factor of the model to the given x scaling factor
+     * Sets the x scaling factor of the model to the given x scaling factor. This assumes the center of the model is
+     * (0, 0)
      * @param x the x scaling factor to use
      */
     public void setXScale(float x) {
@@ -212,7 +215,8 @@ public class Model {
     }
 
     /**
-     * Sets the y scaling factor of the model to the given y scaling factor
+     * Sets the y scaling factor of the model to the given y scaling factor. This assumes the center of the model is
+     * (0, 0)
      * @param y the y scaling factor to use
      */
     public void setYScale(float y) {
@@ -220,7 +224,7 @@ public class Model {
     }
 
     /**
-     * Sets the rotation of the model
+     * Sets the rotation of the model. This assumes the center of the model is (0, 0)
      * @param r the new rotation in radians
      */
     public void setRotationRad(float r) {
@@ -282,22 +286,26 @@ public class Model {
     public float getRotationRad() { return this.r; }
 
     /**
-     * Calculates a bounding box for this model. If rotate is set to true, and this is a rectangular model, it will
-     * return a rotated bounding box. These rotated bounding boxes cannot be used
-     * @return the frame described above
+     * Creates a bounding box for the model
+     * @param rotated whether or not to try to perfectly fit a box with the same rotation as the model. This will only
+     *                work correctly if the box is rectangular. If this is false, the smallest axis-aligned bounding
+     *                box that fits all points in the model will be returned, assuming the center point of the model is
+     *                (0, 0)
+     * @return the bounding box described above
      */
     public BoundingBox getBoundingBox(boolean rotated) {
-        if (this.modelCoords.length == 8 && rotated) { // if rectangular
+        if (this.modelCoords.length == 8 && rotated) { // if rectangular and rotated is true
             float[] corners = new float[this.modelCoords.length]; // create corners array
             for (int i = 0; i < corners.length; i+=2) { // fill it with model coords
                 corners[i] = modelCoords[i]; // copy x
-                corners[i + 1] = modelCoords[i + 1]; // copy negative y
+                corners[i + 1] = modelCoords[i + 1]; // copy y
             }
-            return new BoundingBox(corners, this.r, 0f, 0f); // return the frame with the appropriate r value
-        } else { // if not rectangular
+            return new BoundingBox(corners, this.r, 0f, 0f); // return bounding box with appropriate r value
+        } else { // if not rectangular or rotated is false
             float w2 = this.getWidth() / 2; // calculate half of width of bounding box
             float h2 = this.getHeight() / 2; // calculate half of height of bounding box
-            return new BoundingBox(new float[] {-w2, -h2, -w2, h2, w2, h2, w2, -h2}, 0f, 0f, 0f); // create frame
+            // create un-rotated bounding box that fits all points
+            return new BoundingBox(new float[] {-w2, -h2, -w2, h2, w2, h2, w2, -h2}, 0f, 0f, 0f);
         }
     }
 

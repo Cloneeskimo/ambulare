@@ -9,7 +9,7 @@ package graphics;
 public class PositionalAnimation {
 
     /**
-     * Data
+     * Members
      */
     boolean x = true, y = true, r = true; // flags representing which components are being animated
     float x0, y0, r0;                     // starting position and rotation of owning game object
@@ -29,13 +29,13 @@ public class PositionalAnimation {
      * @param duration how long (in seconds) the animation should take
      */
     public PositionalAnimation(Float xf, Float yf, Float rf, float duration) {
-        if (xf != null) this.xf = xf; // save target x
-        else this.x = false; // if null, disable x animating
-        if (yf != null) this.yf = yf; // save target y
-        else this.y = false; // if null, disable y animating
-        if (rf != null) this.rf = (float)Math.toRadians(rf); // save target rotation
-        else this.r = false; // if null, disable rotation animating
-        this.duration = duration; // save duration
+        if (xf != null) this.xf = xf;
+        else this.x = false; // if x is null, disable x animating
+        if (yf != null) this.yf = yf;
+        else this.y = false; // if y is null, disable y animating
+        if (rf != null) this.rf = (float)Math.toRadians(rf);
+        else this.r = false; // if r is null, disable rotation animating
+        this.duration = duration;
     }
 
     /**
@@ -84,8 +84,8 @@ public class PositionalAnimation {
      * @return the correct rotation for the owning game object based on how much time has passed
      */
     public float getR() {
-        return (this.r0 + this.dr * this.animProg) % (float)(2 * Math.PI); /* starting position plus how far along the
-                                                                                    the difference the animation is */
+        // starting position plus how far along the total difference the animation is
+        return (this.r0 + this.dr * this.animProg) % (float)(2 * Math.PI);
     }
 
     /**

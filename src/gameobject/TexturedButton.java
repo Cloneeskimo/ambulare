@@ -11,7 +11,7 @@ import graphics.Texture;
 public class TexturedButton extends GameObject implements MIHSB.MouseInteractable {
 
     /**
-     * Data
+     * Members
      */
     private final int[] frameCounts; // the amount of frames in the texture for each state of mouse interactivity
     private final int MIID;          // the mouse interactivity id given in the constructor
@@ -39,8 +39,8 @@ public class TexturedButton extends GameObject implements MIHSB.MouseInteractabl
             this.giveTexAnim(defaultFrames + hoverFrames + pressedFrames, frameTime); // start the animation
         }
         this.frameCounts = new int[] {defaultFrames, hoverFrames, pressedFrames}; // keep count of frames for each state
-        this.framesToUse = 0; // start by using the no interactivity frames
-        this.MIID = MIID; // save the mouse interactivity ID as a member
+        this.framesToUse = 0;
+        this.MIID = MIID;
     }
 
     /**
@@ -54,7 +54,7 @@ public class TexturedButton extends GameObject implements MIHSB.MouseInteractabl
      * @param MIID the mouse interactivity ID of the button
      */
     public TexturedButton(int w, int h, String texResPath, int MIID) {
-        this(w, h, texResPath, 1, 1, 1, 0, MIID); // call other constructor
+        this(w, h, texResPath, 1, 1, 1, 0, MIID);
     }
 
     /**

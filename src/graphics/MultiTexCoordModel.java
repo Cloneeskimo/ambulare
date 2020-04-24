@@ -18,7 +18,7 @@ import static org.lwjgl.opengl.GL30.glBindVertexArray;
 public class MultiTexCoordModel extends Model {
 
     /**
-     * Data
+     * Members
      */
     private float[][] texCoords; // an array of sets of texture coordinates
 
@@ -42,7 +42,7 @@ public class MultiTexCoordModel extends Model {
      * @param frameCount  the amount of horizontal frames to consider
      */
     public MultiTexCoordModel(float[] modelCoords, int[] indices, int frameCount) {
-        super(modelCoords, getTexCoordsForFrame(0, frameCount), indices); // call super
+        super(modelCoords, getTexCoordsForFrame(0, frameCount), indices);
         if (indices.length != 6) Utils.handleException(new Exception("Invalid model: MultiTexCoordModels can only be" +
                 "rectangular"), "graphics.MultiTexCoordMode", "MultiTexCoordModel(float[], int[], int)",
                 true); // throw exception if not a rectangle

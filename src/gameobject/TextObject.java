@@ -17,7 +17,7 @@ public class TextObject extends GameObject {
     private static final float[] DEFAULT_COLOR = new float[] {0.0f, 0.0f, 0.0f, 1.0f}; // default text color
 
     /**
-     * Data
+     * Members
      */
     private String text; // the current text
     private Font font;   // the font used
@@ -29,10 +29,11 @@ public class TextObject extends GameObject {
      * @param color the color the text should be
      */
     public TextObject(Font font, String text, float[] color) {
+        // call super, using a material that has the font sheet as a texture, and blend with the given color
         super(0f, 0f, new Model(new float[]{}, new float[]{}, new int[]{}),
-                new Material(font.getSheet(), color, Material.BLEND_MODE.MULTIPLICATIVE)); // call super
-        this.font = font; // save font
-        this.setText(text); // set text
+                new Material(font.getSheet(), color, Material.BLEND_MODE.MULTIPLICATIVE));
+        this.font = font;
+        this.setText(text);
     }
 
     /**
@@ -41,7 +42,7 @@ public class TextObject extends GameObject {
      * @param text the text to display
      */
     public TextObject(Font font, String text) {
-        this(font, text, DEFAULT_COLOR); // call other constructor
+        this(font, text, DEFAULT_COLOR);
     }
 
     /**

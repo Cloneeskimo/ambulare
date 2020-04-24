@@ -11,7 +11,7 @@ import java.util.List;
 public class Node {
 
     /**
-     * Data
+     * Members
      */
     private static char DIVIDER_CHAR = ':'; // the character that divides a line in a node-file into the name and value
     private static char INDENT_CHAR = '\t'; // the character used for indenting in a node-file

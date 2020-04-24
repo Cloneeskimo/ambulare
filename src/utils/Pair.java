@@ -6,7 +6,7 @@ package utils;
 public class Pair {
 
     /**
-     * Data
+     * Members
      */
     public float x, y; // the two values
 
@@ -16,15 +16,15 @@ public class Pair {
      * @param y the second in this pair
      */
     public Pair(float x, float y) {
-        this.x = x; // save first value
-        this.y = y; // save second value
+        this.x = x;
+        this.y = y;
     }
 
     /**
      * Constructs this pair with values (0f, 0f)
      */
     public Pair() {
-        this(0f, 0f); // call other constructor
+        this(0f, 0f);
     };
 
     /**
@@ -38,7 +38,7 @@ public class Pair {
      */
     @Override
     public String toString() {
-        return "(" + this.x + ", " + this.y + ")"; // return as an ordered pair
+        return "(" + this.x + ", " + this.y + ")";
     }
 
     /**
@@ -46,6 +46,6 @@ public class Pair {
      * @param p the other pair to check
      */
     public boolean equals(Pair p) {
-        return (p.x == this.x && p.y == this.y); // return true if x and y match
+        return (p.x == this.x && p.y == this.y);
     }
 }

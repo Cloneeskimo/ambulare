@@ -13,7 +13,7 @@ import static org.lwjgl.opengl.GL20.*;
 public class ShaderProgram {
 
     /**
-     * Data
+     * Members
      */
     private final int progID;                    // program id of the shader program
     private final Map<String, Integer> uniforms; // map of uniform names to locations

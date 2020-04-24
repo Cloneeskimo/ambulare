@@ -1,6 +1,6 @@
 package gameobject;
 
-import gameobject.gameworld.PhysicsObject;
+import gameobject.gameworld.WorldObject;
 import graphics.*;
 import utils.BoundingBox;
 
@@ -13,13 +13,14 @@ import static org.lwjgl.opengl.GL13C.glActiveTexture;
  * Represents a single game object. This is the basic abstraction away from directly dealing with GL commands
  * These objects have a model and a material both used for rendering. They also have position, velocity, visibility
  * components that are used during rendering to convert this object's model coordinates into object
- * coordinates. They and are able to be given positional animations to undergo. Their coordinates are considered to be
- * world coordinates
+ * coordinates. They and are able to be given positional animations as well as texture animations, if the underlying
+ * model is a model that can have multiple sets of texture coordinates. Game object's coordinates are considered to be
+ * world coordinates that represent the center of the game object
  */
 public class GameObject {
 
     /**
-     * Animation Data
+     * Animation Members
      */
     private PositionalAnimation posAnim; // positional animation which can be set to animate positional changes
     protected float frameTime = 0;       // the amount of time (in seconds) an animated texture frame should last
@@ -28,7 +29,7 @@ public class GameObject {
     protected int frame = 0;             // the current animated texture frame
 
     /**
-     * Other Data
+     * Other Members
      */
     private float x = 0f, y = 0f;        // position
     protected Material material;         // material to use when rendering
@@ -189,11 +190,6 @@ public class GameObject {
      * @param y the new y position
      */
     public void setY(float y) {
-        if (y >= 2) {
-            if (this instanceof PhysicsObject) {
-                System.out.println("pp");
-            }
-        }
         this.y = y;
         this.onMove();
     }
@@ -351,10 +347,13 @@ public class GameObject {
     /**
      * Calculates the bounding box for the game object by getting the model's bounding box and translating it to the
      * game object's position
-     * @return the bounding box corresponding to the game object
+     * @param rotated whether to attempt to get the bounding box as a perfectly-fitted rotated box. For mouse input,
+     *                this should be true. For collision detection, this should be false and the axis-aligned bounding
+     *                box should be used instead
+     * @return the bounding box
      */
     public BoundingBox getBoundingBox(boolean rotated) {
-        return model.getBoundingBox(rotated).translate(this.x, this.y); // get model's frame and translate
+        return model.getBoundingBox(rotated).translate(this.x, this.y); // get model's bounding box and translate
     }
 
     /**

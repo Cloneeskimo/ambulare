@@ -29,7 +29,7 @@ public class Material {
     }
 
     /**
-     * Data
+     * Members
      */
     private float[] color;        // the color of this material if it has one
     private Texture texture;      // the texture of this material if it has one

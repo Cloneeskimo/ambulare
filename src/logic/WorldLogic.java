@@ -1,6 +1,6 @@
 package logic;
 
-import gameobject.gameworld.PhysicsObject;
+import gameobject.gameworld.WorldObject;
 import gameobject.ROC;
 import gameobject.TextButton;
 import gameobject.TextObject;
@@ -10,9 +10,8 @@ import graphics.Texture;
 import graphics.Window;
 import utils.Global;
 import utils.Pair;
+import utils.PhysicsEngine;
 import utils.Transformation;
-
-import javax.xml.crypto.dsig.Transform;
 
 import static org.lwjgl.glfw.GLFW.*;
 
@@ -22,10 +21,10 @@ import static org.lwjgl.glfw.GLFW.*;
 public class WorldLogic extends GameLogic {
 
     /**
-     * Data
+     * Members
      */
     Window window; // reference to the window for exit button
-    PhysicsObject player;
+    WorldObject player; // reference to player
     boolean exitButtonPressed = false; // whether exit has been pressed
 
     /**
@@ -38,47 +37,48 @@ public class WorldLogic extends GameLogic {
         this.window = window; // save reference to window
 
         // create and add player
-        player = new PhysicsObject(Model.getStdGridRect(1, 2),
-                new Material(new float[] {0.2f, 0.2f, 1.0f, 1.0f})); // create player
+        player = new WorldObject(Model.getStdGridRect(1, 2),
+                new Material(new float[] {0.0f, 0.0f, 1.0f, 1.0f})); // create as a 1 x 2 blue rectangle
         player.setPos(5, 2f); // set player's position
-        player.getPhysicsSettings().rigid = true;
+        player.getPhysicsProperties().rigid = true; // make rigid
         this.roc.getGameWorld().addObject(player); // add to ROC
         this.roc.getGameWorld().getCam().follow(player); // tell camera to follow it
 
-        PhysicsObject o = new PhysicsObject(Model.getStdGridRect(1, 1), new Material(
-                new float[] {1.0f, 0.0f, 1.0f, 1.0f}));
+        // create another random object
+        WorldObject o = new WorldObject(Model.getStdGridRect(1, 1), new Material(
+                new float[] {1.0f, 0.0f, 1.0f, 1.0f})); // as a pink square
+        // move the object to 3, 1
         o.setX(3f);
         o.setY(1f);
-        this.roc.getGameWorld().addObject(o);
+        this.roc.getGameWorld().addObject(o); // add to ROC
 
         // create and add dirt floor and walls
         Material dirt = new Material(new Texture("/textures/dirt.png")); // dirt material
-
         for (int i = 0; i < 10; i++) { // this loop builds the dirt floor and walls
-            PhysicsObject po = new PhysicsObject(Model.getStdGridRect(1, 1), dirt); // create floor dirt
-            po.getPhysicsSettings().gravity = 0f; // disable gravity on dirt
+            WorldObject po = new WorldObject(Model.getStdGridRect(1, 1), dirt); // create floor dirt
+            po.getPhysicsProperties().gravity = 0f; // disable gravity on dirt
             po.setX(i * Global.GRID_CELL_SIZE); // calculate x
-            po.getPhysicsSettings().rigid = true; // make dirt rigid
+            po.getPhysicsProperties().rigid = true; // make dirt rigid
             this.roc.getGameWorld().addObject(po); // add to ROC
-            po = new PhysicsObject(Model.getStdGridRect(1, 1), dirt); // create wall dirt
-            po.getPhysicsSettings().gravity = 0f; // disable gravity on dirt
+            po = new WorldObject(Model.getStdGridRect(1, 1), dirt); // create wall dirt
+            po.getPhysicsProperties().gravity = 0f; // disable gravity on dirt
             po.setX(i > 4 ? 9 * Global.GRID_CELL_SIZE : 0 * Global.GRID_CELL_SIZE); // calculate x
             po.setY(1 + (i > 4 ? ((i - 4) * Global.GRID_CELL_SIZE) : i * Global.GRID_CELL_SIZE)); // calculate y
-            po.getPhysicsSettings().rigid = true; // make dirt rigid
+            po.getPhysicsProperties().rigid = true; // make dirt rigid
             this.roc.getGameWorld().addObject(po); // add to ROC
         }
 
         // create and add player position text
         this.roc.addStaticObject(new TextObject(Global.FONT, "(0, 0)"), // player pos text
                 new ROC.PositionSettings(-1f, -1f, true, 0.02f));
-        this.roc.getStaticGameObject(2).setScale(0.075f, 0.075f); // scale text down
+        this.roc.getStaticGameObject(2).setScale(0.05f, 0.05f); // scale text down
 
         // create and add text button
         this.roc.addStaticObject(new TextButton(Global.FONT, "Exit", 1),
                 new ROC.PositionSettings(1f, -1f, true,
                 0.02f)); // create text button
         this.roc.getStaticGameObject(3).setScale(0.05f, 0.05f); // scale button down
-        this.roc.ensureAllPlacements();
+        this.roc.ensureAllPlacements(); // ensure ROC static object placements
     }
 
     /**
@@ -88,8 +88,8 @@ public class WorldLogic extends GameLogic {
      */
     @Override
     public void keyboardInput(int key, int action) {
-        if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
-            if (player.somethingUnder(0.1f)) player.setVY(10f); // jum
+        if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) { // if space is pressed
+            if (PhysicsEngine.somethingUnder(player)) player.setVY(10f); // have played jump if there is something under
         }
     }
 
@@ -104,9 +104,7 @@ public class WorldLogic extends GameLogic {
         super.mouseInput(x, y, action); // call super mouse input
         if (action == GLFW_HOVERED) { // if hover event
             Pair pos = new Pair(x, y); // create pair of mouse position
-            //System.out.println(pos);
             Transformation.useCam(pos, this.roc.getGameWorld().getCam()); // transform to camera-view
-
             if (player.getBoundingBox(true).contains(pos.x, pos.y)) { // if mouse is hovering player
                 player.setMaterial(new Material(new float[]{(float)Math.random(), (float)Math.random(),
                         (float)Math.random(), 1.0f})); // change player color when mouse hovers
@@ -129,14 +127,14 @@ public class WorldLogic extends GameLogic {
      */
     @Override
     public void update(float interval) {
-        super.update(interval); // call super update
-        Pair pos = new Pair(player.getX(), player.getY());
-        Transformation.alignToGrid(pos);
+        if (exitButtonPressed) window.close(); // if exit was pressed, close window
+        super.update(interval);
+        Pair pos = new Pair(player.getX(), player.getY()); // pair player position
+        Transformation.alignToGrid(pos); // align position to the grid
         if (((TextObject)this.roc.getStaticGameObject(2)).setText("(" + String.format("%.2f", pos.x) +
                 ", " + String.format("%.2f", pos.y) + ")")) // change player pos text
             this.roc.ensurePlacement(2); // update placement if changed
-        player.setVX(0);
-        if (exitButtonPressed) window.close();
+        player.setVX(0); // reset player velocity
         if (window.isKeyPressed(GLFW_KEY_D)) player.incrementVX(4); // rightwards movement
         if (window.isKeyPressed(GLFW_KEY_A)) player.incrementVX(-4); // leftwards movement
     }

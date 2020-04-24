@@ -18,7 +18,7 @@ import static org.lwjgl.stb.STBImage.*;
 public class Texture {
 
     /**
-     * Data
+     * Members
      */
     private final int id, w, h; // texture ID, width, and height
 
@@ -60,17 +60,8 @@ public class Texture {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); // this makes pixels clear and un-blurred
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this.w, this.h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
                 buf); // generate texture
-        // parameters for glTexImage2D:
-        // target - target texture (the type) - GL_TEXTURE_2D is what we're working with here
-        // level - the level-of-detail number - o is the base image. level n is the nth mipmap reduction
-        // internal format - the number of color components (RGBA in this case)
-        // width, height - the width and height of the image
-        // border - no idea but we set it to zero
-        // format - specifies format of the pixel data we give it (RGBA)
-        // type - specifies the data type of the pixel data (bytes)
-        // data - the actual image data
         glGenerateMipmap(GL_TEXTURE_2D); // generate mip maps
-        stbi_image_free(buf); // cleanup
+        stbi_image_free(buf); // cleanup by freeing image memory
     }
 
     /**

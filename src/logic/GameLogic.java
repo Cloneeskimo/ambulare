@@ -8,17 +8,17 @@ import utils.Global;
 import static utils.Global.ar;
 
 /**
- * The game logic define how the engine will interact with the game. To aid in the process of designing a game world,
- * this abstract class has an easy way to store and render game objects in a wide variety of ways without being too
- * intensive, by using an ROC (see ROC class). If the extending class doesn't want to use an ROC,
- * a flag to enable/disable rendering of the ROC exist as well
+ * The game logic define how the engine will interact with the game. To aid in the process of designing a game world and
+ * interface, this abstract class has an ROC to store, interact with, and render game objects in a wide variety of ways
+ * without being too intensive (see ROC class). If the extending class doesn't want to use an ROC, a flag to
+ * enable/disable rendering of the ROC exists as well
  */
 public abstract class GameLogic {
 
     /**
-     * Data
+     * Members
      */
-    protected ROC roc; // holds and renders all game objects
+    protected ROC roc;                        // holds and renders all game objects
     protected boolean renderROC = true;       /* extending classes can disable ROC rendering if they want to render in
                                                  some other manner*/
     private boolean FPSItemsAdded = false;    /* flag representing whether the FPS HUD items have been added. It is
@@ -34,10 +34,10 @@ public abstract class GameLogic {
      */
     public final void init(Window window) {
         Global.ar = (float)window.getFBWidth() / (float)window.getFBHeight(); // calculate aspect ratio
-        Global.arAction = (Global.ar < 1.0f); /* this stores what actions need to be done to compensate for aspect ratio. If
-                                            ar < 1.0f (height > width) then we will make objects shorter to compensate
-                                            and if ar > 1.0f, the opposite is true */
-        this.roc = new ROC(window.getHandle()); // create ROC
+        Global.arAction = (Global.ar < 1.0f); /* this stores what actions need to be done to compensate for aspect
+            ratio. If ar < 1.0f (height > width) then we will make objects shorter to compensate and if ar > 1.0f,
+            the opposite is true */
+        this.roc = new ROC(window.getHandle());
         this.initOthers(window); // allow extending classes to initialize other members
     }
 

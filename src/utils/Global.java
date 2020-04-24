@@ -10,7 +10,7 @@ import static org.lwjgl.glfw.GLFW.GLFW_KEY_F;
 public class Global {
 
     /**
-     * Data
+     * Members
      */
     public static final String WINDOW_TITLE = "Ambulare"; // the window title
     public static final float TIME_BETWEEN_FPS_REPORTS = 1f; // time between FPS reports when reports are enabled
@@ -27,6 +27,6 @@ public class Global {
      * Initialize any global members
      */
     public static void init() {
-        Global.FONT = new Font("/font.png", "/font_info.txt"); // create global font
+        Global.FONT = new Font("/font.png", "/font_info.txt");
     }
 }

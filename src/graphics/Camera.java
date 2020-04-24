@@ -8,14 +8,14 @@ import gameobject.GameObject;
 public class Camera {
 
     /**
-     * Data
+     * Members
      */
-    private final static float MIN_ZOOM = 0.05f;    // minimum zoom
-    private final static float MAX_ZOOM = 1.8f;     // maximum zoom
-    private final static float DEFAULT_ZOOM = 0.1f; // default zoom
-    private float x, y, vx, vy;                     // position and velocity
-    private float zoom;                             // zoom
-    private GameObject following;                   // a game object to follow, if assigned
+    private final static float MIN_ZOOM = 0.02f;     // minimum zoom
+    private final static float MAX_ZOOM = 1.2f;      // maximum zoom
+    private final static float DEFAULT_ZOOM = 0.08f; // default zoom
+    private float x, y, vx, vy;                      // position and velocity
+    private float zoom;                              // zoom
+    private GameObject following;                    // a game object to follow, if assigned
 
     /**
      * Constructs the camera with a specified zoom
@@ -24,8 +24,8 @@ public class Camera {
      * @param zoom the zoom of this camera - will be bounded by MIN_ZOOM and MAX_ZOOM defined above
      */
     public Camera(float x, float y, float zoom) {
-        this.x = x; // set x
-        this.y = y; // set y
+        this.x = x;
+        this.y = y;
         this.zoom = Math.max(Camera.MIN_ZOOM, Math.min(Camera.MAX_ZOOM, zoom)); // set zoom bounded by min and max
     }
 
@@ -34,23 +34,25 @@ public class Camera {
      * @param x the x
      * @param y the y
      */
-    public Camera(float x, float y) { this(x, y, Camera.DEFAULT_ZOOM); } // call other constructor
+    public Camera(float x, float y) { this(x, y, Camera.DEFAULT_ZOOM); }
 
     /**
      * Constructs the camera at pos (0, 0) and with the default zoom
      */
-    public Camera() { this(0f, 0f); } // call other constructor
+    public Camera() { this(0f, 0f); }
 
     /**
      * Updates the camera
      */
     public void update() {
         if (this.following == null) { // if not following anything
-            this.x += this.vx; // update x world pos based on velocity
-            this.y += this.vy; // update y world pos based on velocity
+            // update world position based on velocity
+            this.x += this.vx;
+            this.y += this.vy;
         } else { // if following something
-            this.x = this.following.getX(); // set x to followed object's x
-            this.y = this.following.getY(); // set y to followed object's y
+            // set position to the followed object's position
+            this.x = this.following.getX();
+            this.y = this.following.getY();
         }
     }
 
@@ -77,8 +79,8 @@ public class Camera {
      * @param y the new y
      */
     public void setPos(float x, float y) {
-        this.x = x; // set x
-        this.y = y; // set y
+        this.x = x;
+        this.y = y;
     }
 
     /**

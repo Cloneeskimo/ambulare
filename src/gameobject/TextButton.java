@@ -15,7 +15,7 @@ public class TextButton extends TextObject implements MIHSB.MouseInteractable {
     private static final float[] DEFAULT_PRESS_COLOR = new float[]{1.0f, 1.0f, 0.0f, 1.0f}; // default press colorS
 
     /**
-     * Data
+     * Members
      */
     private final float[] defaultC, hoverC, pressC; // the colors for no interaction, hovering, and pressing
     private final int MIID;                         // the unique mouse interactable ID of the button
@@ -45,11 +45,11 @@ public class TextButton extends TextObject implements MIHSB.MouseInteractable {
      * @param MIID the mouse interactable ID to assign the text button
      */
     public TextButton(Font font, String text, int MIID) {
-        super(font, text); // call super
+        super(font, text);
         this.defaultC = this.material.getColor(); // get default text color from the material (super will have set it)
         this.hoverC = DEFAULT_HOVER_COLOR; // use default hover color
         this.pressC = DEFAULT_PRESS_COLOR; // use default press color
-        this.MIID = MIID; // save mouse interaction ID as member
+        this.MIID = MIID;
     }
 
     /**

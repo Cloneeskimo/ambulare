@@ -23,7 +23,7 @@ import java.util.Map;
 public class Font {
 
     /**
-     * Data
+     * Members
      */
     private Map<Character, Integer> charCutoffs; // map from ASCII characters to the amount of horizontal cutoff
     private Texture sheet;                       // font sheet
