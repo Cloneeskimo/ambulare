@@ -3,7 +3,7 @@
 
 ### Overview
 
-Ambulare is a space-themed classic RPG. It runs in the JVM, and relies on LWJGL.
+Ambulare is a side-scrolling fantasy RPG. It runs in the JVM, and relies on LWJGL.
 
 ### Building
 
