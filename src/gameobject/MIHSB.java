@@ -52,7 +52,7 @@ public class MIHSB {
             for (int i = 0; i < this.mis.size(); i++) { // for each that can be interacted with by a mouse
                 // if it uses a camera, use the mouse position in camera-view coordinates. Otherwise, use world pos
                 Pair appropriatePos = this.useCam.get(i) ? camPos : pos;
-                if (mis.get(i).getFrame().contains(appropriatePos)) { // if the frame contains the mouse
+                if (mis.get(i).getBoundingBox(true).contains(appropriatePos)) { // if the frame contains the mouse
                     if (this.pressed) mis.get(i).onPress(); // if the mouse wandered in while pressed, call onPress
                     else mis.get(i).onHover(appropriatePos.x, appropriatePos.y); // otherwise, call onHover
                     this.hoverStates.set(i, true); // save new hover state
@@ -133,7 +133,7 @@ public class MIHSB {
         /**
          * @return the appropriate bounds to use to consider whether or not the implementing object is being hovered
          */
-        BoundingBox getFrame();
+        BoundingBox getBoundingBox(boolean rotated);
     }
 
 }

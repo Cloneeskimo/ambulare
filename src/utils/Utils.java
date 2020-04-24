@@ -13,6 +13,16 @@ import java.util.Scanner;
 public class Utils {
 
     /**
+     * Performs a logical exclusive or (XOR) operation on two booleans
+     * @param a the first boolean
+     * @param b the second boolean
+     * @return the XOR of a and b
+     */
+    public static boolean XOR(boolean a, boolean b) {
+        return (a || b) && !(a && b);
+    }
+
+    /**
      * Generates a random float within the given range
      * @param min the minimum the random float can be
      * @param max the maximum the random float can be

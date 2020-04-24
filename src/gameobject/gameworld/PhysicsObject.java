@@ -24,7 +24,7 @@ public class PhysicsObject extends GameObject {
      * Data
      */
     private List<PhysicsObject> collidables;  // a reference to the list of other objects to consider for collision
-    private PhysicsEngine.PhysicsSettings ps; // the settings which describe how this object interacts with physics
+    private PhysicsEngine.PhysicsProperties pp; // the settings which describe how this object interacts with physics
 
     /**
      * Constructor
@@ -34,7 +34,7 @@ public class PhysicsObject extends GameObject {
     public PhysicsObject(Model model, Material material) {
         super(model, material);                        // call super
         this.collidables = new ArrayList<>();          // initialize collidables to empty list
-        this.ps = new PhysicsEngine.PhysicsSettings(); // start physics settings at default
+        this.pp = new PhysicsEngine.PhysicsProperties(); // start physics settings at default
     }
 
     /**
@@ -44,7 +44,7 @@ public class PhysicsObject extends GameObject {
     @Override
     public void update(float interval) {
                                 // apply gravity but do not go below terminal velocity
-        this.vy = Math.max(this.vy - (this.ps.gravity * interval), TERMINAL_VELOCITY);
+        this.vy = Math.max(this.vy - (this.pp.gravity * interval), TERMINAL_VELOCITY);
         super.update(interval); // call super
     }
 
@@ -57,40 +57,8 @@ public class PhysicsObject extends GameObject {
      */
     @Override
     public boolean move(float dx, float dy) {
-        if (this.ps.collidable) { // if this physics object is collidable
-            boolean xMoved = super.move(dx, 0); // move just x
-            BoundingBox f = null; // null so that we can avoid calculating BoundingBox until absolutely necessary
-            if (xMoved) { // if an actual movement occurred
-                for (PhysicsObject po : this.collidables) { // look through collidable objects
-                    if (po.ps.collidable && this != po) { // if the other is collidable and isn't this
-                        if (f == null) f = this.getFrame(); // get frame if don't have it yet
-                        if (PhysicsEngine.colliding(f, po.getFrame())) { // check for collision. if colliding,
-                            PhysicsEngine.performCollisionRxn(this, po, false); // react to the collision
-                            this.setX(this.getX() - dx); // move back to original x
-                            xMoved = false; // set x move flag to false because we denied the movement
-                            break; // break from collision checking loop
-                        }
-                    }
-                }
-            }
-            f = null; // reset frame to null because we will want to recalculate it for y collisions
-            boolean yMoved = super.move(0, dy); // then move just y
-            if (yMoved) { // if an actual movement occurred
-                for (PhysicsObject po : this.collidables) { // look through collidable objects
-                    if (po.ps.collidable && this != po) { // if the other is collidable and isn't this
-                        if (f == null) f = this.getFrame(); // get frame if don't have it yet
-                        if (PhysicsEngine.colliding(f, po.getFrame())) { // check for collision. if colliding,
-                            PhysicsEngine.performCollisionRxn(this, po, true); // react to the collision
-                            this.setY(this.getY() - dy); // move back to original y
-                            yMoved = false; // set y move flag to false because we denied the movement
-                            break; // break from collision checking loop
-                        }
-                    }
-                }
-            }
-            return xMoved || yMoved; // if either y movement or x movement actually occurred, return true
-        }
-        return super.move(dx, dy); // if collision for this object is off, handle movement normally
+        if (this.pp.collidable) return PhysicsEngine.move(this, dx, dy);
+        else return super.move(dx, dy); // if collision for this object is off, handle movement normally
     }
 
     /**
@@ -104,9 +72,10 @@ public class PhysicsObject extends GameObject {
         this.setY(this.getY() - precision); // move y down based on precision
         BoundingBox f = null; // start at null so as to avoid calculating frame until absolutely necessary
         for (PhysicsObject po : this.collidables) { // for each collidable object
-            if (po.ps.collidable && po != this) { // if the object has collision on and isn't this
-                if (f == null) f = this.getFrame(); // calculate frame if not done yet
-                if (PhysicsEngine.colliding(this.getFrame(), po.getFrame())) { // if they collide
+            if (po.pp.collidable && po != this) { // if the object has collision on and isn't this
+                if (f == null) f = this.getBoundingBox(true); // calculate frame if not done yet
+                if (PhysicsEngine.colliding(this.getBoundingBox(true), po.getBoundingBox(true))) { // if they
+                    // collide
                     this.setY(this.getY() + precision); // return y to original position
                     return true; // there is something underneath
                 }
@@ -124,8 +93,10 @@ public class PhysicsObject extends GameObject {
         this.collidables = collidables;
     }
 
+    public List<PhysicsObject> getCollidables() { return this.collidables; }
+
     /**
      * @return the physics settings for the object
      */
-    public PhysicsEngine.PhysicsSettings getPhysicsSettings() { return this.ps; }
+    public PhysicsEngine.PhysicsProperties getPhysicsProperties() { return this.pp; }
 }

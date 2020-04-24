@@ -1,5 +1,6 @@
 package gameobject;
 
+import gameobject.gameworld.PhysicsObject;
 import graphics.*;
 import utils.BoundingBox;
 
@@ -187,7 +188,15 @@ public class GameObject {
      * Update's the game object's y position
      * @param y the new y position
      */
-    public void setY(float y) { this.y = y; this.onMove(); }
+    public void setY(float y) {
+        if (y >= 2) {
+            if (this instanceof PhysicsObject) {
+                System.out.println("pp");
+            }
+        }
+        this.y = y;
+        this.onMove();
+    }
 
     /**
      * Updates the game object's horizontal velocity (x velocity)
@@ -340,12 +349,12 @@ public class GameObject {
     public float getRotationRad() { return this.model.getRotationRad(); }
 
     /**
-     * Calculates the frame for the game object by getting the model's frame and translating it to the game object's
-     * position
-     * @return the frame corresponding to the game object
+     * Calculates the bounding box for the game object by getting the model's bounding box and translating it to the
+     * game object's position
+     * @return the bounding box corresponding to the game object
      */
-    public BoundingBox getFrame() {
-        return model.getFrame().translate(this.x, this.y); // get model's frame and translate
+    public BoundingBox getBoundingBox(boolean rotated) {
+        return model.getBoundingBox(rotated).translate(this.x, this.y); // get model's frame and translate
     }
 
     /**

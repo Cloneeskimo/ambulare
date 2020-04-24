@@ -282,13 +282,12 @@ public class Model {
     public float getRotationRad() { return this.r; }
 
     /**
-     * Calculates a frame for this model. If this is a rectangular model (i.e, have 4 vertices), it will create a
-     * rotated frame that perfectly fits the rectangle. Otherwise, it will create the smallest possible bounding box to
-     * fit all model coordinates
+     * Calculates a bounding box for this model. If rotate is set to true, and this is a rectangular model, it will
+     * return a rotated bounding box. These rotated bounding boxes cannot be used
      * @return the frame described above
      */
-    public BoundingBox getFrame() {
-        if (this.modelCoords.length == 8) { // if rectangular
+    public BoundingBox getBoundingBox(boolean rotated) {
+        if (this.modelCoords.length == 8 && rotated) { // if rectangular
             float[] corners = new float[this.modelCoords.length]; // create corners array
             for (int i = 0; i < corners.length; i+=2) { // fill it with model coords
                 corners[i] = modelCoords[i]; // copy x
