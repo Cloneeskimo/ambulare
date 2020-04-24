@@ -1,17 +1,19 @@
 package utils;
 
 /**
- * Defines a rectangle that should describe the object it corresponds to. Bounding boxes can have rotation or be
- * axis-aligned. These are used for collision and mouse input
+ * A fitting box is defined by four corners, a center point, and a rotation value. These can be used to fit objects
+ * more precisely than an axis-aligned bounding box. They are not used for collision detection, but they can and should
+ * be used to for checking if a specific point is within the object they describe. This is particularly useful for
+ * mouse input detection
  */
-public class BoundingBox {
+public class FittingBox {
 
     /**
      * Members
      */
     private float[] corners; // contains the four corner vertices in clockwise order, starting from the bottom left
-    private float r;         // how rotated (in radians) the bounding box is
-    private float cx, cy;    // the center point of the box (should be perfectly centered within the corners)
+    private float r;         // how rotated (in radians) the fitting box is
+    private float cx, cy;    // the center point of the fitting box (should be perfectly centered within the corners)
 
     /**
      * Constructor
@@ -22,7 +24,7 @@ public class BoundingBox {
      * @param cx the center point x
      * @param cy the center point y
      */
-    public BoundingBox(float[] corners, float r, float cx, float cy) {
+    public FittingBox(float[] corners, float r, float cx, float cy) {
         if (corners.length != 8) // if invalid amount of corners
             Utils.handleException(new Exception("Invalid corners given for BoundingBox. Length should be 8, is " +
                     "actually " + corners.length), "BoundingBox", "BoundingBox(float[]", true); // throw exception
@@ -33,10 +35,10 @@ public class BoundingBox {
     }
 
     /**
-     * Checks if the bounding box contains the given point
+     * Checks if the fitting box contains the given point
      * @param x the x of the point to check
      * @param y the y of the point to check
-     * @return whether the bounding box contains the given point
+     * @return whether the fitting box contains the given point
      */
     public boolean contains(float x, float y) {
         Pair[] rps = new Pair[4]; // create pair array
@@ -53,43 +55,25 @@ public class BoundingBox {
     }
 
     /**
-     * Checks if the bounding box contains the given point
+     * Checks if the fitting box contains the given point
      * @param pos the point to check for
-     * @return whether the bounding box contains the given point
+     * @return whether the fitting box contains the given point
      */
     public boolean contains(Pair pos) {
         return this.contains(pos.x, pos.y); // call other method with pair deconstructed
     }
 
     /**
-     * Translates this entire bounding box by the given amount.
+     * Translates the entire fitting box by the given amount.
      * @param x the x to translate by
      * @param y the y to translate by
-     * @return the bounding box after translation has occurred
+     * @return the fitting box after translation has occurred
      */
-    public BoundingBox translate(float x, float y) {
+    public FittingBox translate(float x, float y) {
         // translate center point
         this.cx += x;
         this.cy += y;
         for (int i = 0; i < corners.length; i++) corners[i] += i % 2 == 0 ? x : y; // translate each corner
         return this;
     }
-
-    /**
-     * @return an array containing the four corners of the bounding box in the order in which they are stored: clockwise
-     * starting from the bottom-left
-     */
-    public Pair[] getCorners() {
-        Pair[] cs = new Pair[4];
-        cs[0] = new Pair(this.corners[0], this.corners[1]);
-        cs[1] = new Pair(this.corners[2], this.corners[3]);
-        cs[2] = new Pair(this.corners[4], this.corners[5]);
-        cs[3] = new Pair(this.corners[6], this.corners[7]);
-        return cs;
-    }
-
-    /**
-     * @return the rotation of the bounding box
-     */
-    public float getR() { return this.r; }
 }

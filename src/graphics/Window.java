@@ -6,9 +6,6 @@ import org.lwjgl.opengl.GL;
 import utils.Pair;
 import utils.Utils;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.system.MemoryUtil.NULL;

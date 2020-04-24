@@ -5,8 +5,6 @@ import gameobject.TextObject;
 import graphics.Window;
 import utils.Global;
 
-import static utils.Global.ar;
-
 /**
  * The game logic define how the engine will interact with the game. To aid in the process of designing a game world and
  * interface, this abstract class has an ROC to store, interact with, and render game objects in a wide variety of ways

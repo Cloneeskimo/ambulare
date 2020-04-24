@@ -1,8 +1,7 @@
 package graphics;
 
 import org.lwjgl.system.MemoryUtil;
-import utils.BoundingBox;
-import utils.Global;
+import utils.FittingBox;
 import utils.Pair;
 import utils.Utils;
 
@@ -82,6 +81,17 @@ public class Model {
      */
     public static Model getStdGridRect(int w, int h) {
         return new Model(getGridRectModelCoords(w, h), getStdRectTexCoords(), getStdRectIdx());
+    }
+
+    public static boolean isRectangular(Model m) {
+        if (m.modelCoords.length != 8) return false;
+        float dax = m.modelCoords[2] - m.modelCoords[0];
+        float day = m.modelCoords[3] - m.modelCoords[1];
+        float da = (float)Math.sqrt(dax * dax + day * day);
+        float dbx = m.modelCoords[4] - m.modelCoords[6];
+        float dby = m.modelCoords[5] - m.modelCoords[7];
+        float db = (float)Math.sqrt(dbx * dbx + dby * dby);
+        return (Math.abs(db - da) < 0.0001f);
     }
 
     /**
@@ -286,26 +296,23 @@ public class Model {
     public float getRotationRad() { return this.r; }
 
     /**
-     * Creates a bounding box for the model
-     * @param rotated whether or not to try to perfectly fit a box with the same rotation as the model. This will only
-     *                work correctly if the box is rectangular. If this is false, the smallest axis-aligned bounding
-     *                box that fits all points in the model will be returned, assuming the center point of the model is
-     *                (0, 0)
-     * @return the bounding box described above
+     * Creates a fitting box for the model. If the model is rectangular, it will create a perfectly-sized and rotated
+     * fitting box. Otherwise, it will create the smallest possible fitting box that can house all vertices
+     * @return the fitting box described above
      */
-    public BoundingBox getBoundingBox(boolean rotated) {
-        if (this.modelCoords.length == 8 && rotated) { // if rectangular and rotated is true
+    public FittingBox getFittingBox() {
+        if (isRectangular(this)) { // if rectangular
             float[] corners = new float[this.modelCoords.length]; // create corners array
             for (int i = 0; i < corners.length; i+=2) { // fill it with model coords
                 corners[i] = modelCoords[i]; // copy x
                 corners[i + 1] = modelCoords[i + 1]; // copy y
             }
-            return new BoundingBox(corners, this.r, 0f, 0f); // return bounding box with appropriate r value
-        } else { // if not rectangular or rotated is false
-            float w2 = this.getWidth() / 2; // calculate half of width of bounding box
-            float h2 = this.getHeight() / 2; // calculate half of height of bounding box
-            // create un-rotated bounding box that fits all points
-            return new BoundingBox(new float[] {-w2, -h2, -w2, h2, w2, h2, w2, -h2}, 0f, 0f, 0f);
+            return new FittingBox(corners, this.r, 0f, 0f); // return perfect fitting box
+        } else { // if not rectangular
+            float w2 = this.getWidth() / 2; // calculate half of width of fitting box
+            float h2 = this.getHeight() / 2; // calculate half of height of fitting box
+            // create un-rotated fitting box that fits all points
+            return new FittingBox(new float[] {-w2, -h2, -w2, h2, w2, h2, w2, -h2}, 0f, 0f, 0f);
         }
     }
 

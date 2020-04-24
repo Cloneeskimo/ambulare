@@ -1,9 +1,9 @@
 package logic;
 
-import gameobject.gameworld.WorldObject;
 import gameobject.ROC;
 import gameobject.TextButton;
 import gameobject.TextObject;
+import gameobject.gameworld.WorldObject;
 import graphics.Material;
 import graphics.Model;
 import graphics.Texture;
@@ -105,7 +105,7 @@ public class WorldLogic extends GameLogic {
         if (action == GLFW_HOVERED) { // if hover event
             Pair pos = new Pair(x, y); // create pair of mouse position
             Transformation.useCam(pos, this.roc.getGameWorld().getCam()); // transform to camera-view
-            if (player.getBoundingBox(true).contains(pos.x, pos.y)) { // if mouse is hovering player
+            if (player.getFittingBox().contains(pos.x, pos.y)) { // if mouse is hovering player
                 player.setMaterial(new Material(new float[]{(float)Math.random(), (float)Math.random(),
                         (float)Math.random(), 1.0f})); // change player color when mouse hovers
             }

@@ -1,8 +1,7 @@
 package gameobject;
 
-import gameobject.gameworld.WorldObject;
 import graphics.*;
-import utils.BoundingBox;
+import utils.FittingBox;
 
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
 import static org.lwjgl.opengl.GL11.glBindTexture;
@@ -345,15 +344,13 @@ public class GameObject {
     public float getRotationRad() { return this.model.getRotationRad(); }
 
     /**
-     * Calculates the bounding box for the game object by getting the model's bounding box and translating it to the
-     * game object's position
-     * @param rotated whether to attempt to get the bounding box as a perfectly-fitted rotated box. For mouse input,
-     *                this should be true. For collision detection, this should be false and the axis-aligned bounding
-     *                box should be used instead
-     * @return the bounding box
+     * Calculates the fitting box for the game object by getting the model's fitting box and translating it to the
+     * game object's position. If the game object's model is rectangular, it will create a perfectly-sized and rotated
+     * fitting box. Otherwise, it will create the smallest possible fitting box that can house all vertices
+     * @return the fitting box describe above
      */
-    public BoundingBox getBoundingBox(boolean rotated) {
-        return model.getBoundingBox(rotated).translate(this.x, this.y); // get model's bounding box and translate
+    public FittingBox getFittingBox() {
+        return model.getFittingBox().translate(this.x, this.y); // get model's fitting box and translate
     }
 
     /**

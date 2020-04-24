@@ -1,5 +1,6 @@
 package utils;
 
+import gameobject.GameObject;
 import gameobject.gameworld.WorldObject;
 
 import java.util.List;
@@ -15,13 +16,15 @@ public class PhysicsEngine {
      * Static Data
      */
     public static final float TERMINAL_VELOCITY = -50f; // the minimum vertical velocity from gravity
+    private static final double COLLISION_THRESHOLD = -1E-6; /* the minimum distance between the objects at which they
+        are not considered to be colliding. Should be slightly less than zero to avoid precision issues */
     private static final float NEXT_TO_PRECISION = 0.0001f; /* the amount away from game objects to look to determine
         if there is something there. For example, in somethingUnder(), the object is moved this far down and checked
         for collisions to determine if there is another object beneath it */
 
     /**
      * Moves the given world object by the given x and y components, checking for and reacting to collisions in the
-     * process. This method will only use un-rotated bounding boxes for all objects in consideration
+     * process. This method will only use axis-aligned bounding boxes for all objects in consideration
      * @param o the object to move
      * @param dx the x factor to move the object by
      * @param dy the y factor to move the object by
@@ -29,21 +32,15 @@ public class PhysicsEngine {
      */
     public static boolean move(WorldObject o, float dx, float dy) {
         List<WorldObject> collidables = o.getCollidables(); // get the collidables to check for
+        WorldObject l = null; // if an x collision occurs, save the object of collision to l to avoid checking for y too
         float ox = o.getX(); float oy = o.getY(); // save original position for checking against final position
-        BoundingBox bb = null; // don't get the bounding box until absolutely need to
-        WorldObject l = null; /* this is to keep track of an object collided with while checking the x component.
-            this is so as to avoid checking for collisions for the same object when checking the y component, as that
-            can produce strange behavior */
         if (dx != 0) { // if there is actually a movement in x
             o.setX(o.getX() + dx); // perform the move
             for (WorldObject wo : collidables) { // then look through all collidable objects
                 if (wo.getPhysicsProperties().collidable && wo != o) { // if curr is collidable and not the given object
-                    if (bb == null) bb = o.getBoundingBox(false); // make sure we have o's bounding box
-                    if (colliding(bb, wo.getBoundingBox(false))) { // if the objects are colliding
-                        float horizontalDistance = Math.abs(wo.getX() - o.getX()); // find the distance between them
-                        // calculate the minimum amount necessary to push o back to reverse the collision
-                        float horizontalPushback = horizontalDistance - wo.getWidth() / 2 - o.getWidth() / 2;
-                        o.setX(o.getX() + (wo.getX() > o.getX() ? 1 : -1) * horizontalPushback); // push o back
+                    Pair pb = AABBColliding(o.getAABB(), wo.getAABB()); // check if o and wo are colliding
+                    if (pb != null) { // if the objects are colliding
+                        o.setX(o.getX() + (wo.getX() > o.getX() ? 1 : -1) * pb.x); // push o back out of the collision
                         Pair[] reaction = performReaction(o.getVX(), wo.getVX(), o.getPhysicsProperties(),
                                 wo.getPhysicsProperties()); // perform a reaction based on the collision
                         // the reaction returns two pairs corresponding to new velocity values/multipliers
@@ -51,23 +48,18 @@ public class PhysicsEngine {
                         o.setVY(o.getVY() * reaction[0].y); // apply o's y velocity multiplier
                         wo.setVX(reaction[1].x); // set wo's new velocity
                         wo.setVY(wo.getVY() * reaction[1].y); // apply p's y velocity multiplier
-                        l = wo; // save the object we collided with so we don't check again for y component
+                        l = wo; // save to l to avoid checking for y too
                     }
                 }
             }
         }
         if (dy != 0) { // if there is an actual change in y
             o.setY(o.getY() + dy); // perform the move
-            bb = null; // reset bounding box to null - it may have changed by now
             for (WorldObject wo : collidables) { // go through possible colliding objects
                 if (wo.getPhysicsProperties().collidable && wo != o && wo != l) { // if curr is collidable and different
-                    if (bb == null) bb = o.getBoundingBox(false); // make sure we have the bounding box
-                    if (colliding(bb, wo.getBoundingBox(false))) { // if colliding
-                        float verticalDistance = Math.abs(wo.getY() - o.getY()); // calculate the distance between them
-                        // calculate the minimum amount necessary to push o back to reverse the collision
-                        float verticalPushback = Math.abs(verticalDistance - wo.getHeight() / 2 - o.getHeight() / 2);
-                        // push o back out of the collision
-                        o.setY(o.getY() + (wo.getY() > o.getY() ? -1 : 1) * verticalPushback);
+                    Pair pb = AABBColliding(o.getAABB(), wo.getAABB()); // check if o and wo are colliding
+                    if (pb != null) { // if colliding
+                        o.setY(o.getY() + (wo.getY() > o.getY() ? 1 : -1) * pb.y); // push o back out of the collision
                         Pair[] reaction = performReaction(o.getVY(), wo.getVY(), o.getPhysicsProperties(),
                                 wo.getPhysicsProperties()); // perform a reaction based on the collision
                         // the reaction returns two pairs corresponding to new velocity values/multipliers
@@ -83,30 +75,19 @@ public class PhysicsEngine {
     }
 
     /**
-     * Calculates whether the two given bounding boxes are colliding. This method is based on the separating axis
-     * theorem and will work for rotated bounding boxes, but the move function does not support them
-     * @param a the first bounding box to consider
-     * @param b the second bounding box to consider
-     * @return whether the two bounding boxes are colliding
+     * Checks if two objects are colliding by considering their axis-aligned bounding boxes
+     * @param a the first object's AABB
+     * @param b the second object's AABB
+     * @return null if no collision, or a Pair containing the necessary x or y push-back to back out of the collision
      */
-    public static boolean colliding(BoundingBox a, BoundingBox b) {
-        // get axes based on the rotations of both bounding boxes
-        Pair[] axes1 = getAxes(a.getR());
-        Pair[] axes2 = getAxes(b.getR());
-        Pair[] axes = new Pair[4]; // create an array to hold all four normalized axes
-        for (int i = 0; i < 4; i++) axes[i] = normalize(i > 1 ? axes2[i - 2] : axes1[i]);
-        // get the corner points of the two bounding boxes
-        Pair[] ca = a.getCorners();
-        Pair[] cb = b.getCorners();
-        for (Pair axis : axes) { // for each axis
-            // project the bounding boxes (defined by their corners) onto the axis
-            Pair proja = project(ca, axis);
-            Pair projb = project(cb, axis);
-            // if any of a's projections don't overlap with b's, then there is decidedly not a collision
-            if (proja.y < projb.x || projb.y < proja.x) return false;
-            else if (Utils.XOR(proja.y <= projb.x, projb.y <= proja.x)) return false;
-        }
-        return true;
+    public static Pair AABBColliding(AABB a, AABB b) {
+        // get the x distance between them
+        float dx = Math.abs(a.getCX() - b.getCX()) - a.getW2() - b.getW2();
+        if (dx >= COLLISION_THRESHOLD) return null; // if it's greater than threshold, no collision
+        // get the y distance between them
+        float dy = Math.abs(a.getCY() - b.getCY()) - a.getH2() - b.getH2();
+        if (dy >= COLLISION_THRESHOLD) return null; // if it's greater than threshold, no collision
+        return new Pair(dx, dy); // if both were less than threshold, collision
     }
 
     /**
@@ -117,11 +98,9 @@ public class PhysicsEngine {
     public static boolean somethingUnder(WorldObject wo) {
         wo.setY(wo.getY() - NEXT_TO_PRECISION); // move y down based on precision
         List<WorldObject> collidables = wo.getCollidables(); // get possible collisions
-        BoundingBox bb = null; // start at null so as to avoid calculating bounding box until absolutely necessary
         for (WorldObject o : collidables) { // for each collidable object
             if (o.getPhysicsProperties().collidable && o != wo) { // if the object has collision on and isn't wo
-                if (bb == null) bb = wo.getBoundingBox(false); // calculate bounding box if not done yet
-                if (PhysicsEngine.colliding(bb, o.getBoundingBox(false))) { // if they collide
+                if (AABBColliding(wo.getAABB(), o.getAABB()) != null) { // if they collide
                     wo.setY(wo.getY() + NEXT_TO_PRECISION); // return y to original position
                     return true; // there is something underneath
                 }
@@ -171,56 +150,6 @@ public class PhysicsEngine {
             v[0].y = ppa.fricResis; // apply friction to other component for b
         }
         return v;
-    }
-
-    /**
-     * Projects a shape onto an vector/axis
-     * @param shape the set of points defining the shape to project
-     * @param axis the vector/axis to project onto
-     * @return the projection, defined by a minimum (x) and a maximum (y)
-     */
-    private static Pair project(Pair[] shape, Pair axis) {
-        float min = dot(shape[0], axis); // get the first point's dot product to start as the min
-        float max = min; // and the max
-        for (int i = 0; i < shape.length; i++) { // then go through the rest of the points
-            float p = dot(shape[i], axis); // find their dot product
-            if (p < min) min = p; // find the min of the dot products
-            else if (p > max) max = p; // and the max of the dot products
-        }
-        return new Pair(min, max);
-    }
-
-    /**
-     * Calculates the appropriate axes to check for a SAT collision test based on a bounding box's rotation
-     * @param r the rotation of the bounding box (in radians)
-     * @return two corresponding axes to check
-     */
-    private static Pair[] getAxes(double r) {
-        return new Pair[] { // create new pair object and calculate the first and second normals based on rotation
-                new Pair((float)Math.cos(r), (float)Math.sin(r)),
-                new Pair((float)Math.cos(r + Math.PI / 2), (float)Math.sin(r + Math.PI / 2))
-        };
-    }
-
-    /**
-     * Calculates the dot product of two vectors
-     * @param v1 the first vector
-     * @param v2 the second vector
-     * @return the dot product
-     */
-    private static float dot(Pair v1, Pair v2) {
-        return (v1.x * v2.x) + (v1.y * v2.y);
-    }
-
-    /**
-     * Normalizes a given vector
-     * @param v the vector to normalize
-     * @return a new normalized vector - or the same vector if its length is 0
-     */
-    private static Pair normalize(Pair v) {
-        float length = (float)Math.sqrt(v.x * v.x + v.y * v.y); // calculate total length of the vector
-        if (length != 0) return new Pair(v.x / length, v.y / length); // calculate and return normalize vector
-        return v; // return old vector if length was zero
     }
 
     /**
