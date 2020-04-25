@@ -20,9 +20,9 @@ public class WorldObject extends GameObject {
     /**
      * Members
      */
-    private List<WorldObject> collidables;      // a reference to the list of other objects to consider for collision
-    private PhysicsEngine.PhysicsProperties pp; // the properties which describe how this object interacts with physics
-    private float bw = 1.0f, bh = 1.0f;         // how much of the width/height should be considered for bounding boxes
+    private List<WorldObject> collidables;        // a reference to the list of other objects to consider for collision
+    private float bw = 1.0f, bh = 1.0f;           // proportion of the width/height considered for bounding boxes
+    protected PhysicsEngine.PhysicsProperties pp; // properties that describe how this object interacts with physics
 
     /**
      * Constructor
@@ -44,6 +44,29 @@ public class WorldObject extends GameObject {
         // apply gravity but do not go below terminal velocity
         this.vy = Math.max(this.vy - (this.pp.gravity * interval), PhysicsEngine.TERMINAL_VELOCITY);
         super.update(interval);
+    }
+
+    /**
+     * World objects will check for collisions during positional animations. If a collision is found, both objects
+     * will be treated as rigid. If there is an object in the way of the animation but the destination is free, the
+     * world object will still end in the right area. If it's uncertain whether the ending area is clear, it is
+     * uncertain as to whether the animation will go through completely.
+     * @param interval the amount of time, in seconds, to account for
+     */
+    @Override
+    protected void updatePosAnim(float interval) {
+        this.posAnim.update(interval); // update animation
+        this.move(this.posAnim.getX() - this.getX(), this.posAnim.getY() - this.getY());
+        this.setRotRad(this.posAnim.getR()); // set rotation
+        this.onMove(); // call onMove()
+        if (this.posAnim.finished()) { // if animation is over
+            this.move(this.posAnim.getFinalX() - this.getX(), this.posAnim.getFinalY() - this.getY());
+            this.setRotRad(this.posAnim.getFinalR()); // make sure at the correct ending rotation
+            this.posAnim = null; // delete the animation
+            // reset velocities
+            this.setVX(0);
+            this.setVY(0);
+        }
     }
 
     /**

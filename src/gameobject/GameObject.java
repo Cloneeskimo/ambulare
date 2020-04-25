@@ -22,20 +22,20 @@ public class GameObject {
     /**
      * Animation Members
      */
-    private PositionalAnimation posAnim; // positional animation which can be set to animate positional changes
-    protected float frameTime = 0;       // the amount of time (in seconds) an animated texture frame should last
-    protected float frameTimeLeft = 0;   // the amount of time (in seconds) left for the current animated texture frame
-    protected int frameCount = -1;       // amount of animated texture frames
-    protected int frame = 0;             // the current animated texture frame
+    protected PositionalAnimation posAnim; // positional animation which can be set to animate positional changes
+    protected float frameTime = 0;         // the amount of time (s) an animated texture frame should last
+    protected float frameTimeLeft = 0;     // the amount of time (s) left for the current animated texture frame
+    protected int frameCount = -1;         // amount of animated texture frames
+    protected int frame = 0;               // the current animated texture frame
 
     /**
      * Other Members
      */
-    private float x = 0f, y = 0f;        // position
-    protected Material material;         // material to use when rendering
-    protected Model model;               // model to use when rendering
-    protected float vx = 0f, vy = 0f;    // velocity
-    protected boolean visible = true;    // visibility
+    private float x = 0f, y = 0f;          // position
+    protected Material material;           // material to use when rendering
+    protected Model model;                 // model to use when rendering
+    protected float vx = 0f, vy = 0f;      // velocity
+    protected boolean visible = true;      // visibility
 
     /**
      * Constructs the game object at the default starting position
@@ -120,7 +120,7 @@ public class GameObject {
             glBindTexture(GL_TEXTURE_2D, this.material.getTexture().getID()); // bind texture
         } else sp.setUniform("isTextured", 0); // set textured flag to false otherwise
         if (this.material.isColored()) { // if the object's material is colored
-            float[] color = this.material.getColor(); // and get color instead
+            float[] color = this.material.getColor(); // get color
             sp.setUniform("color", color[0], color[1], color[2], color[3]); // set color uniform
         }
         Material.BLEND_MODE bm = this.material.getBlendMode(); // get blend mode of the object's material

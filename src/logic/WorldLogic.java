@@ -3,11 +3,10 @@ package logic;
 import gameobject.ROC;
 import gameobject.TextButton;
 import gameobject.TextObject;
+import gameobject.gameworld.AnimatedBlock;
+import gameobject.gameworld.Block;
 import gameobject.gameworld.WorldObject;
-import graphics.Material;
-import graphics.Model;
-import graphics.Texture;
-import graphics.Window;
+import graphics.*;
 import utils.Global;
 import utils.Pair;
 import utils.PhysicsEngine;
@@ -39,31 +38,25 @@ public class WorldLogic extends GameLogic {
         // create and add player
         player = new WorldObject(Model.getStdGridRect(1, 2),
                 new Material(new float[] {0.0f, 0.0f, 1.0f, 1.0f})); // create as a 1 x 2 blue rectangle
-        player.setPos(Transformation.getCenterOfCell(new Pair(3, 3)));
+        player.setPos(Transformation.getCenterOfCell(new Pair(3, 4)));
         player.getPhysicsProperties().rigid = true; // make rigid
-        this.roc.getGameWorld().addObject(player); // add to ROC
+        this.roc.addToWorld(player); // add to ROC
         this.roc.getGameWorld().getCam().follow(player); // tell camera to follow it
 
         // create another random object
         WorldObject o = new WorldObject(Model.getStdGridRect(1, 1), new Material(
                 new float[] {1.0f, 0.0f, 1.0f, 1.0f})); // as a pink square
         // move the object to 3, 1
-        o.setPos(Transformation.getCenterOfCell(new Pair(-1, 3)));
-        this.roc.getGameWorld().addObject(o); // add to ROC
+        o.setPos(Transformation.getCenterOfCell(new Pair(2, 3)));
+        this.roc.addToWorld(o); // add to ROC
 
-        // create and add dirt floor and walls
-        Material dirt = new Material(new Texture("/textures/dirt.png")); // dirt material
-        for (int i = -5; i < 5; i++) { // this loop builds the dirt floor and walls
-            WorldObject po = new WorldObject(Model.getStdGridRect(1, 1), dirt); // create floor dirt
-            po.getPhysicsProperties().gravity = 0f; // disable gravity on dirt
-            po.setPos(Transformation.getCenterOfCell(new Pair(i, 0)));
-            po.getPhysicsProperties().rigid = true; // make dirt rigid
-            this.roc.getGameWorld().addObject(po); // add to ROC
-//            po = new WorldObject(Model.getStdGridRect(1, 1), dirt); // create wall dirt
-//            po.getPhysicsProperties().gravity = 0f; // disable gravity on dirt
-//            po.setPos(Transformation.getCenterOfCell(new Pair(-3, i + 6)));
-//            po.getPhysicsProperties().rigid = true; // make dirt rigid
-//            this.roc.getGameWorld().addObject(po); // add to ROC
+        // create and add red dirt floor and walls
+        this.roc.getGameWorld().createBlockMap(10, 10);
+        Material m = new Material(new Texture("/textures/dirt_anim.png"), new float[] {2.0f, 1.0f, 1.0f, 1.0f},
+                Material.BLEND_MODE.MULTIPLICATIVE);
+        for (int i = 0; i < 9; i++) { // this loop builds the dirt floor and walls
+            this.roc.getGameWorld().addBlock(new AnimatedBlock(m, i, 0, 4, 0.5f, true));
+            this.roc.getGameWorld().addBlock(new AnimatedBlock(m, 0, i + 1, 4, 0.5f, true));
         }
 
         // create and add player position text
@@ -87,7 +80,9 @@ public class WorldLogic extends GameLogic {
     @Override
     public void keyboardInput(int key, int action) {
         if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) { // if space is pressed
-            if (PhysicsEngine.somethingUnder(player)) player.setVY(10f); // have played jump if there is something under
+            if (PhysicsEngine.nextTo(player, 0f, -1f)) player.setVY(10f); // jump if there is something under
+        } else if (key == GLFW_KEY_ENTER && action == GLFW_RELEASE) {
+            player.givePosAnim(new PositionalAnimation(2.5f, 4.5f, player.getRotationRad(), 1.0f));
         }
     }
 
