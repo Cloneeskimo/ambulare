@@ -31,7 +31,7 @@ public abstract class GameLogic {
      * @param window the window
      */
     public final void init(Window window) {
-        this.roc = new ROC(window.getHandle());
+        this.roc = new ROC();
         this.initOthers(window); // allow extending classes to initialize other members
     }
 

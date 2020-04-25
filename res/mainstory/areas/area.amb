@@ -1,0 +1,20 @@
+area:
+{
+    name: Area
+    key:
+    {
+        d: resfrom /mainstory/materials/dirt.amb
+        g:
+        {
+            material:
+            {
+                texture_path: /textures/grass_top.png
+            }
+        }
+    }
+    layout:
+    {
+        :gggggg
+        :dddddd
+    }
+}

@@ -32,7 +32,7 @@ public class TexturedButton extends GameObject implements MIHSB.MouseInteractabl
     public TexturedButton(int w, int h, String texResPath, int defaultFrames, int hoverFrames, int pressedFrames,
                           float frameTime, int MIID) {
         super(MultiTexCoordModel.getStdMultiTexGridRect(w, h, defaultFrames + hoverFrames + pressedFrames),
-                new Material(new Texture(texResPath))); // call super, creating necessary components
+                new Material(new Texture(texResPath, true))); // call super, creating necessary components
         /* here we check if there is more than one frame for any mouse interactivity state. If there isn't, there is no
            need to keep time for texture animation */
         if (defaultFrames + hoverFrames + pressedFrames > 3) { // if there is actually animation

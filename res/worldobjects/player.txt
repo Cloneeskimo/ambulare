@@ -1,6 +1,0 @@
-player:
-{
-    color: 0f 0f 0f 1f
-    speed: 4f
-    name: Svenske
-}

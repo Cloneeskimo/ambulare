@@ -64,12 +64,13 @@ public class Block {
 
     /**
      * Constructs the block with the texture with the given resource-relative path
-     * @param texResPath the resource-relative path to the texture
+     * @param texPath the path to the texture
+     * @param resPath whether the given path is resource-relative or not
      * @param x the x grid position of the block
      * @param y the y grid position of the block
      */
-    public Block(String texResPath, int x, int y) {
-        this.material = new Material(new Texture(texResPath)); // create and use material based on texture
+    public Block(String texPath, boolean resPath, int x, int y) {
+        this.material = new Material(new Texture(texPath, resPath)); // create and use material based on texture
         this.x = x;
         this.y = y;
     }

@@ -1,5 +1,6 @@
 package graphics;
 
+import utils.Node;
 import utils.Utils;
 
 /**
@@ -14,19 +15,6 @@ public class Material {
      * AVERAGED - finds the average of the sample and the color
      */
     public enum BLEND_MODE { NONE, MULTIPLICATIVE, AVERAGED }
-
-    /**
-     * Converts a given string to a BLEND_MODE (defined above)
-     * @param s the string to convert - not case-sensitive
-     * @return the corresponding BLEND_MODE or null if not recognized
-     */
-    public static BLEND_MODE strToBM(String s) {
-        s = s.toUpperCase(); // convert to uppercase
-        if (s.equals("MULTIPLICATIVE")) return BLEND_MODE.MULTIPLICATIVE; // multiplicative
-        if (s.equals("AVERAGED")) return BLEND_MODE.AVERAGED; // averaged
-        if (s.equals("NONE")) return BLEND_MODE.NONE; // none
-        return null; // null
-    }
 
     /**
      * Members
@@ -103,4 +91,41 @@ public class Material {
      * Cleans up the material
      */
     public void cleanup() { if (this.texture != null) this.texture.cleanup(); }
+
+    /**
+     * Creates a material from a node. The optional children of the node are listed below:
+     * - texture_path: the path to the texture for the material. If no texture path is given, no texture will be used
+     * - resource_relative: whether the given texture path is resource relative. If this flag is not set, the path will
+     *      be assumed to be resource-relative
+     * - color: the color to use for the material. If this is not set and there is a texture, no color will be used. If
+     *      this is not set and there is no texture, white will be used.
+     *  - blend_mode: the blend mode to use when there is both a color and a texture ("none", "multiplicative", or
+     *      "averaged"). If this is not set, "none" will be used
+     * If materials have errors while parsing, no crashes will occur
+     * @param node the node to create the material from
+     */
+    public Material(Node node) {
+        String texPath = null; // texture path starts as null
+        boolean resPath = true; // resource-relative starts as true
+        this.blendMode = BLEND_MODE.NONE; // blend mode starts at no blending
+        try { // try to parse material
+            for (Node c : node.getChildren()) { // go through each child and parse the values
+                String n = c.getName(); // get name
+                // parse the data
+                if (n.equals("texture_path")) texPath = c.getValue();
+                else if (n.equals("resource_relative")) resPath = Boolean.parseBoolean(c.getValue());
+                else if (n.equals("color")) this.color = Utils.strToColor(c.getValue());
+                else if (n.equals("blend_mode")) this.blendMode = BLEND_MODE.valueOf(c.getValue().toUpperCase());
+                else // if unrecognized child, log but don't crash
+                    Utils.log("Unrecognized child given for material info: " + c + ". Ignoring.",
+                            "graphics.Material", "Material(Node)", false);
+            }
+        } catch (Exception e) { // log any errors but don't crash
+            Utils.log("Unable to parse the following material info: " + node.toString() + "\n for reason:" +
+                    e.getMessage(), "graphics.Material", "Material(Node)", false);
+        }
+        if (texPath != null) this.texture = new Texture(texPath, resPath); // if a texture was given, use the texture
+        // if no texture or color was specified, default to white
+        if (!this.isColored() && !this.isTextured()) this.color = new float[]{1.0f, 1.0f, 1.0f, 1.0f};
+    }
 }

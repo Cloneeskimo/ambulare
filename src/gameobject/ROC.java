@@ -18,6 +18,8 @@ import java.util.List;
  * (1) StaticObjects: bound to certain positions in the window and have extensive positioning settings and customization
  * (useful for HUD creation)
  * (2) WorldObjects: objects with physics that are directly given to a game world to manage
+ * Note that, by default, ROCs do not instantiate their game world to save on resources for settings where a game world
+ * is not necessary. useGameWorld() must be called for the ROC to instantiate its game world
  * ROCs also provide extensive support for mouse interaction through having an MIHSB
  */
 public class ROC {
@@ -35,14 +37,20 @@ public class ROC {
 
     /**
      * Constructor
+     */
+    public ROC() {
+        this.staticObjects = new ArrayList<>();
+        this.mihsb = new MIHSB();
+        this.initSP(); // create and initialize shader programs
+    }
+
+    /**
+     * Instantiates the ROC's game world
      * @param windowHandle the window's GLFW handle
      */
-    public ROC(long windowHandle) {
-        this.staticObjects = new ArrayList<>();
+    public void useGameWorld(long windowHandle) {
         this.gameWorld = new GameWorld(windowHandle);
-        this.mihsb = new MIHSB();
         this.mihsb.useCam(this.gameWorld.getCam()); // tell the MIHSB to use the game world's cam for calculations
-        this.initSP(); // create and initialize shader programs
     }
 
     /**
@@ -84,7 +92,7 @@ public class ROC {
      * @param interval the amount of time to account for
      */
     public void update(float interval) {
-        this.getGameWorld().update(interval);
+        if (this.gameWorld != null) this.gameWorld.update(interval); // update gameworld
         for (StaticObject so : this.staticObjects) so.o.update(interval); // update static objects
     }
 
@@ -92,7 +100,7 @@ public class ROC {
      * Renders all the static objects
      */
     public void render() {
-        this.gameWorld.render(); // render the world first, underneath the static objects
+        if (this.gameWorld != null) this.gameWorld.render(); // render the world first, underneath the static objects
         this.sp.bind(); // bind shader program
         this.sp.setUniform("texSampler", 0); // set texture sampler uniform to use texture unit 0
         this.sp.setUniform("ar", Global.ar); // set aspect ratio uniform
@@ -139,7 +147,13 @@ public class ROC {
      * @param wo the world object to add
      */
     public void addToWorld(WorldObject wo) {
-        this.gameWorld.addObject(wo);
+        if (this.gameWorld == null) { // if game world hasn't been instantiated
+            Utils.log("Attempted to add an object to a ROC's game world withouth calling useGameWorld() first." +
+                    "Ignoring request", "gameobject.gameworld.GameWorld", "addToWorld(WorldObject)",
+                    false); // log occurrence
+            return; // and return without crashing
+        }
+        this.gameWorld.addObject(wo); // otherwise just add to the game world
         // if object is interactable with a mouse, add it to the MIHSB with the camera usage flag true (world object)
         if (wo instanceof MIHSB.MouseInteractable) this.mihsb.add((MIHSB.MouseInteractable)wo, true);
     }
@@ -180,7 +194,7 @@ public class ROC {
     }
 
     /**
-     * @return the camera
+     * @return the ROC's game world. Note that this will be null if useGameWorld() hasn't been called
      */
     public GameWorld getGameWorld() { return this.gameWorld; }
 
@@ -189,7 +203,7 @@ public class ROC {
      */
     public void cleanup() {
         if (this.sp != null) this.sp.cleanup(); // cleanup shader program
-        this.gameWorld.cleanup(); // cleanup game world
+        if (this.gameWorld != null) this.gameWorld.cleanup(); // cleanup game world
         for (StaticObject so : this.staticObjects) so.o.cleanup(); // cleanup static objects
     }
 

@@ -4,13 +4,11 @@ import gameobject.ROC;
 import gameobject.TextButton;
 import gameobject.TextObject;
 import gameobject.gameworld.AnimatedBlock;
+import gameobject.gameworld.Area;
 import gameobject.gameworld.Block;
 import gameobject.gameworld.WorldObject;
 import graphics.*;
-import utils.Global;
-import utils.Pair;
-import utils.PhysicsEngine;
-import utils.Transformation;
+import utils.*;
 
 import static org.lwjgl.glfw.GLFW.*;
 
@@ -34,6 +32,9 @@ public class WorldLogic extends GameLogic {
     protected void initOthers(Window window) {
         super.initOthers(window); // call super so that FPS displaying objects are added to HUD
         this.window = window; // save reference to window
+        this.roc.useGameWorld(window.getHandle()); // use game world
+
+        Area a = new Area(Node.resToNode("/mainstory/areas/area.amb"));
 
         // create and add player
         player = new WorldObject(Model.getStdGridRect(1, 2),
@@ -51,13 +52,20 @@ public class WorldLogic extends GameLogic {
         this.roc.addToWorld(o); // add to ROC
 
         // create and add red dirt floor and walls
-        this.roc.getGameWorld().createBlockMap(10, 10);
-        Material m = new Material(new Texture("/textures/dirt_anim.png"), new float[] {2.0f, 1.0f, 1.0f, 1.0f},
-                Material.BLEND_MODE.MULTIPLICATIVE);
-        for (int i = 0; i < 9; i++) { // this loop builds the dirt floor and walls
-            this.roc.getGameWorld().addBlock(new AnimatedBlock(m, i, 0, 4, 0.5f, true));
-            this.roc.getGameWorld().addBlock(new AnimatedBlock(m, 0, i + 1, 4, 0.5f, true));
+        this.roc.getGameWorld().createBlockMap(12, 12);
+        for (int i = 2; i < 8; i++) {
+            this.roc.getGameWorld().addBlock(new Block("/textures/dirt_bottom.png", true, i, 0));
+            this.roc.getGameWorld().addBlock(new Block("/textures/dirt.png", true, i, 1));
+            this.roc.getGameWorld().addBlock(new Block("/textures/grass_top.png", true, i, 2));
         }
+        this.roc.getGameWorld().addBlock(new Block("/textures/grass_topleft.png", true, 1, 2));
+        this.roc.getGameWorld().addBlock(new Block("/textures/dirt_left.png", true, 1, 1));
+        this.roc.getGameWorld().addBlock(new Block("/textures/dirt_bottomleft.png", true, 1, 0));
+        this.roc.getGameWorld().addBlock(new Block("/textures/grass_topright.png", true, 8, 2));
+        this.roc.getGameWorld().addBlock(new Block("/textures/dirt_bottomright.png", true, 8, 0));
+        this.roc.getGameWorld().addBlock(new Block("/textures/dirt_right.png", true, 8, 1));
+        this.roc.getGameWorld().addBlock(new Block(new Material(Node.resToNode(
+                "/mainstory/materials/dirt.amb")), 7, 3));
 
         // create and add player position text
         this.roc.addStaticObject(new TextObject(Global.FONT, "(0, 0)"), // player pos text

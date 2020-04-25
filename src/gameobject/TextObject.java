@@ -15,8 +15,8 @@ public class TextObject extends GameObject {
      * Static Data
      */
     public static final float DEFAULT_SIZE = 0.1f; /* defines the default text size in normalized coordinates. That
-        is, text will, by default, be 0.1f tall and however wide necessary to accomodate all characters */
-    private static final float[] DEFAULT_COLOR = new float[] {0.0f, 0.0f, 0.0f, 1.0f}; // default text color
+        is, text will, by default, be 0.1f tall and however wide necessary to accommodate all characters */
+    private static final float[] DEFAULT_COLOR = new float[] {1.0f, 1.0f, 1.0f, 1.0f}; // default text color
 
     /**
      * Members

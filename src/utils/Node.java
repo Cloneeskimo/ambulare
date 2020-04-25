@@ -199,6 +199,8 @@ public class Node {
             parseNode(node, data, 0, 0); // parse read data into root node
             return node; // return read node
         } catch (Exception e) { // if exception
+            Utils.log("Unable to load node at path: " + path + ". Returning null", "utils.Node",
+                    "fileToNode(String, boolean)", false);
             return null; // return null
         }
     }

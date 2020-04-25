@@ -30,15 +30,17 @@ public class AnimatedBlock extends Block {
 
     /**
      * Constructs the animated block with the texture with the given resource-relative path
-     * @param texResPath the resource-relative path to the texture
+     * @param texPath the path to the texture
+     * @param resPath whether the given path is resource-relative
      * @param x the x grid position of the block
      * @param y the y grid position of the block
      * @param frames the amount of frames in the texture
      * @param frameTime how long each frame will be
      * @param randStart whether to start at a random location in the animation
      */
-    public AnimatedBlock(String texResPath, int x, int y, int frames, float frameTime, boolean randStart) {
-        super(texResPath, x, y);
+    public AnimatedBlock(String texPath, boolean resPath, int x, int y, int frames, float frameTime,
+                         boolean randStart) {
+        super(texPath, resPath, x, y);
         this.initAnim(frames, frameTime, randStart); // initialize the animation
     }
 

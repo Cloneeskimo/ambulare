@@ -37,7 +37,7 @@ public class Font {
      * @param infoResPath the resource-relative path to the font node-file. The node-file layout is defined above
      */
     public Font(String sheetResPath, String infoResPath) {
-        this.sheet = new Texture(sheetResPath); // load sheet
+        this.sheet = new Texture(sheetResPath, true); // load sheet
         Node info = Node.resToNode(infoResPath); // load info
         try { // try to parse data
             this.charsPerRow = Integer.parseInt(info.getChild("chars_per_row").getValue()); // parse characters per row
