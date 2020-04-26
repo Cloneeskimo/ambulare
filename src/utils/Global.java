@@ -27,7 +27,7 @@ public class Global {
      * Initialize any global members
      */
     public static void init() {
-        Global.FONT = new Font("/font.png", "/font_info.txt");
+        Global.FONT = new Font("/textures/font.png", "/font_info.txt");
     }
 
     /**
