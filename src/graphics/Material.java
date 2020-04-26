@@ -31,57 +31,19 @@ public class Material {
         different set for each amount of frames also means that less variance in frame count is more space efficient */
 
     /**
-     * Calculates the sets of texture coordinates for each frame
-     *
-     * @param frameCount the amount of horizontal frames in the corresponding texture
-     */
-    private static int[] calcTexCoordVBOs(int frameCount) {
-        int[] VBOs = new int[frameCount]; // create new array for the VBOs
-        for (int i = 0; i < frameCount; i++) { // for each frame
-            float[] texCoords = getTexCoordsForFrame(i, frameCount); // calc the texture coordinates
-            FloatBuffer fb = MemoryUtil.memAllocFloat(texCoords.length); // allocate buffer space for tex coord data
-            fb.put(texCoords).flip(); // put texture coordinate data into buffer
-            VBOs[i] = glGenBuffers(); // generate texture coordinate vertex buffer object
-            glBindBuffer(GL_ARRAY_BUFFER, VBOs[i]); // bind texture coordinate vertex buffer object
-            glBufferData(GL_ARRAY_BUFFER, fb, GL_STATIC_DRAW); // put tex coord data into tex coord VBO
-            MemoryUtil.memFree(fb); // free buffer
-        }
-        glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind any VBOs
-        return VBOs;
-    }
-
-    /**
-     * Calculates the set of texture coordinates for the given horizontal frame
-     *
-     * @param i  the frame to calculate the texture coordinates for
-     * @param of the total amount of horizontal frames in the corresponding texture
-     * @return the length-eight float array containing the texture coordinates
-     */
-    private static float[] getTexCoordsForFrame(int i, int of) {
-        float frameWidth = (float) 1 / (float) of; // calculate width of one frame
-        float frac = (float) i / (float) of; // calculates how horizontally far this frame is in texture
-        return new float[]{ // create texture coordinates array
-                frac, 1.0f, // top left
-                frac, 0.0f, // bottom left
-                frac + frameWidth, 0.0f, // bottom right
-                frac + frameWidth, 1.0f // top right
-        };
-    }
-
-    /**
      * Members
      */
-    private float[] color;        // the color of this material if it has one
-    private Texture texture;      // the texture of this material if it has one
-    private BLEND_MODE blendMode; // how this Material blends its texture and color when it has both
+    private float[] color;          // the color of this material if it has one
+    private Texture texture;        // the texture of this material if it has one
+    private BLEND_MODE blendMode;   // how this Material blends its texture and color when it has both
 
     /**
      * Animation Members
      */
-    private int frames = 1;       // total amount of frames and current frame
-    private int frame = 0;        // current frame of animation
-    private float frameTime = 1f; // amount of time per frame
-    private float frameTimeLeft;  // amount of time left for the current frame
+    protected int frames = 1;       // total amount of frames and current frame
+    protected int frame = 0;        // current frame of animation
+    protected float frameTime = 1f; // amount of time per frame
+    protected float frameTimeLeft;  // amount of time left for the current frame
 
     /**
      * Constructs the material based on the given texture, color, and blend flag
@@ -230,7 +192,7 @@ public class Material {
     public int getTexCoordVBO() {
         int[] texCoordVBOs = Material.texCoords.get(this.frames); // try to get the set of VBOs
         if (texCoordVBOs == null) { // if this set of texture coordinate VBOs hasn't been calculated yet
-            texCoordVBOs = calcTexCoordVBOs(this.frames); // calculate the texture coordinates for that amount of frames
+            texCoordVBOs = Model.calcTexCoordVBOs(this.frames); // calculate the tex coords for that amount of frames
             Material.texCoords.put(this.frames, texCoordVBOs); // save to map
         }
         return texCoordVBOs[this.frame]; // get and return the texture coordinates for the current frame

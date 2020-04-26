@@ -3,6 +3,7 @@ package logic;
 import gameobject.ROC;
 import gameobject.TextButton;
 import gameobject.TextObject;
+import gameobject.TexturedButton;
 import gameobject.gameworld.Area;
 import gameobject.gameworld.WorldObject;
 import graphics.*;

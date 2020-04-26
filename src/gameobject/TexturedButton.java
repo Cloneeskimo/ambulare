@@ -1,7 +1,7 @@
 package gameobject;
 
 import graphics.Material;
-import graphics.MultiTexCoordModel;
+import graphics.Model;
 import graphics.Texture;
 
 /**
@@ -13,83 +13,44 @@ public class TexturedButton extends GameObject implements MIHSB.MouseInteractabl
     /**
      * Members
      */
-    private final int[] frameCounts; // the amount of frames in the texture for each state of mouse interactivity
-    private final int MIID;          // the mouse interactivity id given in the constructor
-    private int framesToUse = 1;     // which set of frames to use (which state of mouse interactivity the button is in)
+    private final int MIID; // the mouse interactivity id given in the constructor
 
     /**
      * Constructs the textured button with animation within any single mouse interactivity state
      *
-     * @param w             the width of the button in grid cells
-     * @param h             the height of the button in grid cells
+     * @param model         the model to use for textured button
      * @param texResPath    the resource-relative path to the texture. The texture should have its frames in the
-     *                      following order: no interaction frames, then hover frames, then pressed frames
-     * @param defaultFrames how many frames in the texture correspond to the no interaction state
+     *                      following order: default frames, then hover frames, then pressed frames
+     * @param defaultFrames how many frames in the texture correspond to the default state
      * @param hoverFrames   how many frames in the texture correspond to the hover state
      * @param pressedFrames how many frames in the texture correspond to the pressed state
      * @param frameTime     how much time (in seconds) to show a frame
      * @param MIID          the mouse interactivity ID of the button
      */
-    public TexturedButton(int w, int h, String texResPath, int defaultFrames, int hoverFrames, int pressedFrames,
+    public TexturedButton(Model model, String texResPath, int defaultFrames, int hoverFrames, int pressedFrames,
                           float frameTime, int MIID) {
-        super(MultiTexCoordModel.getStdMultiTexGridRect(w, h, defaultFrames + hoverFrames + pressedFrames),
-                new Material(new Texture(texResPath, true))); // call super, creating necessary components
-        /* here we check if there is more than one frame for any mouse interactivity state. If there isn't, there is no
-           need to keep time for texture animation */
-        if (defaultFrames + hoverFrames + pressedFrames > 3) { // if there is actually animation
-            //this.giveTexAnim(defaultFrames + hoverFrames + pressedFrames, frameTime); // start the animation
-        }
-        this.frameCounts = new int[]{defaultFrames, hoverFrames, pressedFrames}; // keep count of frames for each state
-        this.framesToUse = 0;
+        super(model, null);
+        this.material = new TexturedButtonMaterial(new Texture(texResPath, true), defaultFrames, hoverFrames,
+                pressedFrames, frameTime); // create extended textured button material
         this.MIID = MIID;
     }
 
     /**
      * Constructs the textured button without any animation within mouse interactivity states (the texture will still
-     * change when the state changes however). This constructor basically assumes that the texture at the given path
-     * has one frame for each mouse interactivity state
+     * change when the mouse state changes however). This constructor basically assumes that the texture at the given
+     * path has one frame for each mouse interactivity state
      *
-     * @param w          the width of the button in grid cells
-     * @param h          the height of the button in grid cells
+     * @param model      the model to use for textured button
      * @param texResPath the resource-relative path to the texture. The texture should have its frames in the
-     *                   following order: no interaction frame, then the hover frame, then the pressed frame
+     *                   following order: default frame, then the hover frame, then the pressed frame
      * @param MIID       the mouse interactivity ID of the button
      */
-    public TexturedButton(int w, int h, String texResPath, int MIID) {
-        this(w, h, texResPath, 1, 1, 1, 0, MIID);
+    public TexturedButton(Model model, String texResPath, int MIID) {
+        this(model, texResPath, 1, 1, 1, 0, MIID);
     }
 
     /**
-     * Updates the texture animation if there is one
-     *
-     * @param interval the amount of time, in seconds, to account for
-     */
-    protected void updateTexAnim(float interval) {
-        this.frameTimeLeft -= interval; // update frame time left
-        if (this.frameTimeLeft <= 0f) { // if frame is over
-            this.frameTimeLeft += this.frameTime; // reset time
-            this.frame++; // move to next frame
-            if (this.frame >= this.frameCounts[framesToUse]) this.frame = 0; // return to first frame if reached end
-            this.setAppropriateFrame(); // calculate the appropriate frame to tell the model to use
-        }
-    }
-
-    /**
-     * Calculates the appropriate frame to tell the multi-tex coordinate model to shift to, given the mouse
-     * interactivity state of the button and how far along the animation it is (if there is an animation)
-     */
-    private void setAppropriateFrame() {
-        this.frame = frame % this.frameCounts[framesToUse]; // make sure frame is within bounds of current MI state
-        int mFrame = this.frame; // start with current frame
-        if (this.framesToUse > 0) { // if we passed first MI state
-            mFrame += this.frameCounts[0]; // we can skip its frames in the texture
-            if (this.framesToUse > 1) mFrame += this.frameCounts[1]; // and if we passed second MI state, skip those too
-        }
-        ((MultiTexCoordModel) this.model).setFrame(mFrame); // tell the model the calculated frame
-    }
-
-    /**
-     * Responds to mouse hovering by switching to the hover frame(s)
+     * Responds to mouse hovering by updating the state of the material
      *
      * @param x the x position of the mouse in either world or camera-view space, depending on whether the
      *          implementing object reacts to a camera
@@ -98,35 +59,31 @@ public class TexturedButton extends GameObject implements MIHSB.MouseInteractabl
      */
     @Override
     public void onHover(float x, float y) {
-        this.framesToUse = 1; // switch to hover frames
-        this.setAppropriateFrame(); // calculate new appropriate frame for model
+        ((TexturedButtonMaterial) this.material).updateMouseState(1);
     }
 
     /**
-     * Responds to hovering ending by switching to the no-interaction frame(s)
+     * Responds to mouse hovering ending by updating the state of the material
      */
     @Override
     public void onDoneHovering() {
-        this.framesToUse = 0; // switch to no interaction frames
-        this.setAppropriateFrame(); // calculate new appropriate frame for model
+        ((TexturedButtonMaterial) this.material).updateMouseState(0);
     }
 
     /**
-     * Responds to a press by switching to the press frame(s)
+     * Responds to a mouse press by updating the state of the material
      */
     @Override
     public void onPress() {
-        this.framesToUse = 2; // switch to press frames
-        this.setAppropriateFrame(); // calculate new appropriate frame for model
+        ((TexturedButtonMaterial) this.material).updateMouseState(2);
     }
 
     /**
-     * Responds to a mouse release by switching to the hover frame(s)
+     * Responds to a mouse release by updating the state of the material
      */
     @Override
     public void onRelease() {
-        this.framesToUse = 1; // switch to hover frames
-        this.setAppropriateFrame(); // calculate new appropriate frame for model
+        ((TexturedButtonMaterial) this.material).updateMouseState(1);
     }
 
     /**
@@ -137,5 +94,82 @@ public class TexturedButton extends GameObject implements MIHSB.MouseInteractabl
     @Override
     public int getID() {
         return this.MIID;
+    }
+
+    /**
+     * Tailors a material to have different animations depending on a mouse state. Used by textured button for
+     * exactly this purpose
+     */
+    private class TexturedButtonMaterial extends Material {
+
+        /**
+         * Members
+         */
+        private final int[] frameCounts; // the amount of frames for each state of mouse interactivity
+        private int mouseState = 0;      // the current mouse state - decides which set of frames to use
+        private final boolean animated;  /* flags whether this button is animated within any mouse state's set of
+                                            frames. If false, update calculations based on animation can be avoided */
+        private int stateFrame = 0;      // the current frame within the subset of frames for the current mouse state
+
+        /**
+         * Constructor
+         *
+         * @param texture       the texture for the material
+         * @param defaultFrames the amount of frames for the default mouse state (no hover or press)
+         * @param hoverFrames   the amount of frames for the hover mouse state
+         * @param pressedFrames the amount of frames for the press mouse state
+         * @param frameTime     how much time (in seconds) each frame should receive
+         */
+        public TexturedButtonMaterial(Texture texture, int defaultFrames, int hoverFrames, int pressedFrames,
+                                      float frameTime) {
+            super(texture, null, BLEND_MODE.NONE, defaultFrames + hoverFrames + pressedFrames, frameTime,
+                    false);
+            this.frameCounts = new int[]{defaultFrames, hoverFrames, pressedFrames}; // keep count of frames for each
+            // if there is more than one frame for any mouse state then that total frames will be greater than 3
+            this.animated = defaultFrames + hoverFrames + pressedFrames > 3;
+        }
+
+        /**
+         * Updates the textured button material by keeping time for animation if animated
+         *
+         * @param interval the amount of time to account for
+         */
+        @Override
+        public void update(float interval) {
+            if (this.animated) { // if this isn't animated, no need to do timekeeping calculations
+                this.frameTimeLeft -= interval; // update frame time left
+                if (this.frameTimeLeft <= 0f) { // if frame is over
+                    this.frameTimeLeft += this.frameTime; // reset time
+                    this.stateFrame++; // move to next frame
+                    if (this.stateFrame >= this.frameCounts[mouseState]) // if end of frames for current mouse state
+                        this.stateFrame = 0; // return to first frame
+                    this.setAppropriateFrame(); // calculate the appropriate frame in the entire texture
+                }
+            }
+        }
+
+        /**
+         * Calculates the appropriate frame of the texture to use based on the mouse state and the current frame
+         * within that state
+         */
+        private void setAppropriateFrame() {
+            // make sure state frame is actually within the bounds of the corresponding mouse state's frame count
+            this.stateFrame = stateFrame % this.frameCounts[mouseState];
+            this.frame = this.stateFrame; // start with state frame
+            if (this.mouseState > 0) { // if hovering or pressing
+                this.frame += this.frameCounts[0]; // we skip default frames
+                if (this.mouseState > 1) this.frame += this.frameCounts[1]; // if pressing, skip hovering frames
+            }
+        }
+
+        /**
+         * Updates the mouse state of the textured button material and recalculates the correct frame
+         *
+         * @param mouseState the new mouse state
+         */
+        public void updateMouseState(int mouseState) {
+            this.mouseState = mouseState; // save new mouse state
+            this.setAppropriateFrame(); // update correct frame
+        }
     }
 }

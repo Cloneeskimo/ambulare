@@ -21,21 +21,42 @@ import static org.lwjgl.opengl.GL30.*;
 public class Model {
 
     /**
-     * Members
+     * Calculates the sets of texture coordinates for each frame
+     *
+     * @param frameCount the amount of horizontal frames in the corresponding texture
      */
-    private float[] modelCoords;         // the model's model coordinates
-    private float sx = 1f, sy = 1f;      // horizontal and vertical scale
-    private float r = 0f;                // rotation in radians
-    private float w = 0, h = 0;          // width and height of the model in model coordinates
-    private float uw, uh;                // width and height of the model when not rotated
-    private boolean outdatedSize = true; /* whenever scale or rotation of the model is changed, this flag will be set
-                                            to true but the model won't re-calculate width and height until the
-                                            corresponding methods are called while this flag is true to save computing
-                                            power */
-    protected final int ids[];           /* integer array to store the various GL object ids: [0] - VAO ID,
-                                            [1] - model coordinate VBO ID, [2] - texture coordinate VBO ID,
-                                            [4] - index VBO ID */
-    protected final int idx;             // the amount of vertices this shape has
+    public static int[] calcTexCoordVBOs(int frameCount) {
+        int[] VBOs = new int[frameCount]; // create new array for the VBOs
+        for (int i = 0; i < frameCount; i++) { // for each frame
+            float[] texCoords = getTexCoordsForFrame(i, frameCount); // calc the texture coordinates
+            FloatBuffer fb = MemoryUtil.memAllocFloat(texCoords.length); // allocate buffer space for tex coord data
+            fb.put(texCoords).flip(); // put texture coordinate data into buffer
+            VBOs[i] = glGenBuffers(); // generate texture coordinate vertex buffer object
+            glBindBuffer(GL_ARRAY_BUFFER, VBOs[i]); // bind texture coordinate vertex buffer object
+            glBufferData(GL_ARRAY_BUFFER, fb, GL_STATIC_DRAW); // put tex coord data into tex coord VBO
+            MemoryUtil.memFree(fb); // free buffer
+        }
+        glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind any VBOs
+        return VBOs;
+    }
+
+    /**
+     * Calculates the set of texture coordinates for the given horizontal frame
+     *
+     * @param i  the frame to calculate the texture coordinates for
+     * @param of the total amount of horizontal frames in the corresponding texture
+     * @return the length-eight float array containing the texture coordinates
+     */
+    public static float[] getTexCoordsForFrame(int i, int of) {
+        float frameWidth = (float) 1 / (float) of; // calculate width of one frame
+        float frac = (float) i / (float) of; // calculates how horizontally far this frame is in texture
+        return new float[]{ // create texture coordinates array
+                frac, 1.0f, // top left
+                frac, 0.0f, // bottom left
+                frac + frameWidth, 0.0f, // bottom right
+                frac + frameWidth, 1.0f // top right
+        };
+    }
 
     /**
      * Returns the model coordinates appropriate for a rectangular model with the given width/height in grid cells
@@ -101,6 +122,22 @@ public class Model {
         return (Math.abs(db - da) < 0.0001f);
     }
 
+    /**
+     * Members
+     */
+    private float[] modelCoords;         // the model's model coordinates
+    private float sx = 1f, sy = 1f;      // horizontal and vertical scale
+    private float r = 0f;                // rotation in radians
+    private float w = 0, h = 0;          // width and height of the model in model coordinates
+    private float uw, uh;                // width and height of the model when not rotated
+    private boolean outdatedSize = true; /* whenever scale or rotation of the model is changed, this flag will be set
+                                            to true but the model won't re-calculate width and height until the
+                                            corresponding methods are called while this flag is true to save computing
+                                            power */
+    protected final int ids[];           /* integer array to store the various GL object ids: [0] - VAO ID,
+                                            [1] - model coordinate VBO ID, [2] - texture coordinate VBO ID,
+                                            [4] - index VBO ID */
+    protected final int idx;             // the amount of vertices this shape has
     /**
      * Constructs the model
      * The assumes input given in sequences of triangles

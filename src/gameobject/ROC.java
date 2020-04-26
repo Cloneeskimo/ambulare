@@ -190,6 +190,9 @@ public class ROC {
         if (o instanceof MIHSB.MouseInteractable) this.mihsb.add((MIHSB.MouseInteractable) o, false);
         so.ensurePosition(Global.ar); // position the object according to its settings
         this.staticObjects.add(so); // add object to static objects list
+        Material m = o.getMaterial();
+        if (!this.materials.contains(m)) materials.add(m);
+        // TODO : comment
     }
 
     /**

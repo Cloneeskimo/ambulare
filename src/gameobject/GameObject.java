@@ -9,30 +9,19 @@ import utils.Pair;
 
 /**
  * Represents a single game object. This is the basic abstraction away from directly dealing with GL commands
- * These objects have a model and a material both used for rendering. They also have position, velocity, visibility
- * components that are used during rendering to convert this object's model coordinates into object
- * coordinates. They and are able to be given positional animations as well as texture animations, if the underlying
- * model is a model that can have multiple sets of texture coordinates. Game object's coordinates are considered to be
- * world coordinates that represent the center of the game object
+ * These objects have a model and a material both used for rendering. They also have position and visibility
+ * components that are used during rendering. They and are able to be given positional animations. Game object's
+ * coordinates are considered to represent the center of the game object
  */
 public class GameObject {
-
-    /**
-     * Animation Members
-     */
-    protected PositionalAnimation posAnim; // positional animation which can be set to animate positional changes
-    protected float frameTime = 0;         // the amount of time (s) an animated texture frame should last
-    protected float frameTimeLeft = 0;     // the amount of time (s) left for the current animated texture frame
-    protected int frameCount = -1;         // amount of animated texture frames
-    protected int frame = 0;               // the current animated texture frame
 
     /**
      * Other Members
      */
     private float x = 0f, y = 0f;          // position
+    protected PositionalAnimation posAnim; // positional animation which can be set to animate positional changes
     protected Material material;           // material to use when rendering
     protected Model model;                 // model to use when rendering
-    protected float vx = 0f, vy = 0f;      // velocity
     protected boolean visible = true;      // visibility
 
     /**
@@ -42,8 +31,8 @@ public class GameObject {
      * @param material the material to use for rendering
      */
     public GameObject(Model model, Material material) {
-        this.material = material; // save material as member
-        this.model = model; // save model as member
+        this.material = material;
+        this.model = model;
     }
 
     /**
@@ -55,9 +44,9 @@ public class GameObject {
      * @param material the material to use for rendering
      */
     public GameObject(float x, float y, Model model, Material material) {
-        this(model, material); // call other constructor
-        this.x = x; // save x as member
-        this.y = y; // save y as member
+        this(model, material);
+        this.x = x;
+        this.y = y;
     }
 
     /**
@@ -66,10 +55,7 @@ public class GameObject {
      * @param interval the amount of time to account for
      */
     public void update(float interval) {
-        if (this.posAnim == null) { // if not in the middle of a positional animation
-            if (this.move(this.vx * interval, this.vy * interval)) // move according to velocity and interval
-                this.onMove(); // call onMove if an actual move occurred
-        } else this.updatePosAnim(interval); // otherwise, update positional animation
+        if (this.posAnimating()) this.updatePosAnim(interval); // update positional animation
     }
 
     /**
@@ -82,11 +68,12 @@ public class GameObject {
         this.x = this.posAnim.getX(); // set x position
         this.y = this.posAnim.getY(); // set y position
         this.setRotRad(this.posAnim.getR()); // set rotation
-        this.onMove(); // call onMove()
+        this.onMove(); // call onMove() to signify that a move was made
         if (this.posAnim.finished()) { // if animation is over
             this.x = this.posAnim.getFinalX(); // make sure at the correct ending x
             this.y = this.posAnim.getFinalY(); // make sure at the correct ending y
             this.setRotRad(this.posAnim.getFinalR()); // make sure at the correct ending rotation
+            this.onMove(); // call onMove() to signify that a move was made
             this.posAnim = null; // delete the animation
         }
     }
@@ -109,31 +96,8 @@ public class GameObject {
     }
 
     /**
-     * Moves the game object by the given offset
-     *
-     * @param dx the x offset
-     * @param dy the y offset
-     * @return whether or not an actual move occurred
-     */
-    public boolean move(float dx, float dy) {
-        this.x += dx; // update x
-        this.y += dy; // update y
-        return (dx != 0 || dy != 0); // call onMove() if an actual move occurred
-    }
-
-    /**
-     * Sets the game object's velocities to 0
-     *
-     * @param stopPosAnim whether or not to stop any positional animation that may be happening
-     */
-    public void stop(boolean stopPosAnim) {
-        this.vx = this.vy = 0; // reset velocities
-        if (stopPosAnim) this.posAnim = null; // delete positional animation if flag set
-    }
-
-    /**
-     * This is called whenever there is a change in the game object's position. The point is for extending classes to be
-     * able to override this in order to react to a changes in position
+     * This is called whenever there is a change in the game object's position, scale, or rotation. The point is for
+     * extending classes to be able to override this in order to react to a changes in position, scale, or rotation
      */
     protected void onMove() {
     }
@@ -170,43 +134,8 @@ public class GameObject {
     }
 
     /**
-     * Updates the game object's horizontal velocity (x velocity)
-     *
-     * @param vx the new horizontal velocity
-     */
-    public void setVX(float vx) {
-        this.vx = vx;
-    }
-
-    /**
-     * Updates the game object's vertical velocity
-     *
-     * @param vy the new vertical velocity
-     */
-    public void setVY(float vy) {
-        this.vy = vy;
-    }
-
-    /**
-     * Updates the game object's horizontal velocity by adding the given incremental change
-     *
-     * @param dvx the incremental change
-     */
-    public void incrementVX(float dvx) {
-        this.vx += dvx;
-    }
-
-    /**
-     * Updates the game object's vertical velocity by adding the given incremental change
-     *
-     * @param dvy the incremental change
-     */
-    public void incrementVY(float dvy) {
-        this.vy += dvy;
-    }
-
-    /**
-     * Sets the x scaling factor of the game object to the given x scaling factor
+     * Sets the x scaling factor of the game object to the given x scaling factor by scaling the model. Note that if
+     * other game objects share a model with this game object, they will be scaled as well
      *
      * @param x the x scaling factor to use
      */
@@ -216,7 +145,8 @@ public class GameObject {
     }
 
     /**
-     * Sets the y scaling factor of the game object to the given y scaling factor
+     * Sets the y scaling factor of the game object to the given y scaling factor by scaling the model. Note that if
+     * other game objects share a model with this game object, they will be scaled as well
      *
      * @param y the y scaling factor to use
      */
@@ -316,49 +246,35 @@ public class GameObject {
     }
 
     /**
-     * @return the game object's width
+     * @return the game object's (model's) width
      */
     public float getWidth() {
-        return this.model.getWidth(); // return model width
+        return this.model.getWidth();
     }
 
     /**
-     * @return the game object's height
+     * @return the game object's (model's) width
      */
     public float getHeight() {
-        return this.model.getHeight(); // return model's height
+        return this.model.getHeight();
     }
 
     /**
-     * @return the game object's width without taking rotation into consideration
+     * @return the game object's (model's) width without taking rotation into consideration
      */
     public float getUnrotatedWidth() {
-        return this.model.getUnrotatedWidth(); // return unrotated model width
+        return this.model.getUnrotatedWidth();
     }
 
     /**
-     * @return the game object's height without taking rotation into consideration
+     * @return the game object's (model's) height without taking rotation into consideration
      */
     public float getUnrotatedHeight() {
-        return this.model.getUnrotatedHeight(); // return model's unrotated height
+        return this.model.getUnrotatedHeight();
     }
 
     /**
-     * @return the game object's horizontal velocity
-     */
-    public float getVX() {
-        return this.vx;
-    }
-
-    /**
-     * @return the game object's vertical velocity
-     */
-    public float getVY() {
-        return this.vy;
-    }
-
-    /**
-     * @return the game object's rotation in radians
+     * @return the game object's (model's) rotation in radians
      */
     public float getRotationRad() {
         return this.model.getRotationRad();
@@ -373,8 +289,7 @@ public class GameObject {
 
     /**
      * Calculates the fitting box for the game object by getting the model's fitting box and translating it to the
-     * game object's position. If the game object's model is rectangular, it will create a perfectly-sized and rotated
-     * fitting box. Otherwise, it will create the smallest possible fitting box that can house all vertices
+     * game object's position.
      *
      * @return the fitting box describe above
      */
