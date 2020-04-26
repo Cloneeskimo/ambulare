@@ -1,7 +1,6 @@
 package utils;
 
 import java.io.*;
-import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -24,17 +23,23 @@ public class Utils {
         return (a || b) && !(a && b);
     }
 
-    //TODO: comment
+    /**
+     * Determines if a file with the given path exists
+     * @param path the path to check
+     * @param resPath whether the path is resource-relative or not. If not, the data directory will not get
+     *                automatically prepended to the path
+     * @return whether the path exists or not
+     */
     public static boolean fileExists(String path, boolean resPath) {
-        if (resPath) {
-            try {
+        if (resPath) { // if resource-relative path
+            try { // try to open the resource as a stream. If it's null, the file doesn't exist
                 return (Class.forName(Utils.class.getName()).getResourceAsStream(path) != null);
             } catch (Exception e) {
                 Utils.handleException(e, "utils.Utils", "fileXists(String, boolean)", true);
             }
-        } else {
-            File file = new File(path);
-            return file.exists();
+        } else { // if not resource-relative
+            File file = new File(path); // create the corresponding file
+            return file.exists(); // and check if it exists
         }
         return false;
     }
@@ -105,7 +110,7 @@ public class Utils {
      * Parses the the given path to separate its directory, name, and extension
      *
      * @param resPath whether the file is resource-relative or not
-     * @param file the path of the file
+     * @param file    the path of the file
      * @return a length three array containing [0] the directory (including the last '/') (or null if not in a
      * directory), [1] the name of the file excluding the slash and extension, [2] the extension of the file
      * including the '.' (or null if no extension), [3] 'true' if the file is resource-relative or 'false' otherwise
@@ -122,7 +127,7 @@ public class Utils {
                 break; // break from loop - don't need to continue anymore
             }
         }
-        return new String[]{ dir, name, ext, resPath ? "true" : "false" };
+        return new String[]{dir, name, ext, resPath ? "true" : "false"};
     }
 
     /**

@@ -134,7 +134,7 @@ public class Node {
     public Node getChild(String name) {
         name = name.toLowerCase(); // convert to lowercase
         for (Node child : this.children) if (child.getName().equals(name)) return child; // look for matching name
-        Utils.log("Couldn't find child with name'" + name + "', returning null", "utils.Node",
+        Utils.log("Couldn't find child with name '" + name + "', returning null", "utils.Node",
                 "getChild(String)", false); // log failure but don't throw exception
         return null; // return null if can't find
     }

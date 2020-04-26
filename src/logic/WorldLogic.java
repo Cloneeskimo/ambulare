@@ -39,6 +39,7 @@ public class WorldLogic extends GameLogic {
                 new Material(new float[] { 0.2f, 0.2f, 1.0f, 1.0f})); // create player as 1x2 blue rectangle
         player.setPos(Transformation.getCenterOfCell(new Pair<>(2, 4))); // move to grid cell 2, 4
         player.getPhysicsProperties().rigid = true; // male player rigid
+        player.setBoundingWidth(0.95f);
         this.roc.addToWorld(player); // add player to world
         this.roc.getGameWorld().getCam().follow(player); // make camera follow player
 
@@ -47,6 +48,7 @@ public class WorldLogic extends GameLogic {
                 new float[]{1.0f, 0.0f, 1.0f, 1.0f})); // as a pink square
         // move the object to 3, 1
         o.setPos(Transformation.getCenterOfCell(new Pair<>(1, 3))); // move to grid cell 1 ,3
+        o.setBoundingWidth(0.95f);
         this.roc.addToWorld(o); // add to ROC
 
         // create and add player position text
