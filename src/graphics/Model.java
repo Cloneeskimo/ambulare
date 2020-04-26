@@ -23,10 +23,6 @@ public class Model {
     /**
      * Members
      */
-    protected final int ids[];           /* integer array to store the various GL object ids: [0] - VAO ID,
-                                            [1] - model coordinate VBO ID, [2] - texture coordinate VBO ID,
-                                            [4] - index VBO ID */
-    private final int idx;               // the amount of vertices this shape has
     private float[] modelCoords;         // the model's model coordinates
     private float sx = 1f, sy = 1f;      // horizontal and vertical scale
     private float r = 0f;                // rotation in radians
@@ -36,20 +32,25 @@ public class Model {
                                             to true but the model won't re-calculate width and height until the
                                             corresponding methods are called while this flag is true to save computing
                                             power */
+    protected final int ids[];           /* integer array to store the various GL object ids: [0] - VAO ID,
+                                            [1] - model coordinate VBO ID, [2] - texture coordinate VBO ID,
+                                            [4] - index VBO ID */
+    protected final int idx;             // the amount of vertices this shape has
 
     /**
      * Returns the model coordinates appropriate for a rectangular model with the given width/height in grid cells
+     *
      * @param w the width of the rectangular model in cells
      * @param h the height of the rectangular model in cells
      * @return the standard rectangular model coordinates in the following order: bottom left, top left, top right,
-     *         bottom right
+     * bottom right
      */
     public static float[] getGridRectModelCoords(int w, int h) {
-        return new float[] {
-                -(float)w / 2, -(float)h / 2, // bottom left
-                -(float)w / 2,  (float)h / 2, // top left
-                 (float)w / 2,  (float)h / 2, // top right
-                 (float)w / 2, -(float)h / 2  // bottom right
+        return new float[]{
+                -(float) w / 2, -(float) h / 2, // bottom left
+                -(float) w / 2, (float) h / 2, // top left
+                (float) w / 2, (float) h / 2, // top right
+                (float) w / 2, -(float) h / 2  // bottom right
         };
     }
 
@@ -57,7 +58,7 @@ public class Model {
      * @return the standard rectangle texture coordinates
      */
     public static float[] getStdRectTexCoords() {
-        return new float[] {
+        return new float[]{
                 0.0f, 1.0f,
                 0.0f, 0.0f,
                 1.0f, 0.0f,
@@ -69,12 +70,13 @@ public class Model {
      * @return the standard rectangle indices
      */
     public static int[] getStdRectIdx() {
-        return new int[] { 0, 1, 3,   // first triangle  - bottom left, top left, bottom right
-                           3, 1, 2 }; // second triangle - bottom right, top left, top right
+        return new int[]{0, 1, 3,   // first triangle  - bottom left, top left, bottom right
+                3, 1, 2}; // second triangle - bottom right, top left, top right
     }
 
     /**
      * Creates a standard rectangular model with the given width and height in cells
+     *
      * @param w the width of the rectangular model in cells
      * @param h the height of the rectangular model in cells
      * @return the standard rectangular model
@@ -83,24 +85,30 @@ public class Model {
         return new Model(getGridRectModelCoords(w, h), getStdRectTexCoords(), getStdRectIdx());
     }
 
+    /**
+     * Checks if a given model is rectangular
+     * @param m the model to check
+     * @return whether the model is rectangular
+     */
     public static boolean isRectangular(Model m) {
         if (m.modelCoords.length != 8) return false;
         float dax = m.modelCoords[2] - m.modelCoords[0];
         float day = m.modelCoords[3] - m.modelCoords[1];
-        float da = (float)Math.sqrt(dax * dax + day * day);
+        float da = (float) Math.sqrt(dax * dax + day * day);
         float dbx = m.modelCoords[4] - m.modelCoords[6];
         float dby = m.modelCoords[5] - m.modelCoords[7];
-        float db = (float)Math.sqrt(dbx * dbx + dby * dby);
+        float db = (float) Math.sqrt(dbx * dbx + dby * dby);
         return (Math.abs(db - da) < 0.0001f);
     }
 
     /**
      * Constructs the model
      * The assumes input given in sequences of triangles
+     *
      * @param modelCoords the positions of the vertices (2-dimensional)
-     * @param texCoords the texture coordinates of the vertices (2-dimensional)
-     * @param indices the index of the vertices. For example, if you have two triangles to make a square, the two
-     *                overlapping points can be given the same index. This helps GL avoid redundant vertex rendering
+     * @param texCoords   the texture coordinates of the vertices (2-dimensional)
+     * @param indices     the index of the vertices. For example, if you have two triangles to make a square, the two
+     *                    overlapping points can be given the same index. This helps GL avoid redundant vertex rendering
      */
     public Model(float[] modelCoords, float[] texCoords, int[] indices) {
 
@@ -186,6 +194,18 @@ public class Model {
     }
 
     /**
+     * Updates the texture coordinate VBO the model should use when rendering
+     * @param id the id of the new VBO to use
+     */
+    public void useTexCoordVBO(int id) {
+        glBindVertexArray(this.ids[0]); // bind the vertex array object
+        glBindBuffer(GL_ARRAY_BUFFER, id); // bind texture coordinate vertex buffer object
+        glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0); // put VBO into VAO
+        glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind VBO
+        glBindVertexArray(0); // unbind vao
+    }
+
+    /**
      * Renders the model
      */
     public void render() {
@@ -201,12 +221,14 @@ public class Model {
     /**
      * Sets the scaling factors of the model to the given scaling factors. . This assumes the center of the model is
      * (0, 0)
+     *
      * @param x the x scaling factor to use
      * @param y the y scaling factor to use
      */
     public void setScale(float x, float y) {
         float mx = x / this.sx, my = y / this.sy; // get multiplicative factor to use on each model coordinate
-        this.sx = x; this.sy = y; // update members
+        this.sx = x;
+        this.sy = y; // update members
         for (int i = 0; i < this.modelCoords.length; i++) { // for each model coordinate
             if (i % 2 == 0) this.modelCoords[i] *= mx; // if x coordinate, use x factor on it
             else this.modelCoords[i] *= my; // if y coordinate, use y factor on it
@@ -218,6 +240,7 @@ public class Model {
     /**
      * Sets the x scaling factor of the model to the given x scaling factor. This assumes the center of the model is
      * (0, 0)
+     *
      * @param x the x scaling factor to use
      */
     public void setXScale(float x) {
@@ -227,6 +250,7 @@ public class Model {
     /**
      * Sets the y scaling factor of the model to the given y scaling factor. This assumes the center of the model is
      * (0, 0)
+     *
      * @param y the y scaling factor to use
      */
     public void setYScale(float y) {
@@ -235,14 +259,15 @@ public class Model {
 
     /**
      * Sets the rotation of the model. This assumes the center of the model is (0, 0)
+     *
      * @param r the new rotation in radians
      */
     public void setRotationRad(float r) {
-        r = r % (2 * (float)Math.PI); // keep within one full rotation
+        r = r % (2 * (float) Math.PI); // keep within one full rotation
         float dr = r - this.r; // calculate difference from current rotation
         this.r = r; // save member
-        for (int i = 0; i < this.modelCoords.length; i+=2) { // for each coordinate
-            Pair rp = Utils.rotatePoint(0f, 0f, modelCoords[i], modelCoords[i + 1], dr); // rotate it
+        for (int i = 0; i < this.modelCoords.length; i += 2) { // for each coordinate
+            Pair<Float> rp = Utils.rotatePoint(0f, 0f, modelCoords[i], modelCoords[i + 1], dr); // rotate it
             this.modelCoords[i] = rp.x; // save rotated x
             this.modelCoords[i + 1] = rp.y; // save rotated y
         }
@@ -268,7 +293,9 @@ public class Model {
     /**
      * @return this model's horizontal scaling factor
      */
-    public float getXScale() { return this.sx; }
+    public float getXScale() {
+        return this.sx;
+    }
 
     /**
      * @return this model's height in model coordinates
@@ -288,22 +315,27 @@ public class Model {
     /**
      * @return this model's vertical scaling factor
      */
-    public float getYScale() { return this.sy; }
+    public float getYScale() {
+        return this.sy;
+    }
 
     /**
      * @return the model's rotation in radians
      */
-    public float getRotationRad() { return this.r; }
+    public float getRotationRad() {
+        return this.r;
+    }
 
     /**
      * Creates a fitting box for the model. If the model is rectangular, it will create a perfectly-sized and rotated
      * fitting box. Otherwise, it will create the smallest possible fitting box that can house all vertices
+     *
      * @return the fitting box described above
      */
     public FittingBox getFittingBox() {
         if (isRectangular(this)) { // if rectangular
             float[] corners = new float[this.modelCoords.length]; // create corners array
-            for (int i = 0; i < corners.length; i+=2) { // fill it with model coords
+            for (int i = 0; i < corners.length; i += 2) { // fill it with model coords
                 corners[i] = modelCoords[i]; // copy x
                 corners[i + 1] = modelCoords[i + 1]; // copy y
             }
@@ -312,7 +344,7 @@ public class Model {
             float w2 = this.getWidth() / 2; // calculate half of width of fitting box
             float h2 = this.getHeight() / 2; // calculate half of height of fitting box
             // create un-rotated fitting box that fits all points
-            return new FittingBox(new float[] {-w2, -h2, -w2, h2, w2, h2, w2, -h2}, 0f, 0f, 0f);
+            return new FittingBox(new float[]{-w2, -h2, -w2, h2, w2, h2, w2, -h2}, 0f, 0f, 0f);
         }
     }
 

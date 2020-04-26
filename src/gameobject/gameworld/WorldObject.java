@@ -26,7 +26,8 @@ public class WorldObject extends GameObject {
 
     /**
      * Constructor
-     * @param model the model to use
+     *
+     * @param model    the model to use
      * @param material the material to use
      */
     public WorldObject(Model model, Material material) {
@@ -37,6 +38,7 @@ public class WorldObject extends GameObject {
 
     /**
      * Updates the world object by updating its normal game object properties and also applying gravity
+     *
      * @param interval the amount of time to account for
      */
     @Override
@@ -47,21 +49,27 @@ public class WorldObject extends GameObject {
     }
 
     /**
-     * World objects will check for collisions during positional animations. If a collision is found, both objects
-     * will be treated as rigid. If there is an object in the way of the animation but the destination is free, the
-     * world object will still end in the right area. If it's uncertain whether the ending area is clear, it is
-     * uncertain as to whether the animation will go through completely.
+     * World objects will check for collisions during positional animations. This makes the item temporarily non-
+     * collidable. If the destination point is not free of objects, there will be collision when the end point is reach
+     * and the object is made collidable again
+     *
      * @param interval the amount of time, in seconds, to account for
      */
     @Override
     protected void updatePosAnim(float interval) {
         this.posAnim.update(interval); // update animation
-        this.move(this.posAnim.getX() - this.getX(), this.posAnim.getY() - this.getY());
+        this.getPhysicsProperties().collidable = false; // temporarily make not collidable
+        this.setX(this.posAnim.getX());
+        this.setY(this.posAnim.getY());
         this.setRotRad(this.posAnim.getR()); // set rotation
         this.onMove(); // call onMove()
         if (this.posAnim.finished()) { // if animation is over
-            this.move(this.posAnim.getFinalX() - this.getX(), this.posAnim.getFinalY() - this.getY());
             this.setRotRad(this.posAnim.getFinalR()); // make sure at the correct ending rotation
+            // set final position and rotation
+            this.setX(this.posAnim.getFinalX());
+            this.setY(this.posAnim.getFinalY());
+            this.setRotRad(this.posAnim.getFinalR());
+            this.getPhysicsProperties().collidable = true; // make collidable again
             this.posAnim = null; // delete the animation
             // reset velocities
             this.setVX(0);
@@ -71,6 +79,7 @@ public class WorldObject extends GameObject {
 
     /**
      * React to movements by using the physics engine to check for and react to collisionss
+     *
      * @param dx the x offset
      * @param dy the y offset
      * @return whether or not any movement actually occurred
@@ -83,6 +92,7 @@ public class WorldObject extends GameObject {
 
     /**
      * Sets the list of collidables to check for collisions
+     *
      * @param collidables the list of collidables
      */
     public void setCollidables(List<WorldObject> collidables) {
@@ -91,6 +101,7 @@ public class WorldObject extends GameObject {
 
     /**
      * Updates the world object's bounding width (see members)
+     *
      * @param bw the new bounding width as a proportion
      */
     public void setBoundingWidth(float bw) {
@@ -99,6 +110,7 @@ public class WorldObject extends GameObject {
 
     /**
      * Updates the world object's bounding height (see members)
+     *
      * @param bh the new bounding height as a proportion
      */
     public void setBoundingHeight(float bh) {
@@ -118,10 +130,14 @@ public class WorldObject extends GameObject {
     /**
      * @return the collidables to consider for collision for the world object
      */
-    public List<WorldObject> getCollidables() { return this.collidables; }
+    public List<WorldObject> getCollidables() {
+        return this.collidables;
+    }
 
     /**
      * @return the physics settings for the object
      */
-    public PhysicsEngine.PhysicsProperties getPhysicsProperties() { return this.pp; }
+    public PhysicsEngine.PhysicsProperties getPhysicsProperties() {
+        return this.pp;
+    }
 }

@@ -25,7 +25,8 @@ public class Texture {
 
     /**
      * Constructor
-     * @param path the path to the image
+     *
+     * @param path    the path to the image
      * @param resPath whether the given path is resource-relative
      */
     public Texture(String path, boolean resPath) {
@@ -51,8 +52,8 @@ public class Texture {
             }
             if (buf == null)
                 Utils.handleException(new Exception("Unable to load texture with " + (resPath ? ("resource-relative ") :
-                                "") + "path '"  + path +"' for reason: " + stbi_failure_reason()), "graphics.Texture",
-                                "Texture(String)", true); // throw exception if unable to load texture
+                                "") + "path '" + path + "' for reason: " + stbi_failure_reason()), "graphics.Texture",
+                        "Texture(String)", true); // throw exception if unable to load texture
         } catch (Exception e) { // if exception
             Utils.handleException(e, "graphics.Texture", "Texture(String)", true); // handle exception
         }
@@ -75,20 +76,28 @@ public class Texture {
     /**
      * @return the texture's ID
      */
-    public int getID() { return this.id; }
+    public int getID() {
+        return this.id;
+    }
 
     /**
      * @return the texture's width
      */
-    public int getWidth() { return this.w; }
+    public int getWidth() {
+        return this.w;
+    }
 
     /**
      * @return the texture's height
      */
-    public int getHeight() { return this.h; }
+    public int getHeight() {
+        return this.h;
+    }
 
     /**
      * Cleans up the texture
      */
-    public void cleanup() { glDeleteTextures(this.id); }
+    public void cleanup() {
+        glDeleteTextures(this.id);
+    }
 }

@@ -32,10 +32,11 @@ public class Global {
 
     /**
      * Updates the global aspect ratio and aspect ratio variables
+     *
      * @param w the window to use for the calculationsss
      */
     public static void updateAr(Window w) {
-        Global.ar = (float)w.getFBWidth() / (float)w.getFBHeight(); // calculate aspect ratio
+        Global.ar = (float) w.getFBWidth() / (float) w.getFBHeight(); // calculate aspect ratio
         Global.arAction = (Global.ar < 1.0f); /* this stores what actions need to be done to compensate for aspect
             ratio. If ar < 1.0f (height > width) then we will make objects shorter to compensate and if ar > 1.0f,
             the opposite is true */

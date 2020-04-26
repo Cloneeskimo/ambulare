@@ -1,4 +1,4 @@
 material:
 {
-    texture_path: /textures/dirt.png
+    texture_path: /textures/dirt/dirt.png
 }

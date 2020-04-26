@@ -20,9 +20,10 @@ public class Node {
 
     /**
      * Constructs this node by giving it all of its properties
-     * @param name the name of the node (the string before the dividing character in a node-file) (will be converted
-     *             to lowercase)
-     * @param value the value of the node (the string after the dividing node in a node-file)
+     *
+     * @param name     the name of the node (the string before the dividing character in a node-file) (will be converted
+     *                 to lowercase)
+     * @param value    the value of the node (the string after the dividing node in a node-file)
      * @param children the starting list of children for the node
      */
     public Node(String name, String value, List<Node> children) {
@@ -33,8 +34,9 @@ public class Node {
 
     /**
      * Constructs this node by giving it just a name and a value
-     * @param name the name of the node (the string before the dividing character in a node-file) (will be converted to
-     *             lowercase)
+     *
+     * @param name  the name of the node (the string before the dividing character in a node-file) (will be converted to
+     *              lowercase)
      * @param value the value of the node (the string after the dividing node in a node-file)
      */
     public Node(String name, String value) {
@@ -43,6 +45,7 @@ public class Node {
 
     /**
      * Constructs this node by giving it just a name
+     *
      * @param name the name of the node (the string before the dividing character in a node-file) (will be converted to
      *             lowercase)
      */
@@ -60,20 +63,27 @@ public class Node {
     /**
      * @return the children of this node
      */
-    public List<Node> getChildren() { return this.children; }
+    public List<Node> getChildren() {
+        return this.children;
+    }
 
     /**
      * @return the amount of children this node has
      */
-    public int getChildCount() { return this.children.size(); }
+    public int getChildCount() {
+        return this.children.size();
+    }
 
     /**
      * @return whether or not this node has children
      */
-    public boolean hasChildren() { return (this.children.size() > 0); }
+    public boolean hasChildren() {
+        return (this.children.size() > 0);
+    }
 
     /**
      * Adds a child to this node
+     *
      * @param child the child to add
      */
     public void addChild(Node child) {
@@ -82,7 +92,8 @@ public class Node {
 
     /**
      * Adds a child to this node
-     * @param name the name of the child node to add (will be converted to lowercase)
+     *
+     * @param name  the name of the child node to add (will be converted to lowercase)
      * @param value the value of the child node to add
      */
     public void addChild(String name, String value) {
@@ -92,6 +103,7 @@ public class Node {
     /**
      * If this node has no children, the given children will become its children. Otherwise, the given
      * children will be added one-by-one to this node's list of children.
+     *
      * @param children the children to consider
      */
     public void setAddChildren(List<Node> children) {
@@ -101,6 +113,7 @@ public class Node {
 
     /**
      * Retrieves the child of this node at the given index.
+     *
      * @param index the index of the child to retrieve
      * @return the child at the given index if it exists
      */
@@ -114,6 +127,7 @@ public class Node {
 
     /**
      * Searches for a child of this node with the given name
+     *
      * @param name the name to search for
      * @return the first child with the matching name, or null if there are none
      */
@@ -127,6 +141,7 @@ public class Node {
 
     /**
      * Searches for a child of this node with the given name and, as opposed to getChild, will crash if cannot find
+     *
      * @param name the name to search for
      * @return the first child with the matching name
      */
@@ -141,27 +156,38 @@ public class Node {
     /**
      * @return the name of this node
      */
-    public String getName() { return this.name; }
+    public String getName() {
+        return this.name;
+    }
 
     /**
      * Updates the name of this node
+     *
      * @param name the new name to assign to this node (will be converted to lowercase)
      */
-    public void setName(String name) { this.name = name.toLowerCase(); }
+    public void setName(String name) {
+        this.name = name.toLowerCase();
+    }
 
     /**
      * @return the value of this node
      */
-    public String getValue() { return this.value; }
+    public String getValue() {
+        return this.value;
+    }
 
     /**
      * Updates the value of this node
+     *
      * @param value the new value to assign to this node
      */
-    public void setValue(String value) { this.value = value; }
+    public void setValue(String value) {
+        this.value = value;
+    }
 
     /**
      * Converts this node to a string (by returning the same representation that would be found in a node-file)
+     *
      * @return the string version of this node
      */
     @Override
@@ -173,6 +199,7 @@ public class Node {
 
     /**
      * Converts a resource node-file to a node (if the node-file is properly formatted)
+     *
      * @param resPath the resource-relative path to the node-file
      * @return the created node
      */
@@ -185,14 +212,15 @@ public class Node {
 
     /**
      * Converts a node-file at the given path to a node (if the node-file is properly formatted)
-     * @param path the path to the node-file
+     *
+     * @param path            the path to the node-file
      * @param dataDirRelative whether the given path is relative to the data directory
      * @return the created node or null if there is no node-file at the given path
      */
     public static Node fileToNode(String path, boolean dataDirRelative) {
         try { // try to open and read file
             BufferedReader in = new BufferedReader(new FileReader((dataDirRelative ? Utils.getDataDir()
-                    + "/": "") + path)); // open file
+                    + "/" : "") + path)); // open file
             List<String> data = new ArrayList<>(); // create empty String list
             while (in.ready()) data.add(in.readLine()); // read and add file line-by-line
             Node node = new Node(); // create root node
@@ -207,14 +235,15 @@ public class Node {
 
     /**
      * Converts a given node to a node-file to be placed at the given path
-     * @param node the node to convert to a node-file
-     * @param path the path to place the node-file
+     *
+     * @param node            the node to convert to a node-file
+     * @param path            the path to place the node-file
      * @param dataDirRelative whether the given path is relative to the data directory
      */
     public static void nodeToFile(Node node, String path, boolean dataDirRelative) {
         try { // try to open and read file
             Utils.ensureDirs(path, dataDirRelative); // ensure directories exist
-            PrintWriter out = new PrintWriter(new File((dataDirRelative ? Utils.getDataDir() + "/": "") +
+            PrintWriter out = new PrintWriter(new File((dataDirRelative ? Utils.getDataDir() + "/" : "") +
                     path)); // open node-file
             layoutNode(out, node, new StringBuilder()); // recursively layout node to node-file
             out.close(); // close file
@@ -225,10 +254,11 @@ public class Node {
 
     /**
      * Parses given data into a node recursively
+     *
      * @param curr the root node
      * @param data the data
-     * @param i the position to start at in the data
-     * @param in how many indents to expect
+     * @param i    the position to start at in the data
+     * @param in   how many indents to expect
      * @return the position in the data after parsing this node
      */
     private static int parseNode(Node curr, List<String> data, int i, int in) {
@@ -272,7 +302,7 @@ public class Node {
                     curr.addChild(child); // add child
                     if ((i + 1) > data.size())  // if unexpected file stop
                         Utils.handleException(new Exception("Unexpected file stop at line " + i +
-                                " of given utils.Node data"), "utils.Node",
+                                        " of given utils.Node data"), "utils.Node",
                                 "parseNode(utils.Node, List<String>, int, int", true); // throw exception
                     i += 1; // iterate i
                 }
@@ -288,9 +318,10 @@ public class Node {
 
     /**
      * Lays out a given node to a given writer recursively
-     * @param out the writer to print out to
+     *
+     * @param out  the writer to print out to
      * @param node the node to layout
-     * @param in how many indents to print
+     * @param in   how many indents to print
      */
     private static void layoutNode(Writer out, Node node, StringBuilder in) {
         try { // attempt to write to writer
@@ -310,8 +341,9 @@ public class Node {
 
     /**
      * Generates an error string to be used as exception messages when the error is related to parsing nodes
+     *
      * @param type the type of data structure trying to be constructed from the node
-     * @param msg the error
+     * @param msg  the error
      * @param path the path to the problematic node-file
      * @return the compiled string
      */

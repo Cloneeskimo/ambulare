@@ -21,6 +21,7 @@ public class GameEngine {
 
     /**
      * Constructor
+     *
      * @param logic the starting logic to follow
      */
     public GameEngine(GameLogic logic) {
@@ -63,7 +64,7 @@ public class GameEngine {
         // funnel both mouse movement and buttons events into a single method called mouseInput()
         glfwSetCursorPosCallback(window.getHandle(), (w, x, y) -> { // create GLFW callback for cursor position
             // pass along cursor position to mouseInput() and use GLFW_HOVERED as the action
-            this.mouseInput((float)x, (float)y, GLFW_HOVERED);
+            this.mouseInput((float) x, (float) y, GLFW_HOVERED);
         });
         glfwSetMouseButtonCallback(window.getHandle(), (w, b, a, i) -> {
             // mouse button events don't have mouse positions, so just send zero and hope mouseInput checks the action
@@ -85,7 +86,7 @@ public class GameEngine {
         float elapsedTime; // how much time has passed since last loop
         float accumulator = 0f; // how much time is unaccounted for
         float interval = 1f / Global.TARGET_UPS; // how much time there should be between updates
-        float[] fpsInfo = new float[] { 0.0f, 0.0f, 0.0f }; // FPS info to be used for FPS recording
+        float[] fpsInfo = new float[]{0.0f, 0.0f, 0.0f}; // FPS info to be used for FPS recording
 
         // game loop
         while (!this.window.shouldClose()) { // while the Window shouldn't close
@@ -97,7 +98,7 @@ public class GameEngine {
 
             // four phases of loop
             this.window.pollEvents(); // gather input by polling for GLFW window events
-            while(accumulator >= interval) { // while there is a sufficient amount of unaccounted for time
+            while (accumulator >= interval) { // while there is a sufficient amount of unaccounted for time
                 this.update(interval); /* doing multiple updates for the same smaller interval is preferable to doing
                     one large update with a huge interval because such large updates can be game-breaking, especially
                     when it comes to things like collision. */
@@ -106,19 +107,20 @@ public class GameEngine {
             this.render();  /* render outside of the above loop because, as opposed to updating, outdated renders are
                 useless wastes of GPU power */
             // attempt to manually sync loop unless the window has vertical sync enabled
-            if (!this.window.usesVSync()) this.sync(1 / (float)Global.TARGET_FPS);
+            if (!this.window.usesVSync()) this.sync(1 / (float) Global.TARGET_FPS);
         }
     }
 
     /**
      * Records and reports average frames-per-second measurements
+     *
      * @param elapsedTime the amount of time since the last game loop
-     * @param fpsInfo info about the FPS report, laid out as:
-     *                fpsInfo[0] - accumulator - how much time since last FPS report
-     *                fpsInfo[1] - current sum of FPSes since last report
-     *                fpsInfo[2] - amount of FPS values that have been added to the sum at index 1
-     *                this info is useful to provide average FPS calculations over an entire second instead of
-     *                constant instantaneous ones
+     * @param fpsInfo     info about the FPS report, laid out as:
+     *                    fpsInfo[0] - accumulator - how much time since last FPS report
+     *                    fpsInfo[1] - current sum of FPSes since last report
+     *                    fpsInfo[2] - amount of FPS values that have been added to the sum at index 1
+     *                    this info is useful to provide average FPS calculations over an entire second instead of
+     *                    constant instantaneous ones
      */
     private void reportFPS(float elapsedTime, float[] fpsInfo) {
         fpsInfo[0] += elapsedTime; // keep time between reports
@@ -137,7 +139,8 @@ public class GameEngine {
      * Occurs when keyboard events occur in the GLFW window (pressing, releasing, repeating). It will call the
      * logic's keyboard input method and allow it to handle the input accordingly, as well as checking if the FPS
      * toggle button was pressed and reacting accordingly
-     * @param key the key
+     *
+     * @param key    the key
      * @param action the action of the key (GLFW_PRESS, GLFW_RELEASE, GLFW_REPEAT)
      */
     private void keyboardInput(int key, int action) {
@@ -153,22 +156,25 @@ public class GameEngine {
      * Occurs when mouse events occur in the GLFW window (movement, pressing, and releasing). It will call the logic's
      * mouse input method and allow it to handle the input accordingly. If a hovering event, it will convert the mouse
      * position to projected normalized coordinates
-     * @param x the x of the mouse in window coordinates
-     * @param y the y of the mouse in window coordinates
+     *
+     * @param x      the x of the mouse in window coordinates
+     * @param y      the y of the mouse in window coordinates
      * @param action the action of the mouse (GLFW_HOVER, GLFW_PRESS, or GLFW_RELEASE)
      */
     private void mouseInput(float x, float y, int action) {
         if (action == GLFW_HOVERED) { // if hover,
-            Pair pos = new Pair(x, y); // bundle into coordinate object
+            Pair<Float> pos = new Pair<>(x, y); // bundle into coordinate object
             Transformation.normalize(pos, window.getWidth(), window.getHeight()); // normalize mouse position
             Transformation.deaspect(pos, Global.ar); // project position
-            x = pos.x; y = pos.y; // extract x and y
+            x = pos.x;
+            y = pos.y; // extract x and y
         }
         logic.mouseInput(x, y, action); // notify logic of input
     }
 
     /**
      * Phase 2 of loop: updating the game
+     *
      * @param interval the amount of time to account for
      */
     private void update(float interval) {
@@ -193,13 +199,18 @@ public class GameEngine {
     /**
      * Phase 4 of loop: syncing
      * Syncs the game loop by sleeping for any leftover time in between updates
+     *
      * @param interval how much time there should be between frames
      */
     private void sync(float interval) {
         double loopEnd = this.timer.getTimestamp() + interval; // calculate time when the current loop should end
         while (this.timer.getTime() < loopEnd) { // while there is leftover time for this loop
-            try { Thread.sleep(1); } // sleep
-            catch (Exception e) { Utils.handleException(e, "GameEngine", "sync(float)", true); } // handle exceptions
+            try {
+                Thread.sleep(1);
+            } // sleep
+            catch (Exception e) {
+                Utils.handleException(e, "GameEngine", "sync(float)", true);
+            } // handle exceptions
         }
     }
 

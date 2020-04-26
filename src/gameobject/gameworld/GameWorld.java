@@ -3,7 +3,6 @@ package gameobject.gameworld;
 import graphics.Camera;
 import graphics.ShaderProgram;
 import utils.Global;
-import utils.Pair;
 import utils.PhysicsEngine;
 import utils.Utils;
 
@@ -22,49 +21,25 @@ public class GameWorld {
      * Members
      */
     private List<WorldObject> objects; // the world objects in the game world
-    private List<Block> blocks;        // the blocks to render
-    private Block[][] blockMap;        // block map for collision detection with blocks
+    private Area area;                 // the area currently in use in the game world
     private ShaderProgram sp;          // the shader program used to render the game world
     private Camera cam;                // the camera used to see the game world
 
     /**
      * Constructor
+     *
      * @param windowHandle the handle of the GLFW window
      */
-    public GameWorld(long windowHandle) {
+    public GameWorld(long windowHandle, Area startingArea) {
         this.objects = new ArrayList<>();
-        this.blocks = new ArrayList<>();
+        this.area = startingArea;
+        PhysicsEngine.giveBlockMap(area.getBlockMap()); // give the area's block map to the physics engine
         this.cam = new Camera();
         // register GLFW window scroll callback for camera zoom
         glfwSetScrollCallback(windowHandle, (w, x, y) -> { // when the user scrolls
             this.cam.zoom(y > 0 ? 1.15f : 0.85f); // zoom on camera
         });
         this.initSP(); // initialize shader program
-    }
-
-    /**
-     * Creates a block map of the game world for the physics engine to use for detecting collisions with blocks. Note
-     * that, in order for block maps to work, all blocks must have 0 <= x < (width of block map) and 0 <= y <
-     * (height of block map). If this is ever violated, the game will crash
-     * @param w the width of the block map in grid cells
-     * @param h the height of the block map in grid cells
-     */
-    public void createBlockMap(int w, int h) {
-        this.blockMap = new Block[w][h]; // create the block map with the specified size
-        for (Block b : this.blocks) { // if any blocks already exist
-            // get their grid positions
-            int x = b.getX();
-            int y = b.getY();
-            // if they are out of bounds, throw exception
-            if (x < 0 || x >= w)
-                Utils.handleException(new Exception("Block map given to game world where blocks exist outside" +
-                        " of map"), "gameobject.gameworld.GameWorld", "giveBlockMap(int, int)", true);
-            if (y < 0 || y >= h)
-                Utils.handleException(new Exception("Block map given to game world where blocks exist outside" +
-                        " of map"), "gameobject.gameworld.GameWorld", "giveBlockMap(int, int)", true);
-            this.blockMap[x][y] = b; // put in map
-        }
-        PhysicsEngine.giveBlockMap(this.blockMap); // give the block map to the physics engine to use
     }
 
     /**
@@ -88,10 +63,11 @@ public class GameWorld {
 
     /**
      * Updates the world objects and camera in the game world
+     *
      * @param interval the amount of time (in seconds) to account for
      */
     public void update(float interval) {
-        for (Block b : this.blocks) b.update(interval); // update the blocks
+        this.area.update(interval); // update the area
         for (WorldObject po : this.objects) po.update(interval); // update the world objects
         this.cam.update(); // update camera
     }
@@ -107,13 +83,14 @@ public class GameWorld {
         this.sp.setUniform("camX", this.cam.getX()); // set camera x uniform
         this.sp.setUniform("camY", this.cam.getY()); // set camera y uniform
         this.sp.setUniform("camZoom", this.cam.getZoom()); // set camera zoom uniform
-        for (Block b : this.blocks) Block.renderBlock(this.sp, b); // render blocks
+        this.area.render(this.sp); // render the area
         for (WorldObject o : this.objects) o.render(this.sp); // render world objects
         this.sp.unbind(); // unbind shader program
     }
 
     /**
      * Adds a world object to the game world
+     *
      * @param wo the object to add
      */
     public void addObject(WorldObject wo) {
@@ -122,30 +99,15 @@ public class GameWorld {
     }
 
     /**
-     * Adds a block to the game world. If the game world has a block map, it will be put in the map as well. If the
-     * game world has a block map and the given block is out of the bounds of the block map, the game will crash
-     * @param b the block to add
+     * @return the game world's camera
      */
-    public void addBlock(Block b) {
-        this.blocks.add(b); // add to list of blocks
-        if (this.blockMap != null) { // if the game world has a block map
-            if (b.getX() < 0 || b.getX() >= this.blockMap.length ||
-                    b.getY() < 0 || b.getY() >= this.blockMap[0].length) { // check if out of bounds
-                Utils.handleException(new Exception("Invalid placement for new block: " + new Pair(b.getX(), b.getY()) +
-                    "is out of the block map's bounds"), "gameobject.gameworld.GameWorld", "addBlock(Block, int, int)",
-                        true); // throw exception if out of bounds
-            }
-            this.blockMap[b.getX()][b.getY()] = b; // place in block map
-        }
+    public Camera getCam() {
+        return this.cam;
     }
 
     /**
-     * @return the game world's camera
-     */
-    public Camera getCam() { return this.cam; }
-
-    /**
      * Grabs the world object at the given index
+     *
      * @param i the index to look for
      * @return the object at index i
      */
@@ -157,13 +119,10 @@ public class GameWorld {
     }
 
     /**
-     * Grabs the block at the given grid position
-     * @param x the grid x
-     * @param y the grid y
-     * @return the block at that position (or null if nothing is there)
+     * @return the game world's current are
      */
-    public Block getBlock(int x, int y) {
-        return this.blockMap[x][y];
+    public Area getArea() {
+        return this.area;
     }
 
     /**
@@ -171,7 +130,7 @@ public class GameWorld {
      */
     public void cleanup() {
         if (this.sp != null) this.sp.cleanup(); // cleanup shader program
-        for (Block b : this.blocks) b.cleanup(); // cleanup blocks
+        this.area.cleanup(); // cleanup area
         for (WorldObject o : this.objects) o.cleanup(); // cleanup world objects
     }
 }

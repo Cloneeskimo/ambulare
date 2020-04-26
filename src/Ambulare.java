@@ -1,9 +1,9 @@
 import logic.WorldLogic;
 
 /**
- *  Ambulare
- *  The side-scrolling fantasy RPG
- *  created by Jacob Oaks
+ * Ambulare
+ * The side-scrolling fantasy RPG
+ * created by Jacob Oaks
  */
 
 /**

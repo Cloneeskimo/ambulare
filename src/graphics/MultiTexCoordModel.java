@@ -24,8 +24,9 @@ public class MultiTexCoordModel extends Model {
 
     /**
      * Creates a standard rectangular model with support multiple sets of texture coordinates
-     * @param w the width of the rectangular model in cells
-     * @param h the height of the rectangular model in cells
+     *
+     * @param w          the width of the rectangular model in cells
+     * @param h          the height of the rectangular model in cells
      * @param frameCount the amount of horizontal frames to calculate texture coordinates for. If this isn't equal to
      *                   the amount of frames in the texture, the frames won't line up
      * @return the standard rectangular model
@@ -37,6 +38,7 @@ public class MultiTexCoordModel extends Model {
     /**
      * Given an amount of desired frames for a corresponding texture, the constructor will calculate the equi-distant
      * texture coordinates for each frame and store them
+     *
      * @param modelCoords the positions of the vertices (2-dimensional)
      * @param indices     the indices
      * @param frameCount  the amount of horizontal frames to consider
@@ -44,13 +46,14 @@ public class MultiTexCoordModel extends Model {
     public MultiTexCoordModel(float[] modelCoords, int[] indices, int frameCount) {
         super(modelCoords, getTexCoordsForFrame(0, frameCount), indices);
         if (indices.length != 6) Utils.handleException(new Exception("Invalid model: MultiTexCoordModels can only be" +
-                "rectangular"), "graphics.MultiTexCoordMode", "MultiTexCoordModel(float[], int[], int)",
+                        "rectangular"), "graphics.MultiTexCoordMode", "MultiTexCoordModel(float[], int[], int)",
                 true); // throw exception if not a rectangle
         this.calcTexCoords(frameCount); // calculate texture coordinates
     }
 
     /**
      * Changes the texture coordinates of the model to match the given frame
+     *
      * @param frame the frame
      */
     public void setFrame(int frame) {
@@ -71,6 +74,7 @@ public class MultiTexCoordModel extends Model {
 
     /**
      * Calculates the sets of texture coordinates for each frame
+     *
      * @param frameCount the amount of horizontal frames in the corresponding texture
      */
     private void calcTexCoords(int frameCount) {
@@ -80,14 +84,15 @@ public class MultiTexCoordModel extends Model {
 
     /**
      * Calculates the set of texture coordinates for the given horizontal frame
-     * @param i the frame to calculate the texture coordinates for
+     *
+     * @param i  the frame to calculate the texture coordinates for
      * @param of the total amount of horizontal frames in the corresponding texture
      * @return the length-eight float array containing the texture coordinates
      */
     private static float[] getTexCoordsForFrame(int i, int of) {
-        float frameWidth = (float)1 / (float)of; // calculate width of one frame
-        float frac = (float)i / (float)of; // calculates how horizontally far this frame is in texture
-        return new float[] { // create texture coordinates array
+        float frameWidth = (float) 1 / (float) of; // calculate width of one frame
+        float frac = (float) i / (float) of; // calculates how horizontally far this frame is in texture
+        return new float[]{ // create texture coordinates array
                 frac, 1.0f, // top left
                 frac, 0.0f, // bottom left
                 frac + frameWidth, 0.0f, // bottom right

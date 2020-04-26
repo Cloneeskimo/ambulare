@@ -1,64 +1,115 @@
 package gameobject.gameworld;
 
 import graphics.Material;
-import org.lwjgl.system.CallbackI;
+import graphics.Model;
+import graphics.ShaderProgram;
+import graphics.Texture;
 import utils.Node;
+import utils.Pair;
+import utils.Transformation;
 import utils.Utils;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL20.glDisableVertexAttribArray;
+import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
+import static org.lwjgl.opengl.GL30.glBindVertexArray;
+
+/**
+ * Areas hold, efficiently update, and render blocks and their corresponding materials in a block map. They must be
+ * loaded from a node-file
+ */
 public class Area {
 
-    private String name;
-    private Block[][] blockMap;
+    /**
+     * Static data
+     */
+    private static final BlockModel bm = new BlockModel(); // all blocks use same 1x1 square model
+
+    /**
+     * Renders the set of blocks corresponding to the given set of block positions very efficiently using the given
+     * shader program
+     *
+     * @param sp             the shader program to render with
+     * @param blockPositions the list of block positions grouped together by material. The reason it is set up up as a
+     *                       map from material to pair lists is because rendering all blocks of a certain material
+     *                       at once, repetitive calls can be avoided
+     */
+    public static void renderBlocks(ShaderProgram sp, Map<Material, List<Pair<Integer>>> blockPositions) {
+        for (Material m : blockPositions.keySet()) { // for each material
+            int texCoordVBO = m.getTexCoordVBO(); // get the appropriate texture coordinate VBO
+            bm.useTexCoordVBO(texCoordVBO); // use the texture coordinate VBO
+            m.setUniforms(sp); // set the appropriate uniforms
+            bm.renderBlocks(sp, blockPositions.get(m)); // render all the blocks with that material at once
+        }
+    }
+
+    /**
+     * Members
+     */
+    private String name;                                       // the name of the area
+    private boolean[][] blockMap;                              // the block map for collision detection with blocks
+    private Map<Material, List<Pair<Integer>>> blockPositions; // a list of block positions grouped by material
 
     /**
      * Creates an area from the given node. The required children of the node are listed below:
      * - key: contains children that map letters in the 'map' child to materials to use for the block placed there.
-     *      - each child's name should be a single character. If more characters are provided, only the first character
-     *        is used. If multiple materials are mapped to a single character, only the last one read will be used
-     *      - each child must either (A) have a child of its own that is a parse-able material node, (B) have a value
-     *        that specifies where to look for a parse-able material node, or (C) have the value 'empty' which denotes
-     *        that no block should be placed there (space also represents a lack of block but this may not work properly
-     *        for leading spaces). Case (B) is useful for materials that will be used many places throughout many
-     *        different areas. For case (B), the value should be formatted as follows: "[resfrom:from] [path]" where
-     *        [path] is the path to look for the material and [resfrom/from] denotes that the path is resource-relative
-     *        or not resource-relative, respectively. If not resource-relative, the path should be relative to the
-     *        Ambulare data folder
-     *      - if a child is improperly formatted, it will be ignored but the occurrence may be logged
+     * - each child's name should be a single character. If more characters are provided, only the first character is
+     * used. If multiple materials are mapped to a single character, only the last one read will be used
+     * - each child must either (A) have a child of its own that is a parse-able material node, (B) have a value
+     * that specifies where to look for a parse-able material node, (C) have the value 'empty' which denotes
+     * that no block should be placed there (space also represents a lack of block but this may not work properly
+     * for leading spaces). Case (B) is useful for materials that will be used many places throughout many
+     * different areas. For case (B), the value should be formatted as follows: "[resfrom:from] [path]" where
+     * [path] is the path to look for the material and [resfrom/from] denotes that the path is resource-relative
+     * or not resource-relative, respectively. If not resource-relative, the path should be relative to the
+     * Ambulare data folder. In order for textures for edges/corners to be used during modularization, there must exist
+     * images that have the same name as the image file given but with one of the following intuitive extensions: _top,
+     * _bottom, _left, _right, _topleft, _topright, _bottomleft, _bottomright, _column, _row, _columntop, _columnbottom,
+     * _rowcapleft, _rowcapright
+     * - if a child is improperly formatted, it will be ignored but the occurrence may be logged
      * - layout: contains children that are sequences of characters that will be converted into blocks using the key
-     *        child. the value of the children is the character sequence and the name means nothing. they are read in
-     *        the order that they are listed (higher children are considered to be in a higher row than lower children,
-     *        and the same principle applies horizontally within each child). If a character appears that is not in the
-     *        key, it will be ignored and interpreted as empty space
+     * child. the value of the children is the character sequence and the name means nothing. they are read in
+     * the order that they are listed (higher children are considered to be in a higher row than lower children,
+     * and the same principle applies horizontally within each child). If a character appears that is not in the
+     * key, it will be ignored and interpreted as empty space
      * The optional children of the node are listed below:
      * - name: the name of the area. If not provided, the area will be named "Unnamed"
      * If areas have errors while parsing, depending on the error, crashes may occur
+     *
      * @param node the node to create the area from
      */
     public Area(Node node) {
         try { // try to parse node
 
-            // parse key
-            Map<Character, Material> key = new HashMap<>(); // use hashmap
-            key.put(' ', null); // spaces mean empty
+            /*
+             *  Parse Key
+             */
+            Map<Character, Material> key = new HashMap<>(); // use hashmap to hold key
+            Map<Material, String[]> modularizeData = new HashMap<>(); // hashmap to store mod. data for each material
             Node keyData = node.getChild("key"); // get key child
             if (keyData == null) Utils.handleException(new Exception("Area node-file did not produce a key. A key is " +
                     "required"), "gameobject.gameworld.Area", "Area(Node)", true); // if no key child, crash
             for (Node c : keyData.getChildren()) { // go through children
+
+                /*
+                 *  Get Material Data
+                 */
                 String v = c.getValue(); // get value of the child
+                Node materialData = null;
                 if (v.length() >= 4) { // if the mapping has a value
                     String[] tokens = v.split(" "); // split up the value
-                    // if the value is "empty", put null into the map to represent empty
-                    if (tokens[0].toUpperCase().equals("EMPTY")) key.put(c.getName().charAt(0), null);
-                    else if (tokens[0].toUpperCase().equals("FROM")) // if value specifies to load material from path
-                        // load material from path and put into map
-                        key.put(c.getName().charAt(0), new Material(Node.fileToNode(tokens[1], true)));
+                    if (tokens[0].toUpperCase().equals("FROM")) // if value specifies to load material from path
+                        // load material data from path
+                        materialData = Node.fileToNode(tokens[1], true);
                     else if (tokens[0].toUpperCase().equals("RESFROM")) // if specifies to load material from res-path
-                        // load material from res-path and put into map
-                        key.put(c.getName().charAt(0), new Material(Node.resToNode(tokens[1])));
+                        // load material data from res-path
+                        materialData = Node.resToNode(tokens[1]);
                     else // if unusual value, log but don't crash
                         Utils.log("Unrecognized value for a key child: " + tokens[0] + ". Ignoring.",
                                 "gameobject.gameworld.Area", "Area(Node)", false);
@@ -66,12 +117,31 @@ public class Area {
                     // if no value, must be an explicitly stated material - load directly
                     if (c.getChildren().size() < 1)
                         Utils.log("key contains character '" + c.getName().charAt(0) + "' but provides no" +
-                        "material. Ignoring.", "gameobject.gameworld.Area", "Area(Node)", false);
-                    else key.put(c.getName().charAt(0), new Material(c.getChild(0))); // and put into map
+                                "material. Ignoring.", "gameobject.gameworld.Area", "Area(Node)", false);
+                    else materialData = c.getChild(0); // material data is child itself
                 }
+                Material m = new Material(materialData); // create the material
+                key.put(c.getName().charAt(0), m); // put material in map
+
+                /*
+                 *  Get Modularization Data
+                 */
+                Node tp = materialData.getChild("texture_path"); // get texture path
+                // if the material is textured, store file path info for modularization
+                if (tp != null) {
+                    Node resPath = materialData.getChild("resource_relative"); // get resource-relative flag
+                    // determine if the path is resource-relative
+                    boolean resRelative = resPath == null || Boolean.parseBoolean(resPath.getValue());
+                    modularizeData.put(m, Utils.getFileInfoForPath(resRelative, tp.getValue()));
+                }
+                else modularizeData.put(m, null); // otherwise store null
             }
 
-            // parse layout
+            /*
+             *  Parse Layout
+             */
+            this.blockPositions = new HashMap<>(); // use hashmap to map material to block positions
+            for (Material m : key.values()) this.blockPositions.put(m, new ArrayList<>()); // new list for each material
             Node layoutData = node.getChild("layout"); // get layout child
             if (layoutData == null) Utils.handleException(new Exception("Area node-file did not produce a layout. A " +
                     "layout is required"), "gameobject.gameworld.Area", "Area(Node)", true); // no layout child -> crash
@@ -81,15 +151,27 @@ public class Area {
                 // figure out the widest row so that block map can be created with appropriate width
                 if (rows.get(y).getValue().length() > w) w = rows.get(y).getValue().length();
             }
-            this.blockMap = new Block[w][rows.size()]; // create block map
+
+            /*
+             *  Build Block Map
+             */
+            this.blockMap = new boolean[w][rows.size()]; // create block map
             for (int y = 0; y < rows.size(); y++) { // loop through each row
-                for (int x = 0; x < rows.get(y).getValue().length(); x++) { // loop through each character in the rpw
-                    Material m = key.get(rows.get(y).getValue().charAt(x)); // get the material at that spot
-                    if (m != null) blockMap[x][y] = new Block(m, x, y); // put into block map if not empty
+                Node row = rows.get(rows.size() - 1 - y); // get that row
+                for (int x = 0; x < row.getValue().length(); x++) { // loop through each character in the rpw
+                    Material m = key.get(row.getValue().charAt(x)); // get the material at
+                    // that spot
+                    if (m != null) { // if not empty
+                        blockMap[x][y] = true; // put into block map
+                        this.blockPositions.get(m).add(new Pair(x, y)); // add to list
+                    }
                 }
             }
+            modularize(this.blockMap, this.blockPositions, modularizeData); // modularize the materials
 
-            // parse other
+            /*
+             *  Parse Other Area Data
+             */
             this.name = "Unnamed"; // name starts as unnamed
             for (Node c : node.getChildren()) { // go through each child and parse the values
                 String n = c.getName(); // get name of child
@@ -105,5 +187,165 @@ public class Area {
             Utils.handleException(new Exception("Unable to parse the following area info: " + node.toString() + "\n " +
                     "for sreason:" + e.getMessage()), "gameobject.gameworld.Area", "Area(Node)", true); // crash
         }
+    }
+
+    // TODO: comment
+    private static void modularize(boolean[][] blockMap, Map<Material, List<Pair<Integer>>> blockPositions,
+                                   Map<Material, String[]> modularizeData) {
+        List<Material> originalMaterials = new ArrayList<>(blockPositions.keySet()); // get original materials
+        for (Material m : originalMaterials) { // for each original material
+            // this will map types of modularization to a material to use for any given block
+            Map<MOD_NAME_EXT, Material> update = new HashMap<>();
+            String[] modData = modularizeData.get(m); // get the modularization file data for the current material
+            if (modData != null) { // if there is modularization file data for the current material
+                List<Pair<Integer>> blocks = blockPositions.get(m);
+                for (int j = 0; j < blocks.size(); j++) { // for each block with the current original material
+                    MOD_NAME_EXT[] modularization = getPreferredModularization(blocks.get(j).x, blocks.get(j).y,
+                            blockMap); // calculate the preferred modularization for the block
+                    if (modularization != null) { // if a modularization is preferred
+                        boolean chosen = false; // flag to indicate if done modularizing the current block
+                        for (int i = 0; i < modularization.length && !chosen; i++) { // for each preferred mod
+                            Material updatedMaterial = update.get(modularization[i]); // attempt to get updated material
+                            if (updatedMaterial == null) { // if there does not exist one for that modularization yet
+                                String supposedPath = modData[0] + modData[1] + "_" + modularization[i].toString() +
+                                        modData[2]; // calculate the supposed path of the correct image
+                                if (Utils.fileExists(supposedPath, modData[3].equals("true"))) { // if image exists
+                                    updatedMaterial = new Material(m); // create duplicate material
+                                    // update the texture to the modularized texture
+                                    updatedMaterial.setTexture(new Texture(supposedPath, modData[3].equals("true")));
+                                    blockPositions.put(updatedMaterial, new ArrayList<>()); // add to block positions
+                                    update.put(modularization[i], updatedMaterial); // put into update map
+                                }
+                            }
+                            if (updatedMaterial != null) { // if we end up having an updated material
+                                blockPositions.get(updatedMaterial).add(blocks.get(j)); // add to the new material
+                                blockPositions.get(m).remove(blocks.get(j)); // remove from the original material
+                                chosen = true; // flag that a modularized material has been chosen
+                                j--; // decrement j
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static MOD_NAME_EXT[] getPreferredModularization(int x, int y, boolean[][] blockMap) {
+        boolean left = x > 0 && (blockMap[x - 1][y]); // determine if a block exists to the left
+        boolean right = x < blockMap.length - 1 && (blockMap[x + 1][y]); // determine if a block exists to the right
+        boolean below = y > 0 && (blockMap[x][y - 1]); // determine if a block exists below
+        boolean above = y < blockMap[0].length - 1 && (blockMap[x][y + 1]); // determine if a block exists above
+        if (left && right && below && above) return null; // if surrounded, return null - no modularization
+        // if surrounded on the left, below, and on the right -> prefer a top
+        if (left && right && below) return new MOD_NAME_EXT[] { MOD_NAME_EXT.top };
+        // if surrounded on the left, below, and on the right -> prefer a bottom
+        if (left && right && above) return new MOD_NAME_EXT[] { MOD_NAME_EXT.bottom };
+        // if surrounded below, above, and to the left -> prefer a right
+        if (below && above && left) return new MOD_NAME_EXT[] { MOD_NAME_EXT.right };
+        // if surrounded below, above, and to the right -> prefer a left
+        if (below && above && right) return new MOD_NAME_EXT[] { MOD_NAME_EXT.left };
+        // if only surrounded to the left and right -> prefer a row but settle with a top
+        if (left && right) return new MOD_NAME_EXT[] { MOD_NAME_EXT.row, MOD_NAME_EXT.top };
+        // if only surrounded above and below -> prefer a column
+        if (below && above) return new MOD_NAME_EXT[] { MOD_NAME_EXT.column };
+        // if only surrounded above and to the left -> prefer a bottom right but settle with a bottom
+        if (above && left) return new MOD_NAME_EXT[] { MOD_NAME_EXT.bottomright, MOD_NAME_EXT.bottom };
+        // if only surrounded above and to the right -> prefer a bottom left but settle with a bottom
+        if (above && right) return new MOD_NAME_EXT[] { MOD_NAME_EXT.bottomleft, MOD_NAME_EXT.bottom };
+        // if only surrounded below and to the left -> prefer a top right but settle with a top
+        if (below && left) return new MOD_NAME_EXT[] { MOD_NAME_EXT.topright, MOD_NAME_EXT.top };
+        // if only surrounded below and to the right -> prefer a top left but settle with a top
+        if (below && right) return new MOD_NAME_EXT[] { MOD_NAME_EXT.topleft, MOD_NAME_EXT.top };
+        // if only surrounded above -> prefer a column bottom but settle with a column
+        if (above) return new MOD_NAME_EXT[] { MOD_NAME_EXT.columnbottom, MOD_NAME_EXT.column };
+        // if only surrounded below -> prefer a column top but settle with a column
+        if (below) return new MOD_NAME_EXT[] { MOD_NAME_EXT.columntop, MOD_NAME_EXT.column };
+        // if only surrounded to the left -> prefer a row right cap but settle with a row
+        if (left) return new MOD_NAME_EXT[] { MOD_NAME_EXT.rowrightcap, MOD_NAME_EXT.row };
+        // if only surrounded to the right -> prefer a row left cap but settle with a row
+        if (right) return new MOD_NAME_EXT[] { MOD_NAME_EXT.rowleftcap, MOD_NAME_EXT.row };
+        return null;
+    }
+
+    /**
+     * Updates everything in the area
+     *
+     * @param interval the amount of time to account for
+     */
+    public void update(float interval) {
+        for (Material m : this.blockPositions.keySet()) m.update(interval); // update materials
+    }
+
+    /**
+     * Renders everything in the area
+     *
+     * @param sp the shader program to use for rendering
+     */
+    public void render(ShaderProgram sp) {
+        renderBlocks(sp, this.blockPositions); // render the blocks
+    }
+
+    /**
+     * @return the area's block map
+     */
+    public boolean[][] getBlockMap() {
+        return this.blockMap;
+    }
+
+    /**
+     * @return the name of the area
+     */
+    public String getName() {
+        return this.name;
+    }
+
+    /**
+     * Cleans up the area
+     */
+    public void cleanup() {
+        for (Material m : this.blockPositions.keySet()) m.cleanup(); // cleanup materials
+    }
+
+    /**
+     * Extends model by providing optimizations for rendering many blocks at once
+     */
+    private static class BlockModel extends Model {
+
+        /**
+         * Constructor
+         */
+        public BlockModel() {
+            super(Model.getGridRectModelCoords(1, 1), Model.getStdRectTexCoords(), Model.getStdRectIdx());
+        }
+
+        /**
+         * Renders the set of blocks corresponding to the given list of block positions. Note that all blocks in the
+         * given list should have the same material and that this method should be called once for each material
+         *
+         * @param sp             the shader program to use to render
+         * @param blockPositions the positions of the blocks to render
+         */
+        public void renderBlocks(ShaderProgram sp, List<Pair<Integer>> blockPositions) {
+            glBindVertexArray(this.ids[0]); // bind vao
+            glEnableVertexAttribArray(0); // enable model coordinate vbo
+            glEnableVertexAttribArray(1); // enable texture coordinate vbo
+            for (Pair<Integer> b : blockPositions) { // loop through all blocks
+                // set their position in the shader program
+                sp.setUniform("x", Transformation.getCenterOfCellComponent((int) b.x));
+                sp.setUniform("y", Transformation.getCenterOfCellComponent((int) b.y));
+                glDrawElements(GL_TRIANGLES, this.idx, GL_UNSIGNED_INT, 0); // draw model
+            }
+            glDisableVertexAttribArray(0); // disable model coordinate vbo
+            glDisableVertexAttribArray(1); // disable texture coordinate vbo
+            glBindVertexArray(0); // disable vao
+        }
+    }
+
+    /**
+     * All possible file name extensions for various modularization pieces
+     */
+    private enum MOD_NAME_EXT {
+        topleft, top, topright, right, bottomright, bottom, bottomleft, left, column, row, columntop, columnbottom,
+        rowrightcap, rowleftcap
     }
 }

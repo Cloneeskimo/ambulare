@@ -1,21 +1,22 @@
 package utils;
 
 /**
- * Contains a pair of floats. Can represent a coordinate, vector, etc.
+ * Contains a pair of objects
  */
-public class Pair {
+public class Pair<T> {
 
     /**
      * Members
      */
-    public float x, y; // the two values
+    public T x, y; // the two values
 
     /**
      * Constructs the pair with the given values
+     *
      * @param x the first in this pair
      * @param y the second in this pair
      */
-    public Pair(float x, float y) {
+    public Pair(T x, T y) {
         this.x = x;
         this.y = y;
     }
@@ -24,14 +25,19 @@ public class Pair {
      * Constructs this pair with values (0f, 0f)
      */
     public Pair() {
-        this(0f, 0f);
-    };
+        this(null, null);
+    }
+
+    ;
 
     /**
      * Constructs the pair using values from another pair
+     *
      * @param p the other coordinate
      */
-    public Pair(Pair p) { this(p.x, p.y); }
+    public Pair(Pair<T> p) {
+        this(p.x, p.y);
+    }
 
     /**
      * Converts the pair into a string
@@ -43,6 +49,7 @@ public class Pair {
 
     /**
      * Checks if the given pair has equal values to another pair
+     *
      * @param p the other pair to check
      */
     public boolean equals(Pair p) {

@@ -27,16 +27,19 @@ public class Timer {
     /**
      * @return the current timestamp of the timer
      */
-    public double getTimestamp() { return this.timestamp; }
+    public double getTimestamp() {
+        return this.timestamp;
+    }
 
     /**
      * Calculates the elapsed time since the last timestamp
+     *
      * @param mark whether to overwrite the timestamp with the current time
      * @return the amount of elapsed time since the timestamp in seconds
      */
     public float getElapsedTime(boolean mark) {
         double time = getTime(); // get current time
-        float et = (float)(time - this.timestamp); // get elapsed time
+        float et = (float) (time - this.timestamp); // get elapsed time
         if (mark) this.timestamp = time; // record new time if param set to true
         return et; // return calculated elapsed time
     }

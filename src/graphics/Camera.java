@@ -19,8 +19,9 @@ public class Camera {
 
     /**
      * Constructs the camera with a specified zoom
-     * @param x the x
-     * @param y the y
+     *
+     * @param x    the x
+     * @param y    the y
      * @param zoom the zoom of this camera - will be bounded by MIN_ZOOM and MAX_ZOOM defined above
      */
     public Camera(float x, float y, float zoom) {
@@ -31,15 +32,20 @@ public class Camera {
 
     /**
      * Constructs the camera with the default zoom
+     *
      * @param x the x
      * @param y the y
      */
-    public Camera(float x, float y) { this(x, y, Camera.DEFAULT_ZOOM); }
+    public Camera(float x, float y) {
+        this(x, y, Camera.DEFAULT_ZOOM);
+    }
 
     /**
      * Constructs the camera at pos (0, 0) and with the default zoom
      */
-    public Camera() { this(0f, 0f); }
+    public Camera() {
+        this(0f, 0f);
+    }
 
     /**
      * Updates the camera
@@ -58,23 +64,32 @@ public class Camera {
 
     /**
      * Assigns a game object for the camera to follow
+     *
      * @param o the game object to follow. If null, won't follow anything
      */
-    public void follow(GameObject o) { this.following = o; }
+    public void follow(GameObject o) {
+        this.following = o;
+    }
 
     /**
      * Sets the zoom to the given zoom, or the minimum/maximum bound that it surpasses
+     *
      * @param z the value to set it to
      */
-    public void setZoom(float z) { this.zoom = Math.min(Camera.MAX_ZOOM, Math.max(Camera.MIN_ZOOM, z)); }
+    public void setZoom(float z) {
+        this.zoom = Math.min(Camera.MAX_ZOOM, Math.max(Camera.MIN_ZOOM, z));
+    }
 
     /**
      * Change the zoom by the given magnitude in a multiplicative manner
      */
-    public void zoom(float dz) { this.setZoom(this.zoom * dz); }
+    public void zoom(float dz) {
+        this.setZoom(this.zoom * dz);
+    }
 
     /**
      * Updates the camera's position
+     *
      * @param x the new x
      * @param y the new y
      */
@@ -86,15 +101,21 @@ public class Camera {
     /**
      * @return the camera's x
      */
-    public float getX() { return this.x; }
+    public float getX() {
+        return this.x;
+    }
 
     /**
      * @return the camera's y
      */
-    public float getY() { return this.y; }
+    public float getY() {
+        return this.y;
+    }
 
     /**
      * @return the camera's zoom
      */
-    public float getZoom() { return this.zoom; }
+    public float getZoom() {
+        return this.zoom;
+    }
 }

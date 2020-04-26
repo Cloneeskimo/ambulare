@@ -22,12 +22,13 @@ public class TextButton extends TextObject implements MIHSB.MouseInteractable {
 
     /**
      * Constructs the text button with the given custom colors
-     * @param font the font to use for the text
-     * @param text the text to display
+     *
+     * @param font     the font to use for the text
+     * @param text     the text to display
      * @param defaultC the color to use when no interaction is occurring
-     * @param hoverC the color to use when the button is being hovered
-     * @param pressC the color to use when the mouse is pressed down over the button
-     * @param MIID the mouse interactable ID to assign the text button
+     * @param hoverC   the color to use when the button is being hovered
+     * @param pressC   the color to use when the mouse is pressed down over the button
+     * @param MIID     the mouse interactable ID to assign the text button
      */
     public TextButton(Font font, String text, float[] defaultC, float[] hoverC, float[] pressC, int MIID) {
         super(font, text, defaultC); // call super
@@ -40,6 +41,7 @@ public class TextButton extends TextObject implements MIHSB.MouseInteractable {
     /**
      * Constructs the text button with the default colors. The defaults for hover and press are defined above, while
      * the default for no interaction is the same default as a normal text object
+     *
      * @param font the font to use for the text
      * @param text the text to display
      * @param MIID the mouse interactable ID to assign the text button
@@ -54,6 +56,7 @@ public class TextButton extends TextObject implements MIHSB.MouseInteractable {
 
     /**
      * When a text button is hovered, it will change in color to the hover color
+     *
      * @param x the x position of the mouse in either world or camera-view space, depending on whether the
      *          implementing object reacts to a camera
      * @param y the y position of the mouse in either world or camera-view space, depending on whether the
@@ -90,6 +93,7 @@ public class TextButton extends TextObject implements MIHSB.MouseInteractable {
 
     /**
      * The mouse interaction ID of a text button is the ID given to it when constructing
+     *
      * @return the ID given when constructing
      */
     @Override

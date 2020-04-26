@@ -28,6 +28,7 @@ public abstract class GameLogic {
      * Initializes the logic. This method is the only entry point into the logic other then input, update, and render
      * Extending classes cannot override this method. However, this method will call initOthers() which can be
      * overridden by extending classes and should be used for additional initialization
+     *
      * @param window the window
      */
     public final void init(Window window) {
@@ -38,6 +39,7 @@ public abstract class GameLogic {
     /**
      * Extending classes should initialize any game objects to be placed in the ROC or any additional members here
      * In order for FPS reporting to still occur in the HUD, extending classes should call this as super
+     *
      * @param window the window
      */
     protected void initOthers(Window window) {
@@ -57,17 +59,20 @@ public abstract class GameLogic {
     /**
      * Receives keyboard input from the engine
      * Extending classes should certainly override this method to repsond to keyboard events
-     * @param key the key in question
+     *
+     * @param key    the key in question
      * @param action the action of the key (GLFW_PRESS, GLFW_RELEASE, GLFW_REPEAT)
      */
-    public void keyboardInput(int key, int action) {}
+    public void keyboardInput(int key, int action) {
+    }
 
     /**
      * Receives mouse input from the engine and notifies the ROC of the input
      * Extending classes can certainly override this method to change how they react to mouse input. If super is not
      * called, or the ROC is not manually notified, it may not work as intended
-     * @param x the normalized and de-aspected x position of the mouse if hover event, 0 otherwise
-     * @param y the normalized and de-aspected y position of the mouse if hover event, 0 otherwise
+     *
+     * @param x      the normalized and de-aspected x position of the mouse if hover event, 0 otherwise
+     * @param y      the normalized and de-aspected y position of the mouse if hover event, 0 otherwise
      * @param action the nature of the mouse input (GLFW_PRESS, GLFW_RELEASE, or GLFW_HOVERED)
      */
     public void mouseInput(float x, float y, int action) {
@@ -79,14 +84,17 @@ public abstract class GameLogic {
     /**
      * This is called whenever a mouse interactable object in the ROC is clicked
      * Extending classes should override this to react to mouse interactable clicks
+     *
      * @param MIID the ID of the object that was clicked
      */
-    public void clicked(int MIID) {}
+    public void clicked(int MIID) {
+    }
 
     /**
      * Updates this logic by updating the ROC
      * Extending classes can certainly override this but unless updated in the overriding method (or super.update()
      * is called), the ROC will no longer be updated
+     *
      * @param interval the amount of time to account for
      */
     public void update(float interval) {
@@ -108,7 +116,8 @@ public abstract class GameLogic {
      * Extending classes should override this method if they desire to render in other procedures beside the default
      * world and HUD rendering
      */
-    protected void renderOthers() {}
+    protected void renderOthers() {
+    }
 
     /**
      * Reacts to the window resizing by calculating the new aspect ratio and aspect ratio action (see GameLogic.init)
@@ -124,6 +133,7 @@ public abstract class GameLogic {
      * toggled off
      * Extending classes can override this to change logic behavior when FPS is reported, but functionality of the
      * default FPS displaying ROC text objects will no longer work correctly if this is not called as super
+     *
      * @param FPS the FPS to report, or null if FPS reporting is toggled off
      */
     public void reportFPS(Float FPS) {
@@ -134,7 +144,7 @@ public abstract class GameLogic {
             } else { // otherwise
                 this.roc.getStaticGameObject(0).setVisibility(true); // show FPS static text
                 this.roc.getStaticGameObject(1).setVisibility(true); // show FPS counter text
-                ((TextObject)this.roc.getStaticGameObject(1)).setText(Float.toString(FPS)); // update with new FPS
+                ((TextObject) this.roc.getStaticGameObject(1)).setText(Float.toString(FPS)); // update with new FPS
                 this.roc.ensurePlacement(1); // ensure text placement
             }
         }

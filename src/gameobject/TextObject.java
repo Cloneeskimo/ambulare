@@ -4,7 +4,6 @@ import graphics.Font;
 import graphics.Material;
 import graphics.Model;
 import graphics.ShaderProgram;
-import utils.Global;
 
 /**
  * A game object designed to easily and accessibly display text
@@ -16,7 +15,7 @@ public class TextObject extends GameObject {
      */
     public static final float DEFAULT_SIZE = 0.1f; /* defines the default text size in normalized coordinates. That
         is, text will, by default, be 0.1f tall and however wide necessary to accommodate all characters */
-    private static final float[] DEFAULT_COLOR = new float[] {1.0f, 1.0f, 1.0f, 1.0f}; // default text color
+    private static final float[] DEFAULT_COLOR = new float[]{1.0f, 1.0f, 1.0f, 1.0f}; // default text color
 
     /**
      * Members
@@ -26,8 +25,9 @@ public class TextObject extends GameObject {
 
     /**
      * Constructs the text object with the given color
-     * @param font the font to use when rendering the text
-     * @param text the text to display
+     *
+     * @param font  the font to use when rendering the text
+     * @param text  the text to display
      * @param color the color the text should be
      */
     public TextObject(Font font, String text, float[] color) {
@@ -40,6 +40,7 @@ public class TextObject extends GameObject {
 
     /**
      * Constructs the text object with the default color
+     *
      * @param font the font to use when rendering the text
      * @param text the text to display
      */
@@ -50,6 +51,7 @@ public class TextObject extends GameObject {
     /**
      * Refreshes this TextObject by recalculating its model coordinates and texture coordinates
      * This is somewhat of a heavy-ish operation, so it should be avoided unless the text has actually changed
+     *
      * @param text the new text
      */
     private void refreshModel(String text) {
@@ -64,7 +66,7 @@ public class TextObject extends GameObject {
         float[] widths = new float[text.length()]; // width for each character
         float width = 0; // total width
         for (int i = 0; i < text.length(); i++) { // for each character
-            float cw =  charWidth - (float)(font.getCharCutoff(text.charAt(i)) * 2); // width of particular character
+            float cw = charWidth - (float) (font.getCharCutoff(text.charAt(i)) * 2); // width of particular character
             float modelcw = (cw / charWidth * DEFAULT_SIZE); // width in terms of standard square model size
             widths[i] = modelcw; // add character width
             width += modelcw; // add to cumulative width
@@ -103,6 +105,7 @@ public class TextObject extends GameObject {
 
     /**
      * Changes the text of this text object and refreshes the model if the text is actually different
+     *
      * @param text the new text to set
      * @return whether the text was actually changed or not
      */
@@ -117,12 +120,16 @@ public class TextObject extends GameObject {
 
     /**
      * Appends text to the text object
+     *
      * @param text the text to append
      */
-    public void appendText(String text) { this.setText(this.text + text); }
+    public void appendText(String text) {
+        this.setText(this.text + text);
+    }
 
     /**
      * Removes a given amount of the last characters
+     *
      * @param n the amount of last characters to remove. If n is greater than this text's length, the text will become
      *          an empty string. If n is less than 1, nothing will happen
      */
@@ -134,10 +141,17 @@ public class TextObject extends GameObject {
 
     /**
      * Renders the text object if there is text to display
+     *
      * @param sp the shader program to use to render
      */
     @Override
     public void render(ShaderProgram sp) {
-        if (!this.text.equals("")) super.render(sp); // only render if there is text to render
+        if (!this.text.equals("")) { // if the text is not empty
+            if (!this.visible) return; // do not render if invisible
+            sp.setUniform("x", this.getX()); // set x
+            sp.setUniform("y", this.getY()); // set y
+            this.material.setUniforms(sp); // set material uniforms
+            this.model.render(); // render model
+        }
     }
 }

@@ -38,20 +38,21 @@ public class MIHSB {
 
     /**
      * Reacts to mouse input
-     * @param x the normalized and projected x position of the mouse if hover event, 0 otherwise
-     * @param y the normalized and projected y position of the mouse if hover event, 0 otherwise
+     *
+     * @param x      the normalized and projected x position of the mouse if hover event, 0 otherwise
+     * @param y      the normalized and projected y position of the mouse if hover event, 0 otherwise
      * @param action the nature of the mouse input (GLFW_PRESS, GLFW_RELEASE, or GLFW_HOVERED)
      * @return an array containing the IDs of all items that were clicked (mouse released)
      */
     public int[] mouseInput(float x, float y, int action) {
         List<Integer> clickedIDs = new ArrayList<>(); // create a list to store the IDs of the objects that were clicked
         if (action == GLFW_HOVERED) { // if hover
-            Pair pos = new Pair(x, y); // bundle into a pair
-            Pair camPos = new Pair(x, y); // create a separate pair for camera-view coordinates
+            Pair<Float> pos = new Pair<Float>(x, y); // bundle into a pair
+            Pair<Float> camPos = new Pair<Float>(x, y); // create a separate pair for camera-view coordinates
             Transformation.useCam(camPos, cam); // transform camera position into camera-view coordinates
             for (int i = 0; i < this.mis.size(); i++) { // for each that can be interacted with by a mouse
                 // if it uses a camera, use the mouse position in camera-view coordinates. Otherwise, use world pos
-                Pair appropriatePos = this.useCam.get(i) ? camPos : pos;
+                Pair<Float> appropriatePos = this.useCam.get(i) ? camPos : pos;
                 if (mis.get(i).getFittingBox().contains(appropriatePos)) { // if the fitting box contains the mouse
                     if (this.pressed) mis.get(i).onPress(); // if the mouse wandered in while pressed, call onPress
                     else mis.get(i).onHover(appropriatePos.x, appropriatePos.y); // otherwise, call onHover
@@ -82,7 +83,8 @@ public class MIHSB {
 
     /**
      * Adds a new object to consider mouse input for
-     * @param mi the object
+     *
+     * @param mi     the object
      * @param useCam whether this object will be rendered using a camera
      */
     public void add(MouseInteractable mi, boolean useCam) {
@@ -91,7 +93,9 @@ public class MIHSB {
         this.useCam.add(useCam); // save camera usage flag
     }
 
-    public void useCam(Camera cam) { this.cam = cam; }
+    public void useCam(Camera cam) {
+        this.cam = cam;
+    }
 
     /**
      * An interface to be implemented by objects that want to react to being interacted with by a mouse through a MIHSB
@@ -100,6 +104,7 @@ public class MIHSB {
 
         /**
          * The method that will be called when an implementing object is hovered over
+         *
          * @param x the x position of the mouse in either world or camera-view space, depending on whether the
          *          implementing object reacts to a camera
          * @param y the y position of the mouse in either world or camera-view space, depending on whether the
@@ -126,13 +131,14 @@ public class MIHSB {
          * This will be called by the MIHSB to get an ID from the item to return to the object that owns the
          * MIHSB. IDs will not be checked for uniqueness in case the implementor wants multiple objects to have the
          * same reaction
+         *
          * @return the ID described above
          */
         int getID();
 
         /**
          * @return the appropriate fitting box to use to consider whether or not the implementing object is being
-         *         hovered by the mouse
+         * hovered by the mouse
          */
         FittingBox getFittingBox();
     }

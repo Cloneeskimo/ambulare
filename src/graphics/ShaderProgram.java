@@ -22,6 +22,7 @@ public class ShaderProgram {
 
     /**
      * Constructor
+     *
      * @param vShaderPath the resource-relative path to the vertex shader code
      * @param fShaderPath the resource-relative path to the fragment shader code
      */
@@ -36,6 +37,7 @@ public class ShaderProgram {
 
     /**
      * Processes the GLSL shaders by loading the code, compiling the code, then linking.
+     *
      * @param vShaderPath the resource-relative path to the vertex shader
      * @param fShaderPath the resource-relative path to the fragment shader
      */
@@ -50,6 +52,7 @@ public class ShaderProgram {
     /**
      * Processes a GLSL shader (vertex or fragment) based on the given code by compiling it and attaching it to the
      * main program
+     *
      * @param code the code to create the shader from
      * @param type the type of shader
      * @return the ID of the created shader
@@ -62,9 +65,9 @@ public class ShaderProgram {
         glShaderSource(id, code); // give shader the code
         glCompileShader(id); // compile shader
         if (glGetShaderi(id, GL_COMPILE_STATUS) == 0) // if fail
-         Utils.handleException(new Exception("Unable to compile shader of type " + type + ": " +
-                 glGetShaderInfoLog(id, 1024)), "graphics.ShaderProgram", "processShader(String, int)",
-                 true); // throw exception
+            Utils.handleException(new Exception("Unable to compile shader of type " + type + ": " +
+                            glGetShaderInfoLog(id, 1024)), "graphics.ShaderProgram", "processShader(String, int)",
+                    true); // throw exception
         glAttachShader(this.progID, id); // attach to main program
         return id; // return id
     }
@@ -87,6 +90,7 @@ public class ShaderProgram {
 
     /**
      * Register the uniform with the given name by finding its position and saving it
+     *
      * @param name the name of the uniform to find
      */
     public void registerUniform(String name) {
@@ -99,8 +103,9 @@ public class ShaderProgram {
 
     /**
      * Sets the uniform with the given name to the given value (a float)
+     *
      * @param name the name of the uniform the set
-     * @param v the value to set it to
+     * @param v    the value to set it to
      */
     public void setUniform(String name, float v) {
         try {
@@ -112,8 +117,9 @@ public class ShaderProgram {
 
     /**
      * Sets the uniform with the given name to the given value (an integer)
+     *
      * @param name the name of the uniform to set
-     * @param v the value to set it to
+     * @param v    the value to set it to
      */
     public void setUniform(String name, int v) {
         try {
@@ -125,11 +131,12 @@ public class ShaderProgram {
 
     /**
      * Sets the uniform with the given name to the given value (a 4-dimensional float array)
+     *
      * @param name the name of the uniform to set
-     * @param x the first value of the 4-dimensional float array
-     * @param y the second value of the 4-dimensional float array
-     * @param z the third value of the 4-dimensional float array
-     * @param a the fourth value of the 4-dimensional float array
+     * @param x    the first value of the 4-dimensional float array
+     * @param y    the second value of the 4-dimensional float array
+     * @param z    the third value of the 4-dimensional float array
+     * @param a    the fourth value of the 4-dimensional float array
      */
     public void setUniform(String name, float x, float y, float z, float a) {
         try {
@@ -143,12 +150,16 @@ public class ShaderProgram {
     /**
      * Binds the shader program
      */
-    public void bind() { glUseProgram(this.progID); }
+    public void bind() {
+        glUseProgram(this.progID);
+    }
 
     /**
      * Unbinds the shader program
      */
-    public void unbind() { glUseProgram(0); }
+    public void unbind() {
+        glUseProgram(0);
+    }
 
     /**
      * Cleans up the shader program

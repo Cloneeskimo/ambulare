@@ -17,10 +17,11 @@ public class AABB {
 
     /**
      * Constructor
+     *
      * @param cx the center-point x
      * @param cy the center-point y
-     * @param w the full width of the object
-     * @param h the full height of the object
+     * @param w  the full width of the object
+     * @param h  the full height of the object
      */
     public AABB(float cx, float cy, float w, float h) {
         this.cx = cx;
@@ -32,20 +33,28 @@ public class AABB {
     /**
      * @return the center-point x of the axis-aligned bounding box
      */
-    public float getCX() { return this.cx; }
+    public float getCX() {
+        return this.cx;
+    }
 
     /**
      * @return the center-point y of the axis-aligned bounding box
      */
-    public float getCY() { return this.cy; }
+    public float getCY() {
+        return this.cy;
+    }
 
     /**
      * @return the half-widths of the axis-aligned bounding box
      */
-    public float getW2() { return this.w2; }
+    public float getW2() {
+        return this.w2;
+    }
 
     /**
      * @return the half-height of the axis-aligned bounding box
      */
-    public float getH2() { return this.h2; }
+    public float getH2() {
+        return this.h2;
+    }
 }

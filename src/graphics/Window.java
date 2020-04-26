@@ -27,9 +27,10 @@ public class Window {
 
     /**
      * Constructs the window
+     *
      * @param title the title to give to the GLFW window
-     * @param w the width to make the GLFW window. If -1, will cover 80% of the width of the screen when initialized
-     * @param h the height to make the GLFW window. If -1, will cover 80% of the height of screen when initialized
+     * @param w     the width to make the GLFW window. If -1, will cover 80% of the width of the screen when initialized
+     * @param h     the height to make the GLFW window. If -1, will cover 80% of the height of screen when initialized
      * @param vSync whether to enable vertical sync
      */
     public Window(String title, int w, int h, boolean vSync) {
@@ -60,8 +61,8 @@ public class Window {
 
         // check window size
         GLFWVidMode vidmode = glfwGetVideoMode(glfwGetPrimaryMonitor()); // get resolution info for main monitor
-        if (this.w == -1) this.w = (int)(0.8 * vidmode.width()); // if w is -1, use 80% of width of screen
-        if (this.h == -1) this.h = (int)(0.8 * vidmode.height()); // if h is -1, use 80% of height of screen
+        if (this.w == -1) this.w = (int) (0.8 * vidmode.width()); // if w is -1, use 80% of width of screen
+        if (this.h == -1) this.h = (int) (0.8 * vidmode.height()); // if h is -1, use 80% of height of screen
 
         // create window
         this.handle = glfwCreateWindow(this.w, this.h, this.title, NULL, NULL); // create window with specified config
@@ -104,12 +105,16 @@ public class Window {
     /**
      * Polls for any GLFW window events
      */
-    public void pollEvents() { glfwPollEvents(); } // polls for events
+    public void pollEvents() {
+        glfwPollEvents();
+    } // polls for events
 
     /**
      * Swaps the window buffers
      */
-    public void swapBuffers() { glfwSwapBuffers(this.handle); } // swap the buffers
+    public void swapBuffers() {
+        glfwSwapBuffers(this.handle);
+    } // swap the buffers
 
     /**
      * Closes the window
@@ -120,6 +125,7 @@ public class Window {
 
     /**
      * Determine if the window was resized
+     *
      * @param resetFlag whether to reset the flag after checking (to false)
      * @return whether the window was resized
      */
@@ -139,46 +145,62 @@ public class Window {
     /**
      * @return whether this window has vertical sync enabled
      */
-    public boolean usesVSync() { return this.vSync; }
+    public boolean usesVSync() {
+        return this.vSync;
+    }
 
     /**
      * @return the width of this window
      */
-    public int getWidth() { return this.w; }
+    public int getWidth() {
+        return this.w;
+    }
 
     /**
      * @return the height of this window
      */
-    public int getHeight() { return this.h; }
+    public int getHeight() {
+        return this.h;
+    }
 
     /**
      * @return the frame buffer width of this window
      */
-    public int getFBWidth() { return this.fbw; }
+    public int getFBWidth() {
+        return this.fbw;
+    }
 
     /**
      * @return the frame buffer height of this window
      */
-    public int getFBHeight() { return this.fbh; }
+    public int getFBHeight() {
+        return this.fbh;
+    }
 
     /**
      * @return this window's GLFW handle
      */
-    public long getHandle() { return this.handle; }
+    public long getHandle() {
+        return this.handle;
+    }
 
     /**
      * Determines if a given key is pressed
      * Note that this can create unexpected behavior if this is called for toggle-type settings every loop because this
      * will remain true until the key is lifted caused toggling to occur many times in a row. Instead, properly react
      * to key events by using keyboardInput() (the engine and all sets of game logic have this method)
+     *
      * @param key the key to check
      * @return whether the given key is pressed
      */
-    public boolean isKeyPressed(int key) { return glfwGetKey(this.handle, key) == GLFW_PRESS; }
+    public boolean isKeyPressed(int key) {
+        return glfwGetKey(this.handle, key) == GLFW_PRESS;
+    }
 
     /**
      * Note that, like with keyboard input, mouse input can be react to on an event-to-event basis by using mouseInput()
      * which is a method that the engine and sets of game logic have
+     *
      * @return the mouse position as window coordinates
      */
     public Pair getMousePos() {
@@ -186,6 +208,6 @@ public class Window {
         double[] x = new double[1];
         double[] y = new double[1];
         glfwGetCursorPos(this.handle, x, y); // put position in each array
-        return new Pair((float)x[0], (float)y[0]); // put into a pair and return
+        return new Pair((float) x[0], (float) y[0]); // put into a pair and return
     }
 }

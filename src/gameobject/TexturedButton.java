@@ -19,15 +19,16 @@ public class TexturedButton extends GameObject implements MIHSB.MouseInteractabl
 
     /**
      * Constructs the textured button with animation within any single mouse interactivity state
-     * @param w the width of the button in grid cells
-     * @param h the height of the button in grid cells
-     * @param texResPath the resource-relative path to the texture. The texture should have its frames in the
-     *                   following order: no interaction frames, then hover frames, then pressed frames
+     *
+     * @param w             the width of the button in grid cells
+     * @param h             the height of the button in grid cells
+     * @param texResPath    the resource-relative path to the texture. The texture should have its frames in the
+     *                      following order: no interaction frames, then hover frames, then pressed frames
      * @param defaultFrames how many frames in the texture correspond to the no interaction state
-     * @param hoverFrames how many frames in the texture correspond to the hover state
+     * @param hoverFrames   how many frames in the texture correspond to the hover state
      * @param pressedFrames how many frames in the texture correspond to the pressed state
-     * @param frameTime how much time (in seconds) to show a frame
-     * @param MIID the mouse interactivity ID of the button
+     * @param frameTime     how much time (in seconds) to show a frame
+     * @param MIID          the mouse interactivity ID of the button
      */
     public TexturedButton(int w, int h, String texResPath, int defaultFrames, int hoverFrames, int pressedFrames,
                           float frameTime, int MIID) {
@@ -36,9 +37,9 @@ public class TexturedButton extends GameObject implements MIHSB.MouseInteractabl
         /* here we check if there is more than one frame for any mouse interactivity state. If there isn't, there is no
            need to keep time for texture animation */
         if (defaultFrames + hoverFrames + pressedFrames > 3) { // if there is actually animation
-            this.giveTexAnim(defaultFrames + hoverFrames + pressedFrames, frameTime); // start the animation
+            //this.giveTexAnim(defaultFrames + hoverFrames + pressedFrames, frameTime); // start the animation
         }
-        this.frameCounts = new int[] {defaultFrames, hoverFrames, pressedFrames}; // keep count of frames for each state
+        this.frameCounts = new int[]{defaultFrames, hoverFrames, pressedFrames}; // keep count of frames for each state
         this.framesToUse = 0;
         this.MIID = MIID;
     }
@@ -47,11 +48,12 @@ public class TexturedButton extends GameObject implements MIHSB.MouseInteractabl
      * Constructs the textured button without any animation within mouse interactivity states (the texture will still
      * change when the state changes however). This constructor basically assumes that the texture at the given path
      * has one frame for each mouse interactivity state
-     * @param w the width of the button in grid cells
-     * @param h the height of the button in grid cells
+     *
+     * @param w          the width of the button in grid cells
+     * @param h          the height of the button in grid cells
      * @param texResPath the resource-relative path to the texture. The texture should have its frames in the
      *                   following order: no interaction frame, then the hover frame, then the pressed frame
-     * @param MIID the mouse interactivity ID of the button
+     * @param MIID       the mouse interactivity ID of the button
      */
     public TexturedButton(int w, int h, String texResPath, int MIID) {
         this(w, h, texResPath, 1, 1, 1, 0, MIID);
@@ -59,9 +61,9 @@ public class TexturedButton extends GameObject implements MIHSB.MouseInteractabl
 
     /**
      * Updates the texture animation if there is one
+     *
      * @param interval the amount of time, in seconds, to account for
      */
-    @Override
     protected void updateTexAnim(float interval) {
         this.frameTimeLeft -= interval; // update frame time left
         if (this.frameTimeLeft <= 0f) { // if frame is over
@@ -83,11 +85,12 @@ public class TexturedButton extends GameObject implements MIHSB.MouseInteractabl
             mFrame += this.frameCounts[0]; // we can skip its frames in the texture
             if (this.framesToUse > 1) mFrame += this.frameCounts[1]; // and if we passed second MI state, skip those too
         }
-        ((MultiTexCoordModel)this.model).setFrame(mFrame); // tell the model the calculated frame
+        ((MultiTexCoordModel) this.model).setFrame(mFrame); // tell the model the calculated frame
     }
 
     /**
      * Responds to mouse hovering by switching to the hover frame(s)
+     *
      * @param x the x position of the mouse in either world or camera-view space, depending on whether the
      *          implementing object reacts to a camera
      * @param y the y position of the mouse in either world or camera-view space, depending on whether the
@@ -128,6 +131,7 @@ public class TexturedButton extends GameObject implements MIHSB.MouseInteractabl
 
     /**
      * The mouse interaction ID of a text button is the ID given to it when constructing
+     *
      * @return the ID given when constructing
      */
     @Override

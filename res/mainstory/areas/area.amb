@@ -1,20 +1,15 @@
 area:
 {
-    name: Area
+    name: Test Area
     key:
     {
         d: resfrom /mainstory/materials/dirt.amb
-        g:
-        {
-            material:
-            {
-                texture_path: /textures/grass_top.png
-            }
-        }
+        g: resfrom /mainstory/materials/grass.amb
     }
     layout:
     {
-        :gggggg
-        :dddddd
+        : gggggggg  dd  ggg
+        : ddddddddddddddddd
+        : ddddddddddddddddd
     }
 }

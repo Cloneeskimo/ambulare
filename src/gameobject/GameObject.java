@@ -1,13 +1,11 @@
 package gameobject;
 
-import graphics.*;
+import graphics.Material;
+import graphics.Model;
+import graphics.PositionalAnimation;
+import graphics.ShaderProgram;
 import utils.FittingBox;
 import utils.Pair;
-
-import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
-import static org.lwjgl.opengl.GL11.glBindTexture;
-import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
-import static org.lwjgl.opengl.GL13C.glActiveTexture;
 
 /**
  * Represents a single game object. This is the basic abstraction away from directly dealing with GL commands
@@ -39,7 +37,8 @@ public class GameObject {
 
     /**
      * Constructs the game object at the default starting position
-     * @param model the model to render
+     *
+     * @param model    the model to render
      * @param material the material to use for rendering
      */
     public GameObject(Model model, Material material) {
@@ -49,9 +48,10 @@ public class GameObject {
 
     /**
      * Constructs the game object with a starting position
-     * @param x the x position to place the game object at
-     * @param y the y position to place the game object at
-     * @param model the model to render
+     *
+     * @param x        the x position to place the game object at
+     * @param y        the y position to place the game object at
+     * @param model    the model to render
      * @param material the material to use for rendering
      */
     public GameObject(float x, float y, Model model, Material material) {
@@ -62,6 +62,7 @@ public class GameObject {
 
     /**
      * Updates the game object
+     *
      * @param interval the amount of time to account for
      */
     public void update(float interval) {
@@ -69,11 +70,11 @@ public class GameObject {
             if (this.move(this.vx * interval, this.vy * interval)) // move according to velocity and interval
                 this.onMove(); // call onMove if an actual move occurred
         } else this.updatePosAnim(interval); // otherwise, update positional animation
-        if (this.frameCount > 0) this.updateTexAnim(interval); // update texture animation if there is one
     }
 
     /**
      * Updates the positional animation fo the game object if there is one and sets the position accordingly
+     *
      * @param interval the amount of time, in seconds, to account for
      */
     protected void updatePosAnim(float interval) {
@@ -91,48 +92,25 @@ public class GameObject {
     }
 
     /**
-     * Updates the texture animation of the game object by keeping track of time per frame and advancing when necessary
-     * @param interval the amount of time, in seconds, to account for
-     */
-    protected void updateTexAnim(float interval) {
-        this.frameTimeLeft -= interval; // update frame time left
-        if (this.frameTimeLeft <= 0f) { // if frame is over
-            this.frameTimeLeft += this.frameTime; // reset time
-            this.frame++; // iterate frame
-            if (this.frame >= this.frameCount) this.frame = 0; // if end of frames, start over
-            if (this.model instanceof MultiTexCoordModel) { // if the model supports multiple texture coordinates
-                ((MultiTexCoordModel)this.model).setFrame(this.frame); // update model texture coordinates
-            }
-        }
-    }
-
-    /**
      * Renders the game object using the given shader program
      * This function will assume the given shader program is already bound and has the correct set of uniforms to handle
      * rendering a game object (see method for specifics)
+     *
      * @param sp the shader program to use to render the game object
      */
     public void render(ShaderProgram sp) {
         if (!this.visible) return; // do not render if invisible
-        if (this.material.isTextured()) { // if the object's material is textured
-            sp.setUniform("isTextured", 1); // set textured flag to true
-            glActiveTexture(GL_TEXTURE0); // set active texture to one in slot 0
-            glBindTexture(GL_TEXTURE_2D, this.material.getTexture().getID()); // bind texture
-        } else sp.setUniform("isTextured", 0); // set textured flag to false otherwise
-        if (this.material.isColored()) { // if the object's material is colored
-            float[] color = this.material.getColor(); // get color
-            sp.setUniform("color", color[0], color[1], color[2], color[3]); // set color uniform
-        }
-        Material.BLEND_MODE bm = this.material.getBlendMode(); // get blend mode of the object's material
-        sp.setUniform("blend", bm == Material.BLEND_MODE.NONE ? 0 : (bm == Material.BLEND_MODE.MULTIPLICATIVE ? 1
-                : 2)); // set blend uniform
         sp.setUniform("x", this.x); // set x
         sp.setUniform("y", this.y); // set y
+        this.material.setUniforms(sp); // set material uniforms
+        int texCoordVBO = this.material.getTexCoordVBO(); // get the correct texture coordinate VBO
+        this.model.useTexCoordVBO(texCoordVBO); // give the VBO to the model
         this.model.render(); // render model
     }
 
     /**
      * Moves the game object by the given offset
+     *
      * @param dx the x offset
      * @param dy the y offset
      * @return whether or not an actual move occurred
@@ -145,6 +123,7 @@ public class GameObject {
 
     /**
      * Sets the game object's velocities to 0
+     *
      * @param stopPosAnim whether or not to stop any positional animation that may be happening
      */
     public void stop(boolean stopPosAnim) {
@@ -156,11 +135,13 @@ public class GameObject {
      * This is called whenever there is a change in the game object's position. The point is for extending classes to be
      * able to override this in order to react to a changes in position
      */
-    protected void onMove() {}
+    protected void onMove() {
+    }
 
     /**
      * Gives the game object a positional animation to undergo immediately
      * See the PositionalAnimation class definition for more details about positional animations
+     *
      * @param pa the animation to undergo
      */
     public void givePosAnim(PositionalAnimation pa) {
@@ -169,24 +150,18 @@ public class GameObject {
     }
 
     /**
-     * Tells the game object to try to use texture animations. This will only work if the game object's model is one
-     * that supports multiple texture coordinates (see MultiTexCoordModel class)
-     * @param frameCount the amount of horizontal frames to flip through
-     * @param frameTime the amount of time (is seconds) to give each frame
+     * Update's the game object's x position
+     *
+     * @param x the new x position
      */
-    public void giveTexAnim(int frameCount, float frameTime) {
-        this.frameCount = frameCount; // save frame count as member
-        this.frameTime = this.frameTimeLeft = frameTime; // save frame time as member
+    public void setX(float x) {
+        this.x = x;
+        this.onMove();
     }
 
     /**
-     * Update's the game object's x position
-     * @param x the new x position
-     */
-    public void setX(float x) { this.x = x; this.onMove(); }
-
-    /**
      * Update's the game object's y position
+     *
      * @param y the new y position
      */
     public void setY(float y) {
@@ -196,30 +171,43 @@ public class GameObject {
 
     /**
      * Updates the game object's horizontal velocity (x velocity)
+     *
      * @param vx the new horizontal velocity
      */
-    public void setVX(float vx) { this.vx = vx; }
+    public void setVX(float vx) {
+        this.vx = vx;
+    }
 
     /**
      * Updates the game object's vertical velocity
+     *
      * @param vy the new vertical velocity
      */
-    public void setVY(float vy) { this.vy = vy; }
+    public void setVY(float vy) {
+        this.vy = vy;
+    }
 
     /**
      * Updates the game object's horizontal velocity by adding the given incremental change
+     *
      * @param dvx the incremental change
      */
-    public void incrementVX(float dvx) { this.vx += dvx; }
+    public void incrementVX(float dvx) {
+        this.vx += dvx;
+    }
 
     /**
      * Updates the game object's vertical velocity by adding the given incremental change
+     *
      * @param dvy the incremental change
      */
-    public void incrementVY(float dvy) { this.vy += dvy; }
+    public void incrementVY(float dvy) {
+        this.vy += dvy;
+    }
 
     /**
      * Sets the x scaling factor of the game object to the given x scaling factor
+     *
      * @param x the x scaling factor to use
      */
     public void setXScale(float x) {
@@ -229,6 +217,7 @@ public class GameObject {
 
     /**
      * Sets the y scaling factor of the game object to the given y scaling factor
+     *
      * @param y the y scaling factor to use
      */
     public void setYScale(float y) {
@@ -238,6 +227,7 @@ public class GameObject {
 
     /**
      * Updates the position of the game object
+     *
      * @param x the new x
      * @param y the new y
      */
@@ -249,14 +239,16 @@ public class GameObject {
 
     /**
      * Updates the position of the game object
+     *
      * @param pos the new position
      */
-    public void setPos(Pair pos) {
+    public void setPos(Pair<Float> pos) {
         this.setPos(pos.x, pos.y);
     }
 
     /**
      * Sets the scaling factors of the game object to the given scaling factors
+     *
      * @param x the x scaling factor to use
      * @param y the y scaling factor to use
      */
@@ -267,14 +259,16 @@ public class GameObject {
 
     /**
      * Updates the rotation of the game object
+     *
      * @param r the new rotation value in degrees
      */
     public void setRotDeg(float r) {
-        this.setRotRad((float)Math.toRadians(r)); // convert to radians and call other method
+        this.setRotRad((float) Math.toRadians(r)); // convert to radians and call other method
     }
 
     /**
      * Updates the rotation of the game object
+     *
      * @param r the new rotation value in radians
      */
     public void setRotRad(float r) {
@@ -284,30 +278,42 @@ public class GameObject {
 
     /**
      * Sets the visibility flag of the game object
+     *
      * @param v the new value of the visibility flag
      */
-    public void setVisibility(boolean v) { this.visible = v; }
+    public void setVisibility(boolean v) {
+        this.visible = v;
+    }
 
     /**
      * Updates the game object's material
+     *
      * @param m the new material to use
      */
-    public void setMaterial(Material m) { this.material = m; }
+    public void setMaterial(Material m) {
+        this.material = m;
+    }
 
     /**
      * @return whether the game object is currently undergoing a positional animation
      */
-    public boolean posAnimating() { return this.posAnim != null; }
+    public boolean posAnimating() {
+        return this.posAnim != null;
+    }
 
     /**
      * @return the game object's x position
      */
-    public float getX() { return this.x; }
+    public float getX() {
+        return this.x;
+    }
 
     /**
      * @return the game object's y position
      */
-    public float getY() { return this.y; }
+    public float getY() {
+        return this.y;
+    }
 
     /**
      * @return the game object's width
@@ -340,22 +346,36 @@ public class GameObject {
     /**
      * @return the game object's horizontal velocity
      */
-    public float getVX() { return this.vx; }
+    public float getVX() {
+        return this.vx;
+    }
 
     /**
      * @return the game object's vertical velocity
      */
-    public float getVY() { return this.vy; }
+    public float getVY() {
+        return this.vy;
+    }
 
     /**
      * @return the game object's rotation in radians
      */
-    public float getRotationRad() { return this.model.getRotationRad(); }
+    public float getRotationRad() {
+        return this.model.getRotationRad();
+    }
+
+    /**
+     * @return the material used to render the game object
+     */
+    public Material getMaterial() {
+        return this.material;
+    }
 
     /**
      * Calculates the fitting box for the game object by getting the model's fitting box and translating it to the
      * game object's position. If the game object's model is rectangular, it will create a perfectly-sized and rotated
      * fitting box. Otherwise, it will create the smallest possible fitting box that can house all vertices
+     *
      * @return the fitting box describe above
      */
     public FittingBox getFittingBox() {
@@ -367,6 +387,5 @@ public class GameObject {
      */
     public void cleanup() {
         this.model.cleanup(); // cleanup model
-        this.material.cleanup(); // cleanup material
     }
 }

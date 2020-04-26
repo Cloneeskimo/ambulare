@@ -21,11 +21,14 @@ public class PositionalAnimation {
 
     /**
      * Constructs this animation
-     * @param xf the target x - if null, will not change x
-     * @param yf the target y - if null, will not change y
-     * @param rf the target rotation in degrees - if null, will not change rotation. Rotation can be given in numbers
-     *           much greater than 360 and it will calculate the amount of rotation needed to get through all of the
-     *           given degrees, while maintaining an actual rotation value < 360f in the owning game object.
+     *
+     * @param xf       the target x - if null, will not change x
+     * @param yf       the target y - if null, will not change y
+     * @param rf       the target rotation in degrees - if null, will not change rotation. Rotation can be given in
+     *                 numbers
+     *                 much greater than 360 and it will calculate the amount of rotation needed to get through all
+     *                 of the
+     *                 given degrees, while maintaining an actual rotation value < 360f in the owning game object.
      * @param duration how long (in seconds) the animation should take
      */
     public PositionalAnimation(Float xf, Float yf, Float rf, float duration) {
@@ -33,13 +36,14 @@ public class PositionalAnimation {
         else this.x = false; // if x is null, disable x animating
         if (yf != null) this.yf = yf;
         else this.y = false; // if y is null, disable y animating
-        if (rf != null) this.rf = (float)Math.toRadians(rf);
+        if (rf != null) this.rf = (float) Math.toRadians(rf);
         else this.r = false; // if r is null, disable rotation animating
         this.duration = duration;
     }
 
     /**
      * Starts the animation by beginning the timekeeping and calculating extra variables
+     *
      * @param x0 the starting x
      * @param y0 the starting y
      * @param r0 the starting rotation
@@ -59,6 +63,7 @@ public class PositionalAnimation {
     /**
      * Updates the animation by keeping track of time for accurate calculations in the getter methods. It's important
      * to call this or the animation will not be timed correctly
+     *
      * @param interval the amount of time to account for
      */
     public void update(float interval) {
@@ -85,26 +90,34 @@ public class PositionalAnimation {
      */
     public float getR() {
         // starting position plus how far along the total difference the animation is
-        return (this.r0 + this.dr * this.animProg) % (float)(2 * Math.PI);
+        return (this.r0 + this.dr * this.animProg) % (float) (2 * Math.PI);
     }
 
     /**
      * @return the target x of the animation
      */
-    public float getFinalX() { return this.xf; }
+    public float getFinalX() {
+        return this.xf;
+    }
 
     /**
      * @return the target y of the animation
      */
-    public float getFinalY() { return this.yf; }
+    public float getFinalY() {
+        return this.yf;
+    }
 
     /**
      * @return the target rotation of the animation
      */
-    public float getFinalR() { return this.rf  % (float)(2 * Math.PI); }
+    public float getFinalR() {
+        return this.rf % (float) (2 * Math.PI);
+    }
 
     /**
      * @return whether the animation has finished
      */
-    public boolean finished() { return (this.animProg >= 1.0f); }
+    public boolean finished() {
+        return (this.animProg >= 1.0f);
+    }
 }
