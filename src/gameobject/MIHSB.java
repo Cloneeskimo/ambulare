@@ -49,7 +49,7 @@ public class MIHSB {
         if (action == GLFW_HOVERED) { // if hover
             Pair<Float> pos = new Pair<Float>(x, y); // bundle into a pair
             Pair<Float> camPos = new Pair<Float>(x, y); // create a separate pair for camera-view coordinates
-            Transformation.useCam(camPos, cam); // transform camera position into camera-view coordinates
+            if (cam != null) Transformation.useCam(camPos, cam); // transform camera position into camera-view pos
             for (int i = 0; i < this.mis.size(); i++) { // for each that can be interacted with by a mouse
                 // if it uses a camera, use the mouse position in camera-view coordinates. Otherwise, use world pos
                 Pair<Float> appropriatePos = this.useCam.get(i) ? camPos : pos;

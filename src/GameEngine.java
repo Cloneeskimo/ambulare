@@ -15,9 +15,9 @@ public class GameEngine {
      * Members
      */
     private static boolean reportingFPS = false; // whether or not FPS is being reported
-    private final Window window; // the window being used
-    private final Timer timer;  // timer used for timekeeping and ensuring accurate FPS reporting and looping
-    private GameLogic logic; // the logic the engine should follow
+    private final Window window;                 // the window being used
+    private final Timer timer;                   // timer used for timekeeping and accurate FPS reporting and looping
+    private GameLogic logic;                     // the logic the engine should follow
 
     /**
      * Constructor
@@ -178,7 +178,19 @@ public class GameEngine {
      * @param interval the amount of time to account for
      */
     private void update(float interval) {
+        if (GameLogic.logicChange != null) performLogicChange(); // perform logic change if one is needed
         this.logic.update(interval); // allow the logic to update
+    }
+
+    /**
+     * Performs a logic change by using GameLogic's static logic change data. This will also clean up the old logic
+     * and initialize the new logic
+     */
+    private void performLogicChange() {
+        this.logic.cleanup(); // cleanup old logic
+        this.logic = GameLogic.logicChange.getNewLogic(); // grab new logic
+        this.logic.init(this.window); // initialize new logic
+        GameLogic.logicChange = null; // delete logic change data
     }
 
     /**

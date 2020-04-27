@@ -1,4 +1,4 @@
-import logic.WorldLogic;
+import logic.MainMenuLogic;
 
 /**
  * Ambulare
@@ -13,10 +13,11 @@ public class Ambulare {
 
     /**
      * Main method - the entry point into the whole program. Just creates and starts the engine
+     *
      * @param args the command-line arguments
      */
     public static void main(String[] args) {
-        GameEngine g = new GameEngine(new WorldLogic()); // create the engine and tell it which logic to follow
+        GameEngine g = new GameEngine(new MainMenuLogic()); // create the engine and tell it which logic to follow
         g.start(); // start the engine
     }
 }

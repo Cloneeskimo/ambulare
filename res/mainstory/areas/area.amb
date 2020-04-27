@@ -8,8 +8,11 @@ area:
     }
     layout:
     {
-        : gg  gg  gg
-        : ddddddddddd
+        :         gg
+        : gg      dd
+        : dd
+        : dd
+        : ddggggggggg
         : ddddddddddd
         :  ddddddddd
     }

@@ -14,6 +14,11 @@ import utils.Global;
 public abstract class GameLogic {
 
     /**
+     * Static Data
+     */
+    public static LogicChange logicChange = null; // info about logic changes
+
+    /**
      * Members
      */
     protected ROC roc;                        // holds and renders all game objects
@@ -157,5 +162,33 @@ public abstract class GameLogic {
      */
     public void cleanup() {
         this.roc.cleanup(); // cleanup ROC
+    }
+
+    /**
+     * Outlines necessary data to perform a logic change in the engine. By setting GameLogic.logicChange to an
+     * instance of this, the engine will change its logic
+     */
+    public static class LogicChange {
+
+        /**
+         * Members
+         */
+        private GameLogic newLogic; // the new logic to switch to
+
+        /**
+         * Constructor
+         *
+         * @param newLogic the new logic to switch to
+         */
+        public LogicChange(GameLogic newLogic) {
+            this.newLogic = newLogic;
+        }
+
+        /**
+         * @return the new logic of the logic change
+         */
+        public GameLogic getNewLogic() {
+            return this.newLogic;
+        }
     }
 }

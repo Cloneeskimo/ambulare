@@ -1,10 +1,8 @@
 package graphics;
 
-import org.lwjgl.system.MemoryUtil;
 import utils.Node;
 import utils.Utils;
 
-import java.nio.FloatBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -12,7 +10,6 @@ import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
 import static org.lwjgl.opengl.GL11.glBindTexture;
 import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
 import static org.lwjgl.opengl.GL13C.glActiveTexture;
-import static org.lwjgl.opengl.GL15.*;
 
 /**
  * Defines how a game object will render. Materials can be animated, but note that they must be updated in order for
@@ -106,6 +103,7 @@ public class Material {
 
     /**
      * Constructs the material by exactly duplicating the given other material
+     *
      * @param other the other material to duplicate
      */
     public Material(Material other) {
@@ -259,6 +257,13 @@ public class Material {
      */
     public float[] getColor() {
         return this.color;
+    }
+
+    /**
+     * @return the material's texture
+     */
+    public Texture getTexture() {
+        return this.texture;
     }
 
     /**

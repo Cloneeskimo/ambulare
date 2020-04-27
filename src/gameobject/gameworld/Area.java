@@ -9,7 +9,6 @@ import utils.Pair;
 import utils.Transformation;
 import utils.Utils;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -59,8 +58,9 @@ public class Area {
 
     /**
      * Parses key data from an area node-file by populating a key
-     * @param keyData the node containing the key data
-     * @param key the key to populate
+     *
+     * @param keyData     the node containing the key data
+     * @param key         the key to populate
      * @param modFileData a map of material to file data for modularization to populate
      */
     private static void parseKeyData(Node keyData, Map<Character, Material> key, Map<Material, String[]> modFileData) {
@@ -103,8 +103,7 @@ public class Area {
                 boolean resRelative = resPath == null || Boolean.parseBoolean(resPath.getValue());
                 modFileData.put(m, Utils.getFileInfoForPath(resRelative, resRelative ? tp.getValue() :
                         Utils.getDataDir() + tp.getValue())); // store modularization file data
-            }
-            else modFileData.put(m, null); // otherwise store null
+            } else modFileData.put(m, null); // otherwise store null
         }
     }
 
@@ -112,9 +111,10 @@ public class Area {
      * Modularizes all the blocks in the area. I'm pretty sure this is a made-up term but it sounds cool so I use it
      * anyways. In this case, it just refers to checking for edges and corners in the blockmap and updating the
      * textures (and thereby materials) accordingly
-     * @param blockMap the block map to use for surrounding checks
+     *
+     * @param blockMap       the block map to use for surrounding checks
      * @param blockPositions the map from original materials to block positions of blocks with that material
-     * @param modFileData the file data for modularization of each material
+     * @param modFileData    the file data for modularization of each material
      */
     private static void modularize(boolean[][] blockMap, Map<Material, List<Pair<Integer>>> blockPositions,
                                    Map<Material, String[]> modFileData) {
@@ -165,8 +165,9 @@ public class Area {
 
     /**
      * Given the block map and a position to consider, will calculate preferred modularizations
-     * @param x the x of the grid cell to consider
-     * @param y the y of the grid cell to consider
+     *
+     * @param x        the x of the grid cell to consider
+     * @param y        the y of the grid cell to consider
      * @param blockMap the block map to use for consideration
      * @return an array containing modularizations in preferred order, or null if no modularization is suggested
      */
@@ -182,43 +183,43 @@ public class Area {
             boolean bottomLeft = blockMap[x - 1][y - 1]; // determine if a block exists below and to the left
             boolean bottomRight = blockMap[x + 1][y - 1]; // determine if a block exists below and to the right
             if (topLeft && topRight && bottomRight && !bottomLeft) // if bottom left is the only corner not occupied
-                return new MOD_NAME_EXT[] { MOD_NAME_EXT.insetbottomleft }; // prefer an inset bottom left
+                return new MOD_NAME_EXT[]{MOD_NAME_EXT.insetbottomleft}; // prefer an inset bottom left
             if (topRight && bottomRight && bottomLeft && !topLeft) // if top left is the only corner not occupied
-                return new MOD_NAME_EXT[] { MOD_NAME_EXT.insettopleft }; // prefer an inset top left
+                return new MOD_NAME_EXT[]{MOD_NAME_EXT.insettopleft}; // prefer an inset top left
             if (bottomRight && bottomLeft && topLeft && !topRight) // if above right is the only corner not occupied
-                return new MOD_NAME_EXT[] { MOD_NAME_EXT.insettopright }; // prefer an inset top right
+                return new MOD_NAME_EXT[]{MOD_NAME_EXT.insettopright}; // prefer an inset top right
             if (bottomLeft && topLeft && topRight && !bottomRight) // if bottom right is the only corner not occupied
-                return new MOD_NAME_EXT[] { MOD_NAME_EXT.insetbottomright }; // prefer an inset bottom right
+                return new MOD_NAME_EXT[]{MOD_NAME_EXT.insetbottomright}; // prefer an inset bottom right
             return null; // if no inset, return no modularization
         }
         // if surrounded on the left, below, and on the right -> prefer a top
-        if (left && right && below) return new MOD_NAME_EXT[] { MOD_NAME_EXT.top };
+        if (left && right && below) return new MOD_NAME_EXT[]{MOD_NAME_EXT.top};
         // if surrounded on the left, below, and on the right -> prefer a bottom
-        if (left && right && above) return new MOD_NAME_EXT[] { MOD_NAME_EXT.bottom };
+        if (left && right && above) return new MOD_NAME_EXT[]{MOD_NAME_EXT.bottom};
         // if surrounded below, above, and to the left -> prefer a right
-        if (below && above && left) return new MOD_NAME_EXT[] { MOD_NAME_EXT.right };
+        if (below && above && left) return new MOD_NAME_EXT[]{MOD_NAME_EXT.right};
         // if surrounded below, above, and to the right -> prefer a left
-        if (below && above && right) return new MOD_NAME_EXT[] { MOD_NAME_EXT.left };
+        if (below && above && right) return new MOD_NAME_EXT[]{MOD_NAME_EXT.left};
         // if only surrounded to the left and right -> prefer a row but settle with a top
-        if (left && right) return new MOD_NAME_EXT[] { MOD_NAME_EXT.row, MOD_NAME_EXT.top };
+        if (left && right) return new MOD_NAME_EXT[]{MOD_NAME_EXT.row, MOD_NAME_EXT.top};
         // if only surrounded above and below -> prefer a column
-        if (below && above) return new MOD_NAME_EXT[] { MOD_NAME_EXT.column };
+        if (below && above) return new MOD_NAME_EXT[]{MOD_NAME_EXT.column};
         // if only surrounded above and to the left -> prefer a bottom right but settle with a bottom
-        if (above && left) return new MOD_NAME_EXT[] { MOD_NAME_EXT.bottomright, MOD_NAME_EXT.bottom };
+        if (above && left) return new MOD_NAME_EXT[]{MOD_NAME_EXT.bottomright, MOD_NAME_EXT.bottom};
         // if only surrounded above and to the right -> prefer a bottom left but settle with a bottom
-        if (above && right) return new MOD_NAME_EXT[] { MOD_NAME_EXT.bottomleft, MOD_NAME_EXT.bottom };
+        if (above && right) return new MOD_NAME_EXT[]{MOD_NAME_EXT.bottomleft, MOD_NAME_EXT.bottom};
         // if only surrounded below and to the left -> prefer a top right but settle with a top
-        if (below && left) return new MOD_NAME_EXT[] { MOD_NAME_EXT.topright, MOD_NAME_EXT.top };
+        if (below && left) return new MOD_NAME_EXT[]{MOD_NAME_EXT.topright, MOD_NAME_EXT.top};
         // if only surrounded below and to the right -> prefer a top left but settle with a top
-        if (below && right) return new MOD_NAME_EXT[] { MOD_NAME_EXT.topleft, MOD_NAME_EXT.top };
+        if (below && right) return new MOD_NAME_EXT[]{MOD_NAME_EXT.topleft, MOD_NAME_EXT.top};
         // if only surrounded above -> prefer a column bottom but settle with a column
-        if (above) return new MOD_NAME_EXT[] { MOD_NAME_EXT.columnbottom, MOD_NAME_EXT.column };
+        if (above) return new MOD_NAME_EXT[]{MOD_NAME_EXT.columnbottom, MOD_NAME_EXT.column};
         // if only surrounded below -> prefer a column top but settle with a column
-        if (below) return new MOD_NAME_EXT[] { MOD_NAME_EXT.columntop, MOD_NAME_EXT.column };
+        if (below) return new MOD_NAME_EXT[]{MOD_NAME_EXT.columntop, MOD_NAME_EXT.column};
         // if only surrounded to the left -> prefer a row right cap but settle with a row
-        if (left) return new MOD_NAME_EXT[] { MOD_NAME_EXT.rowrightcap, MOD_NAME_EXT.row };
+        if (left) return new MOD_NAME_EXT[]{MOD_NAME_EXT.rowrightcap, MOD_NAME_EXT.row};
         // if only surrounded to the right -> prefer a row left cap but settle with a row
-        if (right) return new MOD_NAME_EXT[] { MOD_NAME_EXT.rowleftcap, MOD_NAME_EXT.row };
+        if (right) return new MOD_NAME_EXT[]{MOD_NAME_EXT.rowleftcap, MOD_NAME_EXT.row};
         return null;
     }
 

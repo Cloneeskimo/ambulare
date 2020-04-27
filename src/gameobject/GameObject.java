@@ -225,6 +225,13 @@ public class GameObject {
     }
 
     /**
+     * Stops the game object from completing its current positional animation
+     */
+    public void stopPosAnimating() {
+        this.posAnim = null;
+    }
+
+    /**
      * @return whether the game object is currently undergoing a positional animation
      */
     public boolean posAnimating() {

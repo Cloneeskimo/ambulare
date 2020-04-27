@@ -4,6 +4,7 @@ import gameobject.gameworld.Area;
 import gameobject.gameworld.GameWorld;
 import gameobject.gameworld.WorldObject;
 import graphics.Material;
+import graphics.Model;
 import graphics.PositionalAnimation;
 import graphics.ShaderProgram;
 import utils.Global;
@@ -37,6 +38,9 @@ public class ROC {
     private GameWorld gameWorld;              // the game world to render underneath the static objects
     private MIHSB mihsb;                      // mouse interaction hover state bundle to abstract away mouse input
     private ShaderProgram sp;                 // the shader programs used to render
+    private GameObject fadeBox;               // used for fading the entire screen
+    private float fadeTime;                   // amount of time the fade box fade should take
+    private float fadeTimeLeft;               // amount of time left for the fade box fade
 
     /**
      * Constructor
@@ -92,6 +96,9 @@ public class ROC {
      */
     public void resized() {
         this.ensureAllPlacements(); // make sure static objects are correctly positioned
+        if (this.fadeBox != null) { // if there is a fade box, update it to fit the new window size
+            this.fadeBox.setScale(2f * (Global.ar > 1f ? Global.ar : 1), 2f / (Global.ar < 1f ? Global.ar : 1));
+        }
     }
 
     /**
@@ -103,6 +110,19 @@ public class ROC {
         for (Material m : this.materials) m.update(interval); // update any materials
         if (this.gameWorld != null) this.gameWorld.update(interval); // update gameworld
         for (StaticObject so : this.staticObjects) so.o.update(interval); // update static objects
+        if (this.fadeBox != null) { // if there is a fade box, update it
+            if (this.fadeTimeLeft > 0f) { // if fading in
+                fadeTimeLeft -= interval; // account for the time
+                this.fadeBox.getMaterial().getColor()[3] = (fadeTimeLeft / fadeTime); // update the alpha of color
+                if (fadeTimeLeft <= 0f) this.fadeBox = null; // if time is up, delete fade box
+            } else { // if fading out
+                fadeTimeLeft += interval; // account for the time
+                this.fadeBox.getMaterial().getColor()[3] = 1f - (fadeTimeLeft / fadeTime); // update the alpha of color
+                /* wait an extra second after fade is done to delete the box in case another render or two occurs during
+                   a transition */
+                if (fadeTimeLeft >= 1f) this.fadeBox = null;
+            }
+        }
     }
 
     /**
@@ -115,7 +135,36 @@ public class ROC {
         this.sp.setUniform("ar", Global.ar); // set aspect ratio uniform
         this.sp.setUniform("arAction", Global.arAction ? 1 : 0); // set aspect ratio action uniform
         for (StaticObject so : this.staticObjects) so.o.render(this.sp); // render static objects
+        if (this.fadeBox != null) fadeBox.render(this.sp); // render fade box if enabled
         this.sp.unbind(); // unbind shader program
+    }
+
+    /**
+     * Begins a fade-in of the window. Note that this only applies to objects rendered by the ROC. Other objects may
+     * not fade correctly
+     *
+     * @param color the color to use for the fade
+     * @param time  how long (in seconds) the fade should take
+     */
+    public void fadeIn(float[] color, float time) {
+        this.fadeBox = new GameObject(Model.getStdGridRect(1, 1), new Material(color)); // create fade box
+        // scale the fade box based on the window size and aspect ratio
+        this.fadeBox.setScale(2f * (Global.ar > 1f ? Global.ar : 1), 2f / (Global.ar < 1f ? Global.ar : 1));
+        this.fadeTime = this.fadeTimeLeft = time; // start timer
+    }
+
+    /**
+     * Begins a fade-out of the window. Note that this only applies to objects rendered by the ROC. Other objects may
+     * not fade correctly
+     *
+     * @param color the color to use for the fade
+     * @param time  how long (in seconds) the fade should take
+     */
+    public void fadeOut(float[] color, float time) {
+        this.fadeBox = new GameObject(Model.getStdGridRect(1, 1), new Material(color)); // create fade box
+        // scale the fade box based on the window size and aspect ratio
+        this.fadeBox.setScale(2f * (Global.ar > 1f ? Global.ar : 1), 2f / (Global.ar < 1f ? Global.ar : 1));
+        this.fadeTime = this.fadeTimeLeft = -time; // start timer
     }
 
     /**
@@ -190,9 +239,8 @@ public class ROC {
         if (o instanceof MIHSB.MouseInteractable) this.mihsb.add((MIHSB.MouseInteractable) o, false);
         so.ensurePosition(Global.ar); // position the object according to its settings
         this.staticObjects.add(so); // add object to static objects list
-        Material m = o.getMaterial();
-        if (!this.materials.contains(m)) materials.add(m);
-        // TODO : comment
+        Material m = o.getMaterial(); // get the material of the object to add
+        if (!this.materials.contains(m)) materials.add(m); // if not already in the materials list, add it
     }
 
     /**
@@ -232,7 +280,9 @@ public class ROC {
     public void cleanup() {
         if (this.sp != null) this.sp.cleanup(); // cleanup shader program
         if (this.gameWorld != null) this.gameWorld.cleanup(); // cleanup game world
-        for (Material m : this.materials) m.cleanup(); // cleanup materials
+        for (Material m : this.materials) { // cleanup materials
+            if (m.getTexture() != Global.FONT.getSheet()) m.cleanup(); // except the font sheet
+        }
         for (StaticObject so : this.staticObjects) so.o.cleanup(); // cleanup static objects
     }
 
@@ -282,7 +332,7 @@ public class ROC {
          * @param py      the parent game object whose y position determines these settings' corresponding game object's
          *                y position
          * @param ox      if px is not null, how many widths away o should be from px (where the width is the average
-         *               of both
+         *                of both
          *                of their widths). If px is null, the object x position for this game object
          * @param oy      if py is not null, how many widths away o should be from py (where the height is the
          *                average of

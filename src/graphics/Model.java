@@ -108,6 +108,7 @@ public class Model {
 
     /**
      * Checks if a given model is rectangular
+     *
      * @param m the model to check
      * @return whether the model is rectangular
      */
@@ -138,6 +139,7 @@ public class Model {
                                             [1] - model coordinate VBO ID, [2] - texture coordinate VBO ID,
                                             [4] - index VBO ID */
     protected final int idx;             // the amount of vertices this shape has
+
     /**
      * Constructs the model
      * The assumes input given in sequences of triangles
@@ -232,6 +234,7 @@ public class Model {
 
     /**
      * Updates the texture coordinate VBO the model should use when rendering
+     *
      * @param id the id of the new VBO to use
      */
     public void useTexCoordVBO(int id) {

@@ -25,7 +25,8 @@ public class Utils {
 
     /**
      * Determines if a file with the given path exists
-     * @param path the path to check
+     *
+     * @param path    the path to check
      * @param resPath whether the path is resource-relative or not. If not, the data directory will not get
      *                automatically prepended to the path
      * @return whether the path exists or not
