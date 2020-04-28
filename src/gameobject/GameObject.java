@@ -303,7 +303,7 @@ public class GameObject {
     public FittingBox getFittingBox() {
         return model.getFittingBox().translate(this.x, this.y); // get model's fitting box and translate
     }
-
+    
     /**
      * Cleans up the game object
      */

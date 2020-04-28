@@ -36,7 +36,7 @@ public class Area {
     /**
      * Static data
      */
-    private static final BlockModel bm = new BlockModel(); // all blocks use same 1x1 square model
+    public static final BlockModel bm = new BlockModel(); // all blocks use same 1x1 square model
 
     /**
      * Renders the set of blocks corresponding to the given set of block positions very efficiently using the given

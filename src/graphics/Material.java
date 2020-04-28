@@ -31,8 +31,8 @@ public class Material {
      * Members
      */
     private float[] color;          // the color of this material if it has one
-    private Texture texture;        // the texture of this material if it has one
     private BLEND_MODE blendMode;   // how this Material blends its texture and color when it has both
+    protected Texture texture;      // the texture of this material if it has one
 
     /**
      * Animation Members

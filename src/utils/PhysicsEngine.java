@@ -154,12 +154,13 @@ public class PhysicsEngine {
                     // if it's not the excluded block (or if there is no excluded block)
                     if (exclude == null || (!p.x.equals(exclude.x)) && !(p.y.equals(exclude.y))) {
                         /* before we can conclude that a collision has occurred, the pushback of an opposite component
-                           collision must be calculated. If it is zero, then that means the object is snug against
-                           the object in question in the other component. Technically, this would lead to a collision
-                           and would cause the object to randomly move in the opposite direction of the snugness.
-                           For example, without this check, objects will climb walls when they are snug against them */
+                           collision must be calculated. If it is within some very small threshold, then that means the
+                           object is snug against the block in question in the other component. Technically, this would
+                           lead to a false collision if unchecked in this manner. One example of a negative consequence
+                           would be unintentional wall climbing */
                         float oppPB = calcPBFromBlock(o.getAABB(), p, !y); // calculate the opposite pushback
-                        if (oppPB != 0) return p; // if the opposite pushback is not zero, then this is valid collision
+                        // if the opposite push back is not within the given threshold, then it is a valid collision
+                        if (oppPB > -COLLISION_THRESHOLD || oppPB < COLLISION_THRESHOLD) return p;
                     }
                 }
             }

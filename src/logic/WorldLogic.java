@@ -4,11 +4,9 @@ import gameobject.ROC;
 import gameobject.TextButton;
 import gameobject.TextObject;
 import gameobject.gameworld.Area;
+import gameobject.gameworld.Entity;
 import gameobject.gameworld.WorldObject;
-import graphics.Material;
-import graphics.Model;
-import graphics.PositionalAnimation;
-import graphics.Window;
+import graphics.*;
 import utils.*;
 
 import static org.lwjgl.glfw.GLFW.*;
@@ -22,7 +20,7 @@ public class WorldLogic extends GameLogic {
      * Members
      */
     Window window;                      // reference to the window for exit button
-    WorldObject player;                 // reference to player
+    Entity player;                      // reference to player
     boolean exitButtonPressed = false;  // whether exit has been pressed
 
     /**
@@ -38,11 +36,14 @@ public class WorldLogic extends GameLogic {
         this.roc.useGameWorld(window.getHandle(), new Area(Node.resToNode("/mainstory/areas/area.amb")));
 
         // create and add player
-        player = new WorldObject(Model.getStdGridRect(1, 2),
-                new Material(new float[]{0.2f, 0.2f, 1.0f, 1.0f})); // create player as 1x2 blue rectangle
+        Texture left = new Texture("/textures/player/player_left.png", true);
+        Texture right = new Texture("/textures/player/player_right.png", true);
+        player = new Entity(Model.getStdGridRect(1, 2),
+                new Entity.EntityMaterial(left, right, right, left));
+        player.setBoundingWidth(0.95f);
+        player.setBoundingHeight(0.95f);
         player.setPos(Transformation.getCenterOfCell(new Pair<>(3, 5))); // move to grid cell 3, 5
         player.getPhysicsProperties().rigid = true; // male player rigid
-        player.setBoundingWidth(0.95f); // give some horizontal collision leeway
         this.roc.addToWorld(player); // add player to world
         this.roc.getGameWorld().getCam().follow(player); // make camera follow player
 
@@ -121,14 +122,6 @@ public class WorldLogic extends GameLogic {
     @Override
     public void mouseInput(float x, float y, int action) {
         super.mouseInput(x, y, action); // call super mouse input
-        if (action == GLFW_HOVERED) { // if hover event
-            Pair<Float> pos = new Pair<>(x, y); // create pair of mouse position
-            Transformation.useCam(pos, this.roc.getGameWorld().getCam()); // transform to camera-view
-            if (player.getFittingBox().contains(pos.x, pos.y)) { // if mouse is hovering player
-                player.setMaterial(new Material(new float[]{(float) Math.random(), (float) Math.random(),
-                        (float) Math.random(), 1.0f})); // change player color when mouse hovers
-            }
-        }
     }
 
     /**
@@ -156,7 +149,13 @@ public class WorldLogic extends GameLogic {
                 ", " + String.format("%.2f", pos.y) + ")")) // change player pos text
             this.roc.ensurePlacement(2); // update placement if changed
         player.setVX(0); // reset player velocity
-        if (window.isKeyPressed(GLFW_KEY_D)) player.incrementVX(4); // rightwards movement
-        if (window.isKeyPressed(GLFW_KEY_A)) player.incrementVX(-4); // leftwards movement
+        if (window.isKeyPressed(GLFW_KEY_D)) {
+            player.incrementVX(4); // rightwards movement
+            player.setFacing(true);
+        }
+        if (window.isKeyPressed(GLFW_KEY_A)) {
+            player.incrementVX(-4); // leftwards movement
+            player.setFacing(false);
+        }
     }
 }

@@ -137,7 +137,7 @@ public class Model {
                                             power */
     protected final int ids[];           /* integer array to store the various GL object ids: [0] - VAO ID,
                                             [1] - model coordinate VBO ID, [2] - texture coordinate VBO ID,
-                                            [4] - index VBO ID */
+                                            [3] - index VBO ID, [4] - normals VBO ID */
     protected final int idx;             // the amount of vertices this shape has
 
     /**
@@ -194,6 +194,19 @@ public class Model {
     }
 
     /**
+     * Renders the model
+     */
+    public void render() {
+        glBindVertexArray(this.ids[0]); // bind vao
+        glEnableVertexAttribArray(0); // enable model coordinate vbo
+        glEnableVertexAttribArray(1); // enable texture coordinate vbo
+        glDrawElements(GL_TRIANGLES, this.idx, GL_UNSIGNED_INT, 0); // draw model
+        glDisableVertexAttribArray(0); // disable model coordinate vbo
+        glDisableVertexAttribArray(1); // disable texture coordinate vbo
+        glBindVertexArray(0); // disable vao
+    }
+
+    /**
      * Updates the width and height members of the model
      */
     private void calculateSize() {
@@ -243,19 +256,6 @@ public class Model {
         glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0); // put VBO into VAO
         glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind VBO
         glBindVertexArray(0); // unbind vao
-    }
-
-    /**
-     * Renders the model
-     */
-    public void render() {
-        glBindVertexArray(this.ids[0]); // bind vao
-        glEnableVertexAttribArray(0); // enable model coordinate vbo
-        glEnableVertexAttribArray(1); // enable texture coordinate vbo
-        glDrawElements(GL_TRIANGLES, this.idx, GL_UNSIGNED_INT, 0); // draw model
-        glDisableVertexAttribArray(0); // disable model coordinate vbo
-        glDisableVertexAttribArray(1); // disable texture coordinate vbo
-        glBindVertexArray(0); // disable vao
     }
 
     /**

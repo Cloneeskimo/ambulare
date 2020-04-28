@@ -47,7 +47,7 @@ public class MainMenuLogic extends GameLogic {
         };
         initSP(); // initialize the shader program
         title = new GameObject(new Model(titleModelCoords, Model.getStdRectTexCoords(), Model.getStdRectIdx()),
-                new Material(new Texture("/textures/title.png", true))); // create title object
+                new Material(new Texture("/textures/ui/title.png", true))); // create title object
         title.setScale(0.55f, 0.55f); // scale title down by about one half
         title.setPos(0f, 3f); // move title to be up and out of view
         this.renderROC = false; // turn off ROC rendering for now
@@ -58,7 +58,7 @@ public class MainMenuLogic extends GameLogic {
      */
     private void initSP() {
         // create the shader program
-        sp = new ShaderProgram("/shaders/vertex.glsl", "/shaders/fragment.glsl");
+        sp = new ShaderProgram("/shaders/hud_vertex.glsl", "/shaders/hud_fragment.glsl");
         sp.registerUniform("ar"); // register aspect ratio uniform
         sp.registerUniform("arAction"); // register aspect ratio action uniform
         sp.registerUniform("x"); // register object x uniform
@@ -113,8 +113,8 @@ public class MainMenuLogic extends GameLogic {
                 if (!title.posAnimating()) phase = 4; // one the title is done positionally animating, go to phase 4
                 break;
             case 4: // PHASE 4: create buttons and add to ROC
-                float[] defaultC = new float[]{0.5f, 0.5f, 0.5f, 1f}; // default color for the buttons -> gray
-                float[] hoverC = new float[]{1f, 1f, 1f, 1f}; // hover color for the buttons -> white
+                float[] defaultC = new float[]{0.65f, 0.65f, 0.65f, 1f}; // default color for the buttons -> gray
+                float[] hoverC = new float[]{0.8f, 0.8f, 0.8f, 1f}; // hover color for the buttons -> light gray
                 float[] pressC = new float[]{1f, 1f, 0f, 1f}; // pressed color for the buttons -> yellow
                 // create play button
                 TextButton play = new TextButton(Global.FONT, "Play", defaultC, hoverC, pressC, PLAY_MIID);

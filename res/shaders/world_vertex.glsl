@@ -42,5 +42,5 @@ void main() {
     if (camZoom != 0) pos = toCameraView(pos); // convert world coordinates to camera-view if there is a camera
     pos = aspect(pos); // convert world or camera-view coordinates to aspect coordinates
     gl_Position = vec4(pos, 0.0, 1.0); // pass through aspect coordinates as a vec4
-    fTexCoords = texCoords; // pass texture coordinates through to fragment shader
+    fTexCoords = texCoords; // pass texture coordinates through to fragment shader=
 }

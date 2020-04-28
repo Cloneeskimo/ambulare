@@ -68,7 +68,7 @@ public class ROC {
      */
     protected void initSP() {
         // create the shader program
-        this.sp = new ShaderProgram("/shaders/vertex.glsl", "/shaders/fragment.glsl");
+        this.sp = new ShaderProgram("/shaders/hud_vertex.glsl", "/shaders/hud_fragment.glsl");
         sp.registerUniform("ar"); // register aspect ratio uniform
         sp.registerUniform("arAction"); // register aspect ratio action uniform
         sp.registerUniform("x"); // register object x uniform
