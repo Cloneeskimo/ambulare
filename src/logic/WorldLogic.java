@@ -3,6 +3,7 @@ package logic;
 import gameobject.ROC;
 import gameobject.TextButton;
 import gameobject.TextObject;
+import gameobject.TexturedButton;
 import gameobject.gameworld.Area;
 import gameobject.gameworld.Entity;
 import gameobject.gameworld.WorldObject;
@@ -36,10 +37,13 @@ public class WorldLogic extends GameLogic {
         this.roc.useGameWorld(window.getHandle(), new Area(Node.resToNode("/mainstory/areas/area.amb")));
 
         // create and add player
-        Texture left = new Texture("/textures/player/player_left.png", true);
-        Texture right = new Texture("/textures/player/player_right.png", true);
         player = new Entity(Model.getStdGridRect(1, 2),
-                new Entity.EntityMaterial(left, right, right, left));
+                new Material(new MSAT("/textures/entity/player.png", true, new MSAT.MSATState[]{
+                        new MSAT.MSATState(1, 1f),
+                        new MSAT.MSATState(1, 1f),
+                        new MSAT.MSATState(1, 1f),
+                        new MSAT.MSATState(1, 1f)
+                })));
         player.setBoundingWidth(0.95f);
         player.setBoundingHeight(0.95f);
         player.setPos(Transformation.getCenterOfCell(new Pair<>(3, 5))); // move to grid cell 3, 5

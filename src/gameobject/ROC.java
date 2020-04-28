@@ -3,10 +3,7 @@ package gameobject;
 import gameobject.gameworld.Area;
 import gameobject.gameworld.GameWorld;
 import gameobject.gameworld.WorldObject;
-import graphics.Material;
-import graphics.Model;
-import graphics.PositionalAnimation;
-import graphics.ShaderProgram;
+import graphics.*;
 import utils.Global;
 import utils.Pair;
 import utils.Transformation;
@@ -34,11 +31,11 @@ public class ROC {
                                                  Instead, they are bound to positioning settings that determine where
                                                  in the window they should be rendered at all times. In other words,
                                                  these are HUD items */
-    private List<Material> materials;         // list of materials to update (for animation)
+    private List<AnimatedTexture> ats;        // list of animated textures to update
     private GameWorld gameWorld;              // the game world to render underneath the static objects
+    private GameObject fadeBox;               // used for fading the entire screen
     private MIHSB mihsb;                      // mouse interaction hover state bundle to abstract away mouse input
     private ShaderProgram sp;                 // the shader programs used to render
-    private GameObject fadeBox;               // used for fading the entire screen
     private float fadeTime;                   // amount of time the fade box fade should take
     private float fadeTimeLeft;               // amount of time left for the fade box fade
 
@@ -47,7 +44,7 @@ public class ROC {
      */
     public ROC() {
         this.staticObjects = new ArrayList<>();
-        this.materials = new ArrayList<>();
+        this.ats = new ArrayList<>();
         this.mihsb = new MIHSB();
         this.initSP(); // create and initialize shader programs
     }
@@ -107,7 +104,7 @@ public class ROC {
      * @param interval the amount of time to account for
      */
     public void update(float interval) {
-        for (Material m : this.materials) m.update(interval); // update any materials
+        for (AnimatedTexture at : this.ats) at.update(interval); // update any animated textures
         if (this.gameWorld != null) this.gameWorld.update(interval); // update gameworld
         for (StaticObject so : this.staticObjects) so.o.update(interval); // update static objects
         if (this.fadeBox != null) { // if there is a fade box, update it
@@ -220,8 +217,11 @@ public class ROC {
                     false); // log occurrence
             return; // and return without crashing
         }
-        Material m = wo.getMaterial(); // get the object's material
-        if (!this.materials.contains(m)) this.materials.add(m); // add to materials list if not in there already
+        Texture t = wo.getMaterial().getTexture(); // get the texture of the object's material
+        if (t instanceof AnimatedTexture) { // if it's an animated texture
+            AnimatedTexture at = (AnimatedTexture) t; // cast it to an animated texture
+            if (!this.ats.contains(at)) this.ats.add(at); // add it to animated textures list if not there already
+        }
         this.gameWorld.addObject(wo); // otherwise just add to the game world
         // if object is interactable with a mouse, add it to the MIHSB with the camera usage flag true (world object)
         if (wo instanceof MIHSB.MouseInteractable) this.mihsb.add((MIHSB.MouseInteractable) wo, true);
@@ -239,8 +239,11 @@ public class ROC {
         if (o instanceof MIHSB.MouseInteractable) this.mihsb.add((MIHSB.MouseInteractable) o, false);
         so.ensurePosition(Global.ar); // position the object according to its settings
         this.staticObjects.add(so); // add object to static objects list
-        Material m = o.getMaterial(); // get the material of the object to add
-        if (!this.materials.contains(m)) materials.add(m); // if not already in the materials list, add it
+        Texture t = o.getMaterial().getTexture(); // get the texture of the object's material
+        if (t instanceof AnimatedTexture) { // if it's an animated texture
+            AnimatedTexture at = (AnimatedTexture) t; // cast it to an animated texture
+            if (!this.ats.contains(at)) this.ats.add(at); // add it to animated textures list if not there already
+        }
     }
 
     /**
@@ -279,10 +282,8 @@ public class ROC {
      */
     public void cleanup() {
         if (this.sp != null) this.sp.cleanup(); // cleanup shader program
-        if (this.gameWorld != null) this.gameWorld.cleanup(); // cleanup game world
-        for (Material m : this.materials) { // cleanup materials
-            if (m.getTexture() != Global.FONT.getSheet()) m.cleanup(); // except the font sheet
-        }
+        if (this.gameWorld != null) this.gameWorld.cleanup(); // cleanup game worlds
+        if (this.fadeBox != null) this.fadeBox.cleanup(); // cleanup fade box
         for (StaticObject so : this.staticObjects) so.o.cleanup(); // cleanup static objects
     }
 

@@ -1,9 +1,6 @@
 package gameobject.gameworld;
 
-import graphics.Material;
-import graphics.Model;
-import graphics.ShaderProgram;
-import graphics.Texture;
+import graphics.*;
 import utils.Node;
 import utils.Pair;
 import utils.Transformation;
@@ -49,8 +46,10 @@ public class Area {
      */
     public static void renderBlocks(ShaderProgram sp, Map<Material, List<Pair<Integer>>> blockPositions) {
         for (Material m : blockPositions.keySet()) { // for each material
-            int texCoordVBO = m.getTexCoordVBO(); // get the appropriate texture coordinate VBO
-            bm.useTexCoordVBO(texCoordVBO); // use the texture coordinate VBO
+            Texture t = m.getTexture(); // get texture for material
+            // if the texture is animated, tell the model which texture coordinates to use
+            if (t instanceof AnimatedTexture) bm.useTexCoordVBO(((AnimatedTexture) t).getTexCoordVBO());
+            else bm.useTexCoordVBO(AnimatedTexture.getTexCoordVBO(0, 1));
             m.setUniforms(sp); // set the appropriate uniforms
             bm.renderBlocks(sp, blockPositions.get(m)); // render all the blocks with that material at once
         }
@@ -329,7 +328,9 @@ public class Area {
      * @param interval the amount of time to account for
      */
     public void update(float interval) {
-        for (Material m : this.blockPositions.keySet()) m.update(interval); // update materials
+
+        // todo : update animated textures for blocks
+
     }
 
     /**
@@ -359,7 +360,9 @@ public class Area {
      * Cleans up the area
      */
     public void cleanup() {
-        for (Material m : this.blockPositions.keySet()) m.cleanup(); // cleanup materials
+
+        // todo : cleanup animated textures
+
     }
 
     /**

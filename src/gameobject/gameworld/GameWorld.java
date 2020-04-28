@@ -34,8 +34,8 @@ public class GameWorld {
      */
     public GameWorld(long windowHandle, Area startingArea) {
         this.objects = new ArrayList<>();
-        this.dnc = new DayNightCycle(0f, 3f, new float[] {
-            0.53f, 0.81f, 0.92f, 0.0f }, new float[] { 0.1f, 0.1f, 0.1f, 0.0f }); // initialize D/N cycle settings
+        this.dnc = new DayNightCycle(0f, 3f, new float[]{
+                0.53f, 0.81f, 0.92f, 0.0f}, new float[]{0.1f, 0.1f, 0.1f, 0.0f}); // initialize D/N cycle settings
         this.initSP(); // initialize shader program
         this.cam = new Camera();
         this.area = startingArea;
@@ -175,9 +175,10 @@ public class GameWorld {
 
         /**
          * Constructor
-         * @param startingSunAngle the angle the sun should start at in degrees [0-360)
-         * @param sunSpeed the speed at which the sun sshould progress
-         * @param dayBackgroundColor the color to set the background to during day
+         *
+         * @param startingSunAngle     the angle the sun should start at in degrees [0-360)
+         * @param sunSpeed             the speed at which the sun sshould progress
+         * @param dayBackgroundColor   the color to set the background to during day
          * @param nightBackgroundColor the color to set the background to during night
          */
         public DayNightCycle(float startingSunAngle, float sunSpeed, float[] dayBackgroundColor,

@@ -1,56 +1,67 @@
 package gameobject.gameworld;
 
+import graphics.MSAT;
 import graphics.Material;
 import graphics.Model;
-import graphics.Texture;
 import utils.PhysicsEngine;
 
+/**
+ * Extends world objects by directly interacting with a multi-state animated texture in order to allow different
+ * animations for different actions an entity might do
+ */
 public class Entity extends WorldObject {
+
+    /**
+     * Memberss
+     */
+    private boolean right;    // whether the entity is facing to the right
+    private boolean airborne; // whether the entity is airborne
 
     /**
      * Constructor
      *
      * @param model    the model to use
-     * @param material the material to use
+     * @param material the material to use. This model's texture should be an MSAT with four states representing the
+     *                 following: (0) entity non-airborne and facing to the left, (1) entity non-airborne and facing to
+     *                 the right, (2) entity airborne and facing to the left, (3) entity airborne and facing to the
+     *                 right
      */
-    public Entity(Model model, EntityMaterial material) {
+    public Entity(Model model, Material material) {
         super(model, material);
     }
 
+    /**
+     * Tells the entity which way to face
+     *
+     * @param right whether the entity should face right (false makes the entity face left)
+     */
     public void setFacing(boolean right) {
-        ((EntityMaterial)this.material).setFacing(right);
+        this.right = right; // update flag
+        this.updateTextureState(); // update MSAT state
     }
 
+    /**
+     * Updates the entity's MSAT based on what actions the entity is taking
+     */
+    private void updateTextureState() {
+        if (this.material.getTexture() instanceof MSAT) { // if the material's texture is even an MSAT
+            MSAT t = (MSAT) this.material.getTexture(); // get an MSAT reference to it
+            t.setState((right ? 1 : 0) + (airborne ? 2 : 0)); // set the correct state on it
+        }
+    }
+
+    /**
+     * Updates the entity
+     *
+     * @param interval the amount of time to account for
+     */
     @Override
     public void update(float interval) {
         super.update(interval);
-        boolean under = PhysicsEngine.nextTo(this, 0f, -1f);
-        ((EntityMaterial)this.material).setAirborne(!under);
-    }
-
-    public static class EntityMaterial extends Material {
-
-        Texture[][] textures;
-        boolean airborne;
-        boolean right;
-
-        public EntityMaterial(Texture leftFacing, Texture rightFacing, Texture leftAirborne, Texture rightAirborne) {
-            super(rightFacing);
-            this.textures = new Texture[][] { {leftFacing, rightFacing}, { leftAirborne, rightAirborne} };
-        }
-
-        public void setFacing(boolean right) {
-            this.right = right;
-            this.updateTexture();
-        }
-
-        public void setAirborne(boolean airborne) {
-            this.airborne = airborne;
-            this.updateTexture();
-        }
-
-        private void updateTexture() {
-            this.texture = this.textures[this.airborne ? 1 : 0][right ? 1 : 0];
+        boolean airborne = !PhysicsEngine.nextTo(this, 0f, -1f); // check if airborne
+        if (airborne != this.airborne) { // if airborne value is different
+            this.airborne = airborne; // update flag
+            this.updateTextureState(); // and update state in MSAT
         }
     }
 }

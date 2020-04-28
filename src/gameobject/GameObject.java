@@ -1,9 +1,6 @@
 package gameobject;
 
-import graphics.Material;
-import graphics.Model;
-import graphics.PositionalAnimation;
-import graphics.ShaderProgram;
+import graphics.*;
 import utils.FittingBox;
 import utils.Pair;
 
@@ -90,8 +87,9 @@ public class GameObject {
         sp.setUniform("x", this.x); // set x
         sp.setUniform("y", this.y); // set y
         this.material.setUniforms(sp); // set material uniforms
-        int texCoordVBO = this.material.getTexCoordVBO(); // get the correct texture coordinate VBO
-        this.model.useTexCoordVBO(texCoordVBO); // give the VBO to the model
+        Texture t = this.material.getTexture(); // get material's texture
+        // if the texture is animated, tell the model with texture coordinates to use
+        if (t instanceof AnimatedTexture) this.model.useTexCoordVBO(((AnimatedTexture) t).getTexCoordVBO());
         this.model.render(); // render model
     }
 
@@ -303,11 +301,12 @@ public class GameObject {
     public FittingBox getFittingBox() {
         return model.getFittingBox().translate(this.x, this.y); // get model's fitting box and translate
     }
-    
+
     /**
      * Cleans up the game object
      */
     public void cleanup() {
         this.model.cleanup(); // cleanup model
+        this.material.cleanup(); // cleanup material
     }
 }

@@ -1,5 +1,6 @@
 package graphics;
 
+import utils.Global;
 import utils.Node;
 import utils.Utils;
 
@@ -12,35 +13,16 @@ import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
 import static org.lwjgl.opengl.GL13C.glActiveTexture;
 
 /**
- * Defines how a game object will render. Materials can be animated, but note that they must be updated in order for
- * the animation ot occur. It is a bad idea to design game objects to do this because it means that the animation
- * will go quicker if more than one object uses the material and updates it every loop. It would be a better idea to
- * keep a list of materials and update that list every loop
+ * Defines how an object should render by allowing various combinations of texture and color
  */
 public class Material {
 
     /**
-     * Static Data
-     */
-    private static Map<Integer, int[]> texCoords = new HashMap<>(); /* this maps from amount of frames of an
-        animation to set of texture coordinate VBOs to used when rendering a frame. Since many materials may be
-        animated, this saves from having tons of repeat lists/arrays of texture coordinates. The fact that there is a
-        different set for each amount of frames also means that less variance in frame count is more space efficient */
-
-    /**
      * Members
      */
-    private float[] color;          // the color of this material if it has one
-    private BLEND_MODE blendMode;   // how this Material blends its texture and color when it has both
-    protected Texture texture;      // the texture of this material if it has one
-
-    /**
-     * Animation Members
-     */
-    protected int frames = 1;       // total amount of frames and current frame
-    protected int frame = 0;        // current frame of animation
-    protected float frameTime = 1f; // amount of time per frame
-    protected float frameTimeLeft;  // amount of time left for the current frame
+    private float[] color;        // the color of this material if it has one
+    private BLEND_MODE blendMode; // how this Material blends its texture and color when it has both
+    protected Texture texture;    // the texture of this material if it has one
 
     /**
      * Constructs the material based on the given texture, color, and blend flag
@@ -59,28 +41,9 @@ public class Material {
                     Utils.handleException(new Exception("Material with no texture given an invalid color: " + color),
                             "graphics.Material", "Material(Texture, float[], boolean)", true);
                 Utils.log("Invalid color array given: " + color + ", assuming colorless", "graphics.Material",
-                        "Material(Texture, float[], boolean)", false); // if texture, ignore color
+                        "Material(Texture, float[], BLEND_MODE)", false); // if texture, ignore color
             }
         }
-    }
-
-    /**
-     * Constructs the material based on the given texture, color, blend flag, and animation settings
-     *
-     * @param texture   the texture to use
-     * @param color     the 4-dimensional color to use (must be a length-4 float array)
-     * @param blendMode what blending mode to use when both a Texture and a color are present (described above)
-     * @param frames    the amount of frames of animation
-     * @param frameTime the amount of time each frame should have
-     * @param randStart whether to start the animation at a random frame and time
-     */
-    public Material(Texture texture, float[] color, BLEND_MODE blendMode, int frames, float frameTime,
-                    boolean randStart) {
-        this(texture, color, blendMode);
-        this.frames = Math.max(frames, 1);
-        this.frameTime = frameTime;
-        this.frame = randStart ? ((int) (Math.random() * frames)) : 0; // calc starting frame
-        this.frameTimeLeft = randStart ? ((float) Math.random() * frameTime) : frameTime; // calc starting time left
     }
 
     /**
@@ -108,10 +71,6 @@ public class Material {
      */
     public Material(Material other) {
         this(other.texture, other.color, other.blendMode);
-        this.frameTime = other.frameTime;
-        this.frames = other.frames;
-        this.frame = other.frame;
-        this.frameTimeLeft = other.frameTimeLeft;
     }
 
     /**
@@ -124,11 +83,6 @@ public class Material {
      * this is not set and there is no texture, white will be used.
      * - blend_mode: the blend mode to use when there is both a color and a texture ("none", "multiplicative", or
      * "averaged"). If this is not set, "none" will be used
-     * - frames: the amount of animated frames in the material's texture. If this is not set, 1 will be used
-     * - frame_time: the amount of time (in seconds) each animated frame should last. If this is not set, 1f will be
-     * used
-     * - rand_start: whether the animation should start at a random point. If this is not set, it will start at the
-     * first frame
      * If materials have errors while parsing, no crashes will occur
      *
      * @param node the node to create the material from
@@ -136,7 +90,6 @@ public class Material {
     public Material(Node node) {
         String texPath = null; // texture path starts as null
         boolean resPath = true; // resource-relative starts as true
-        boolean randStart = false; // random animation starting point starts as false
         this.blendMode = BLEND_MODE.NONE; // blend mode starts at no blending
         try {
             for (Node c : node.getChildren()) { // go through each child and parse the values
@@ -146,9 +99,6 @@ public class Material {
                 else if (n.equals("resource_relative")) resPath = Boolean.parseBoolean(c.getValue());
                 else if (n.equals("color")) this.color = Utils.strToColor(c.getValue());
                 else if (n.equals("blend_mode")) this.blendMode = BLEND_MODE.valueOf(c.getValue().toUpperCase());
-                else if (n.equals("frames")) this.frames = Integer.parseInt(c.getValue());
-                else if (n.equals("frame_time")) this.frameTime = Float.parseFloat(c.getValue());
-                else if (n.equals("rand_start")) randStart = Boolean.parseBoolean(c.getValue());
                 else // if unrecognized child, log but don't crash
                     Utils.log("Unrecognized child given for material info: " + c + ". Ignoring.",
                             "graphics.Material", "Material(Node)", false);
@@ -161,39 +111,6 @@ public class Material {
         if (texPath != null) this.texture = new Texture(resPath ? texPath : Utils.getDataDir() + texPath, resPath);
         // if no texture or color was specified, default to white
         if (!this.isColored() && !this.isTextured()) this.color = new float[]{1.0f, 1.0f, 1.0f, 1.0f};
-        if (this.isAnimated()) { // if the material is animated
-            this.frame = randStart ? ((int) (Math.random() * frames)) : 0; // calc starting frame
-            this.frameTimeLeft = randStart ? ((float) Math.random() * frameTime) : frameTime; // calc starting time left
-        }
-    }
-
-    /**
-     * Updates the material by updating the animation if it has one
-     */
-    public void update(float interval) {
-        if (this.frames > 1) { // if this material is animated
-            this.frameTimeLeft -= interval; // account for time in animation
-            if (this.frameTimeLeft < 0f) { // if frame time for current frame is up
-                this.frameTimeLeft = frameTime; // reset frame time counter
-                this.frame++; // go to the next frame
-                if (this.frame >= this.frames) this.frame = 0; // go back to start after last frame
-            }
-        }
-    }
-
-    /**
-     * Will get the correct texture coordinate vertex buffer object to give to a model given the current frame of the
-     * material and the total amount of frames
-     *
-     * @return the correct texture coordinate VBO as described above
-     */
-    public int getTexCoordVBO() {
-        int[] texCoordVBOs = Material.texCoords.get(this.frames); // try to get the set of VBOs
-        if (texCoordVBOs == null) { // if this set of texture coordinate VBOs hasn't been calculated yet
-            texCoordVBOs = Model.calcTexCoordVBOs(this.frames); // calculate the tex coords for that amount of frames
-            Material.texCoords.put(this.frames, texCoordVBOs); // save to map
-        }
-        return texCoordVBOs[this.frame]; // get and return the texture coordinates for the current frame
     }
 
     /**
@@ -246,13 +163,6 @@ public class Material {
     }
 
     /**
-     * @return whether the material is animated
-     */
-    public boolean isAnimated() {
-        return this.frames > 1;
-    }
-
-    /**
      * @return the materials' color
      */
     public float[] getColor() {
@@ -270,7 +180,7 @@ public class Material {
      * Cleans up the material
      */
     public void cleanup() {
-        if (this.texture != null) this.texture.cleanup();
+        if (this.isTextured() && this.texture != Global.FONT.getSheet()) this.texture.cleanup();
     }
 
     /**
