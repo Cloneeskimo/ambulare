@@ -238,6 +238,21 @@ public class Utils {
     }
 
     /**
+     * Returns an error line to describe improper formatting of something
+     *
+     * @param object   the improperly formatted object
+     * @param loading  what is trying to be created/loaded using said formatting
+     * @param message  what is wrong with the formatting
+     * @param ignoring whether the error will be ignored
+     * @return a compiled and standardized string describing the issue
+     */
+    public static String getImproperFormatErrorLine(String object, String loading, String message, boolean ignoring) {
+        String msg = "Improperly formatted " + object + " found while loading " + loading + ": " + message
+                + (ignoring ? ". Ignoring" : ""); // compile string
+        return msg; // and return
+    }
+
+    /**
      * Creates an appropriate log line intro for an event to be logged
      *
      * @param fatal  whether the corresponding event is fatal or not

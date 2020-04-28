@@ -62,7 +62,9 @@ public class Font {
             if (c.getName().toUpperCase().equals("STANDARD")) this.stdCharCutoff =
                     Integer.parseInt(c.getValue()); // standard cutoff
             else if (c.getName().toUpperCase().equals("COLON")) this.charCutoffs.put(':',
-                    Integer.parseInt(c.getValue())); // colon gets special treatment for obvious node-file reasons
+                    Integer.parseInt(c.getValue())); // colon gets special treatment bc it's the node-file separator
+            else if (c.getName().toUpperCase().equals("NUMBER")) this.charCutoffs.put('#',
+                    Integer.parseInt(c.getValue())); // hashtag/number get special treatment bc it's the comment char
             else this.charCutoffs.put(c.getName().charAt(0),
                         Integer.parseInt(c.getValue())); // add to map normally for every other character
         }

@@ -35,7 +35,7 @@ public class MSAT extends AnimatedTexture {
      *                image. These should be given in thee order that they appear in the image
      */
     public MSAT(String path, boolean resPath, MSATState[] states) {
-        super(path, resPath, countFrames(states), 0, states[0].frameTime, false);
+        super(path, resPath, countFrames(states), states[0].frameTime, false);
         this.states = states;
         this.state = 0;
     }

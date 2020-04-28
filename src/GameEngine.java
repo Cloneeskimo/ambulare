@@ -26,7 +26,7 @@ public class GameEngine {
      */
     public GameEngine(GameLogic logic) {
         int w = -1, h = -1; // if there is no saved window data, use -1 to denote default width and height
-        Node wd = Node.fileToNode("wd.amb", true); // try to load window data
+        Node wd = Node.fileToNode("wd.node", true); // try to load window data
         if (wd != null) { // if window data was found
             w = Integer.parseInt(wd.getChild("width").getValue()); // use saved width of window
             h = Integer.parseInt(wd.getChild("height").getValue()); // ues saved height of window
@@ -233,7 +233,7 @@ public class GameEngine {
         Node wd = new Node("window data"); // create a node to hold window data
         wd.addChild("width", Integer.toString(window.getWidth())); // add window width
         wd.addChild("height", Integer.toString(window.getHeight())); // add window height
-        Node.nodeToFile(wd, "/wd.amb", true); // and save node
+        Node.nodeToFile(wd, "/wd.node", true); // and save node
         this.logic.cleanup(); // tell logic to cleanup
     }
 }

@@ -1,0 +1,27 @@
+area:
+{
+    # specify the name of the area
+    name: Test Area
+
+    # provide a key mapping from characters in the layout to blocks to place there
+    key:
+    {
+        # dirt
+        d: resfrom /mainstory/blocks/dirt.node
+
+        # grass
+        g: resfrom /mainstory/blocks/grass.node
+    }
+
+    # specify the layout of the area
+    layout:
+    {
+        :         gg
+        : gg      dd
+        : dd
+        : dd
+        : ddggggggggg
+        : ddddddddddd
+        :  ddddddddd
+    }
+}

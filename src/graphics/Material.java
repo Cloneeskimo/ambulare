@@ -21,7 +21,7 @@ public class Material {
      * Members
      */
     private float[] color;        // the color of this material if it has one
-    private BLEND_MODE blendMode; // how this Material blends its texture and color when it has both
+    private BlendMode blendMode; // how this Material blends its texture and color when it has both
     protected Texture texture;    // the texture of this material if it has one
 
     /**
@@ -31,7 +31,7 @@ public class Material {
      * @param color     the 4-dimensional color to use (must be a length-4 float array)
      * @param blendMode what blending mode to use when both a Texture and a color are present (described above)
      */
-    public Material(Texture texture, float[] color, BLEND_MODE blendMode) {
+    public Material(Texture texture, float[] color, BlendMode blendMode) {
         this.texture = texture; // set texture
         this.blendMode = blendMode; // set blend mode
         if (color != null) { // if a color is provided
@@ -41,7 +41,7 @@ public class Material {
                     Utils.handleException(new Exception("Material with no texture given an invalid color: " + color),
                             "graphics.Material", "Material(Texture, float[], boolean)", true);
                 Utils.log("Invalid color array given: " + color + ", assuming colorless", "graphics.Material",
-                        "Material(Texture, float[], BLEND_MODE)", false); // if texture, ignore color
+                        "Material(Texture, float[], BlendMode)", false); // if texture, ignore color
             }
         }
     }
@@ -52,7 +52,7 @@ public class Material {
      * @param texture the texture to use
      */
     public Material(Texture texture) {
-        this(texture, null, BLEND_MODE.NONE);
+        this(texture, null, BlendMode.NONE);
     }
 
     /**
@@ -61,7 +61,7 @@ public class Material {
      * @param color the 4-dimensional color to use (must be a length-4 float array)
      */
     public Material(float[] color) {
-        this(null, color, BLEND_MODE.NONE);
+        this(null, color, BlendMode.NONE);
     }
 
     /**
@@ -81,7 +81,7 @@ public class Material {
      * folder
      * - color: the color to use for the material. If this is not set and there is a texture, no color will be used. If
      * this is not set and there is no texture, white will be used.
-     * - blend_mode: the blend mode to use when there is both a color and a texture ("none", "multiplicative", or
+     * - BlendMode: the blend mode to use when there is both a color and a texture ("none", "multiplicative", or
      * "averaged"). If this is not set, "none" will be used
      * If materials have errors while parsing, no crashes will occur
      *
@@ -90,7 +90,7 @@ public class Material {
     public Material(Node node) {
         String texPath = null; // texture path starts as null
         boolean resPath = true; // resource-relative starts as true
-        this.blendMode = BLEND_MODE.NONE; // blend mode starts at no blending
+        this.blendMode = BlendMode.NONE; // blend mode starts at no blending
         try {
             for (Node c : node.getChildren()) { // go through each child and parse the values
                 String n = c.getName(); // get name
@@ -98,7 +98,7 @@ public class Material {
                 if (n.equals("texture_path")) texPath = c.getValue();
                 else if (n.equals("resource_relative")) resPath = Boolean.parseBoolean(c.getValue());
                 else if (n.equals("color")) this.color = Utils.strToColor(c.getValue());
-                else if (n.equals("blend_mode")) this.blendMode = BLEND_MODE.valueOf(c.getValue().toUpperCase());
+                else if (n.equals("BlendMode")) this.blendMode = BlendMode.valueOf(c.getValue().toUpperCase());
                 else // if unrecognized child, log but don't crash
                     Utils.log("Unrecognized child given for material info: " + c + ". Ignoring.",
                             "graphics.Material", "Material(Node)", false);
@@ -126,8 +126,8 @@ public class Material {
         } else sp.setUniform("isTextured", 0); // set textured flag to false otherwise
         if (this.isColored()) // if the material is colored
             sp.setUniform("color", this.color[0], this.color[1], this.color[2], this.color[3]); // color uniforms
-        sp.setUniform("blend", this.blendMode == Material.BLEND_MODE.NONE ? 0 :
-                (this.blendMode == Material.BLEND_MODE.MULTIPLICATIVE ? 1 : 2)); // set blend uniform
+        sp.setUniform("blend", this.blendMode == Material.BlendMode.NONE ? 0 :
+                (this.blendMode == Material.BlendMode.MULTIPLICATIVE ? 1 : 2)); // set blend uniform
     }
 
     /**
@@ -189,5 +189,5 @@ public class Material {
      * MULTIPLICATIVE - multiplies the color by the texture sample
      * AVERAGED - finds the average of the sample and the color
      */
-    public enum BLEND_MODE {NONE, MULTIPLICATIVE, AVERAGED}
+    public enum BlendMode {NONE, MULTIPLICATIVE, AVERAGED}
 }

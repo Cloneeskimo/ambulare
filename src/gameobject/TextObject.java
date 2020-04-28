@@ -33,7 +33,7 @@ public class TextObject extends GameObject {
     public TextObject(Font font, String text, float[] color) {
         // call super, using a material that has the font sheet as a texture, and blend with the given color
         super(0f, 0f, new Model(new float[]{}, new float[]{}, new int[]{}),
-                new Material(font.getSheet(), color, Material.BLEND_MODE.MULTIPLICATIVE));
+                new Material(font.getSheet(), color, Material.BlendMode.MULTIPLICATIVE));
         this.font = font;
         this.setText(text);
     }

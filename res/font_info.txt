@@ -61,7 +61,7 @@ font_info:
         e: 11
         f: 11
         o: 11
-        #: 9
+        number: 9
         w: 9
         =: 7
         _: 6

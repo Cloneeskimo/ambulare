@@ -82,10 +82,6 @@ public class ShaderProgram {
                     1024)), "graphics.ShaderProgram", "link()", true); // throw exception
         glDetachShader(this.progID, this.vShaderID); // detach vertex shader
         glDetachShader(this.progID, this.fShaderID); // detach fragment shader
-        glValidateProgram(this.progID); // validates program. Failure does not necessarily mean program is broken
-        if (glGetProgrami(this.progID, GL_VALIDATE_STATUS) == 0) // if validation message
-            Utils.log("Shader validation gave the following response: " + glGetProgramInfoLog(this.progID,
-                    1024), "graphics.ShaderProgram", "link()", false); // log
     }
 
     /**

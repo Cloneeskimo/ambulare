@@ -6,7 +6,8 @@ import java.util.List;
 
 /**
  * A tree-like data structure for storing data that can easily be loaded and stored in files
- * A file containing data able to be read and parsed into a node is called a node-file
+ * A file containing data able to be read and parsed into a node is called a node-file. By convention, node-files
+ * should have the extension '.node', but they are technically allowed to have any extension
  */
 public class Node {
 
@@ -15,19 +16,19 @@ public class Node {
      */
     private static char DIVIDER_CHAR = ':'; // the character that divides a line in a node-file into the name and value
     private static char INDENT_CHAR = '\t'; // the character used for indenting in a node-file
+    private static char COMMENT_CHAR = '#'; // lines starting with this character in node-files will be ignored
     private List<Node> children;            // list of child nodes
-    private String name, value;             // name and values. Names are ALWAYS lowercase but values are case-sensitive
+    private String name, value;             // name and values
 
     /**
      * Constructs this node by giving it all of its properties
      *
-     * @param name     the name of the node (the string before the dividing character in a node-file) (will be converted
-     *                 to lowercase)
+     * @param name     the name of the node (the string before the dividing character in a node-file)
      * @param value    the value of the node (the string after the dividing node in a node-file)
      * @param children the starting list of children for the node
      */
     public Node(String name, String value, List<Node> children) {
-        this.name = name.toLowerCase(); // set name
+        this.name = name;
         this.value = value; // set value
         this.children = children; // set children
     }
@@ -35,8 +36,7 @@ public class Node {
     /**
      * Constructs this node by giving it just a name and a value
      *
-     * @param name  the name of the node (the string before the dividing character in a node-file) (will be converted to
-     *              lowercase)
+     * @param name  the name of the node (the string before the dividing character in a node-file)
      * @param value the value of the node (the string after the dividing node in a node-file)
      */
     public Node(String name, String value) {
@@ -46,8 +46,7 @@ public class Node {
     /**
      * Constructs this node by giving it just a name
      *
-     * @param name the name of the node (the string before the dividing character in a node-file) (will be converted to
-     *             lowercase)
+     * @param name the name of the node (the string before the dividing character in a node-file)
      */
     public Node(String name) {
         this(name, "");
@@ -78,7 +77,7 @@ public class Node {
      * @return whether or not this node has children
      */
     public boolean hasChildren() {
-        return (this.children.size() > 0);
+        return this.children.size() > 0;
     }
 
     /**
@@ -93,7 +92,7 @@ public class Node {
     /**
      * Adds a child to this node
      *
-     * @param name  the name of the child node to add (will be converted to lowercase)
+     * @param name  the name of the child node to add
      * @param value the value of the child node to add
      */
     public void addChild(String name, String value) {
@@ -132,7 +131,6 @@ public class Node {
      * @return the first child with the matching name, or null if there are none
      */
     public Node getChild(String name) {
-        name = name.toLowerCase(); // convert to lowercase
         for (Node child : this.children) if (child.getName().equals(name)) return child; // look for matching name
         Utils.log("Couldn't find child with name '" + name + "', returning null", "utils.Node",
                 "getChild(String)", false); // log failure but don't throw exception
@@ -146,7 +144,6 @@ public class Node {
      * @return the first child with the matching name
      */
     public Node needChild(String name) {
-        name = name.toLowerCase(); // convert to lowercase
         for (Node child : this.children) if (child.getName().equals(name)) return child; // look for matching name
         Utils.handleException(new Exception("Unable to find child with name " + name), "utils.Node",
                 "needChild(String)", true); // throw exception if can't find
@@ -163,10 +160,10 @@ public class Node {
     /**
      * Updates the name of this node
      *
-     * @param name the new name to assign to this node (will be converted to lowercase)
+     * @param name the new name to assign to this node
      */
     public void setName(String name) {
-        this.name = name.toLowerCase();
+        this.name = name;
     }
 
     /**
@@ -205,6 +202,7 @@ public class Node {
      */
     public static Node resToNode(String resPath) {
         List<String> data = Utils.resToStringList(resPath); // read resource
+        trimData(data); // trim away comments and empty lines
         Node node = new Node(); // create root node
         parseNode(node, data, 0, 0); // parse read data from node-file into root node
         return node; // return parsed node
@@ -223,6 +221,7 @@ public class Node {
                     + "/" : "") + path)); // open file
             List<String> data = new ArrayList<>(); // create empty String list
             while (in.ready()) data.add(in.readLine()); // read and add file line-by-line
+            trimData(data); // trim away comments and empty lines
             Node node = new Node(); // create root node
             parseNode(node, data, 0, 0); // parse read data into root node
             return node; // return read node
@@ -230,6 +229,31 @@ public class Node {
             Utils.log("Unable to load node at path: " + path + ". Returning null", "utils.Node",
                     "fileToNode(String, boolean)", false);
             return null; // return null
+        }
+    }
+
+    /**
+     * Removes comment lines and empty from a list of strings (from a node-file) to be parsed into a node
+     *
+     * @param data the data to remove comment lines from
+     */
+    private static void trimData(List<String> data) {
+        for (int j = 0; j < data.size(); j++) { // for each line
+            String line = data.get(j); // get the line
+            for (int i = 0; i <= line.length(); i++) { // go through each character
+                if (i >= line.length()) { // if reached end of line without finding content
+                    data.remove(line); // remove the line
+                    j--; // decrement j so as to not skip lines
+                    break; // no need to look further in the line
+                }
+                if (line.charAt(i) == COMMENT_CHAR) { // if we reach the comment character
+                    data.remove(line); // remove the line
+                    j--; // decrement j so as to not skip lines
+                    break; // no need to look further in the line
+                }
+                // if a character that isn't a space, indent, or comment found -> this line is okay
+                else if (line.charAt(i) != ' ' && line.charAt(i) != INDENT_CHAR) break;
+            }
         }
     }
 

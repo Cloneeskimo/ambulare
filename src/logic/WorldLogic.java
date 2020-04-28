@@ -3,7 +3,6 @@ package logic;
 import gameobject.ROC;
 import gameobject.TextButton;
 import gameobject.TextObject;
-import gameobject.TexturedButton;
 import gameobject.gameworld.Area;
 import gameobject.gameworld.Entity;
 import gameobject.gameworld.WorldObject;
@@ -34,7 +33,7 @@ public class WorldLogic extends GameLogic {
         super.initOthers(window); // call super so that FPS displaying objects are added to HUD
         this.window = window; // save reference to window
         // create game world with starting area
-        this.roc.useGameWorld(window.getHandle(), new Area(Node.resToNode("/mainstory/areas/area.amb")));
+        this.roc.useGameWorld(window.getHandle(), new Area(Node.resToNode("/mainstory/areas/area.node")));
 
         // create and add player
         player = new Entity(Model.getStdGridRect(1, 2),

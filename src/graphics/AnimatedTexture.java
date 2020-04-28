@@ -50,13 +50,12 @@ public class AnimatedTexture extends Texture {
      * @param path      the path to the image
      * @param resPath   whether the given path is resource-relative
      * @param frames    the total amount of frames
-     * @param frame     the starting frame
      * @param frameTime the amount of time (in seconds) to give each frame
      * @param randStart whether to start the animation at a random time
      */
-    public AnimatedTexture(String path, boolean resPath, int frames, int frame, float frameTime, boolean randStart) {
+    public AnimatedTexture(String path, boolean resPath, int frames, float frameTime, boolean randStart) {
         super(path, resPath);
-        this.frames = Math.min(frames - 1, Math.max(0, frame)); // set starting frame bounded by 0 and frame count
+        this.frames = frames;
         this.frameTime = frameTime;
         this.frame = randStart ? ((int) (Math.random() * frames)) : 0; // calc starting frame
         this.frameTimeLeft = randStart ? ((float) Math.random() * frameTime) : frameTime; // calc starting time left

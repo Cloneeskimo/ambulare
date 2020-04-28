@@ -1,0 +1,5 @@
+block info:
+{
+    # specify the texture path for the grass block
+    texture_path: /textures/blocks/grass/grass.png
+}
