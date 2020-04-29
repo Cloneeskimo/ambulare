@@ -15,6 +15,7 @@ uniform float camZoom; // camera's zoom
 layout (location = 0) in vec2 modelCoords; // model coordinate data in VBO at index 0 of VAO
 layout (location = 1) in vec2 texCoords; // texture coordinate data in VBO at index 1 of VAO
 out vec2 fTexCoords; // texture coordinates are just passed through to fragment shaders
+out vec2 worldPos; // world position passed through to fragment shaders for lighting calculations
 
 /**
  *  Applies camera zoom and position to an object
@@ -39,6 +40,7 @@ vec2 aspect(vec2 coords) {
  */
 void main() {
     vec2 pos = vec2(modelCoords.x + x, modelCoords.y + y); // convert model coordinates to world coordinates
+    worldPos = pos; // save world position for fragment shader
     if (camZoom != 0) pos = toCameraView(pos); // convert world coordinates to camera-view if there is a camera
     pos = aspect(pos); // convert world or camera-view coordinates to aspect coordinates
     gl_Position = vec4(pos, 0.0, 1.0); // pass through aspect coordinates as a vec4

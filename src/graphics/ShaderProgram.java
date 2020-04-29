@@ -98,6 +98,18 @@ public class ShaderProgram {
     }
 
     /**
+     * Registers a light uniform with the given name by finding its position and saving it
+     * @param name the name of the light uniform to find
+     */
+    public void registerLightUniform(String name) {
+        this.registerUniform(name + ".glow"); // register the light's glow
+        this.registerUniform(name + ".reach"); // register the light's reach
+        this.registerUniform(name + ".intensity"); // register the light's intensity
+        this.registerUniform(name + ".x"); // register the light's x position
+        this.registerUniform(name + ".y"); // register the light's y position
+    }
+
+    /**
      * Sets the uniform with the given name to the given value (a float)
      *
      * @param name the name of the uniform the set
@@ -140,6 +152,27 @@ public class ShaderProgram {
         } catch (Exception e) { // if exception
             Utils.handleException(e, "graphics.ShaderProgram", "setUniform(String, float, float, float, float)",
                     true); // handle exception
+        }
+    }
+
+    /**
+     * Sets the light uniform with the given name to the light corresponding to the given light source and position
+     * @param name the name of the uniform to set
+     * @param light the light source whose light properties to use
+     * @param x the x position of the light
+     * @param y the y position of the light
+     */
+    public void setLightUniform(String name, LightSource light, float x, float y) {
+        try {
+            float[] glow = light.getGlow(); // get the light's glow
+            glUniform3f(this.uniforms.get(name + ".glow"), glow[0], glow[1], glow[2]); // set the light's glow
+            glUniform1f(this.uniforms.get(name + ".reach"), light.getReach()); // set the light's reach
+            glUniform1f(this.uniforms.get(name + ".intensity"), light.getIntensity()); // set the light's intensity
+            glUniform1f(this.uniforms.get(name + ".x"), x); // set the light's x position
+            glUniform1f(this.uniforms.get(name + ".y"), y); // set the light's y position
+        } catch (Exception e) { // if exception
+            // handle exception
+            Utils.handleException(e, "graphics.ShaderProgram", "setUniform(String, LightSource, float,float)", true);
         }
     }
 

@@ -19,6 +19,11 @@ import static org.lwjgl.opengl.GL11.glClearColor;
 public class GameWorld {
 
     /**
+     * Static Data
+     */
+    private static final int MAX_LIGHTS = 5; // maximum amount of lights in the game world
+
+    /**
      * Members
      */
     private List<WorldObject> objects; // the world objects in the game world
@@ -34,7 +39,7 @@ public class GameWorld {
      */
     public GameWorld(long windowHandle, Area startingArea) {
         this.objects = new ArrayList<>();
-        this.dnc = new DayNightCycle(0f, 8f, new float[]{
+        this.dnc = new DayNightCycle(0f, 20f, new float[]{
                 0.53f, 0.81f, 0.92f, 0.0f}, new float[]{0.1f, 0.1f, 0.1f, 0.0f}); // initialize D/N cycle settings
         this.initSP(); // initialize shader program
         this.cam = new Camera();
@@ -64,6 +69,7 @@ public class GameWorld {
         sp.registerUniform("camY"); // register camera y uniform
         sp.registerUniform("camZoom"); // register camera zoom uniform
         sp.registerUniform("sunPresence"); // register sun presence uniform
+        for (int i = 0; i < MAX_LIGHTS; i++) sp.registerLightUniform("lights[" + i + "]"); // register lights
     }
 
     /**

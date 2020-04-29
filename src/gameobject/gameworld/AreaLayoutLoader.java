@@ -136,10 +136,10 @@ public class AreaLayoutLoader {
     /**
      * Loads decor using the given decor key node and area layout node. This should be done after blocks are loaded
      *
-     * @param keyData the decor_key child node from the area node-file
+     * @param keyData    the decor_key child node from the area node-file
      * @param layoutData the layout child node from thee area node-file
-     * @param ats            the list of animated textures to populate
-     * @param blockMap the block map to use for pinning decors
+     * @param ats        the list of animated textures to populate
+     * @param blockMap   the block map to use for pinning decors
      * @return the list of game objects corresponding to all of the decor
      */
     public static List<GameObject> loadDecor(Node keyData, Node layoutData, List<AnimatedTexture> ats,
@@ -151,7 +151,7 @@ public class AreaLayoutLoader {
         for (int y = 0; y < rows.size(); y++) { // go through each row
             String row = rows.get(rows.size() - 1 - y).getValue(); // get the row
             for (int x = 0; x < row.length(); x++) { // loop through each character in the row
-                DecorInfo di = (DecorInfo)key.get(row.charAt(x)); // get the decor info for that character
+                DecorInfo di = (DecorInfo) key.get(row.charAt(x)); // get the decor info for that character
                 if (di != null) { // if there is decor there
 
                     // get the texture -> material map for that tile info and create it if it doesn't exist
@@ -211,10 +211,10 @@ public class AreaLayoutLoader {
                     pos.x += di.xOffset; // apply horizontal offset
                     pos.y += di.yOffset; // apply vertical offset
                     if (di.xRandInterval != 0f) { // apply random horizontal offset
-                        pos.x += (float)(Math.random() * 2 * di.xRandInterval) - di.xRandInterval;
+                        pos.x += (float) (Math.random() * 2 * di.xRandInterval) - di.xRandInterval;
                     }
                     if (di.yRandInterval != 0f) { // apply random vertical offset
-                        pos.y += (float)(Math.random() * 2 * di.yRandInterval) - di.yRandInterval;
+                        pos.y += (float) (Math.random() * 2 * di.yRandInterval) - di.yRandInterval;
                     }
                     go.setPos(pos); // set the updated position for the decor
                     decor.add(go); // add to the decor lis
@@ -226,17 +226,19 @@ public class AreaLayoutLoader {
 
     /**
      * Calculates the last free position (containing no block) in the given direction from the given starting block
+     *
      * @param blockMap the block map to use for checking
-     * @param x the starting x
-     * @param y the starting y
-     * @param dx the change in x for the direction
-     * @param dy the change in y for the direction
+     * @param x        the starting x
+     * @param y        the starting y
+     * @param dx       the change in x for the direction
+     * @param dy       the change in y for the direction
      * @return a pair of integers containing the last free position (containing no block) in the given direction. If the
      * starting position is not free, the starting position will be returned
      */
     private static Pair<Integer> lastFreeBlockInDirection(boolean[][] blockMap, int x, int y, int dx, int dy) {
         while (!blockMap[x + dx][y + dy]) { // while there is no block in the given directory
-            x += dx; y += dy; // keep going in that direction
+            x += dx;
+            y += dy; // keep going in that direction
             if (x + dx < 0 || x + dx >= blockMap.length) break;
             if (y + dy < 0 || y + dy >= blockMap[0].length) break;
         }
@@ -247,7 +249,7 @@ public class AreaLayoutLoader {
      * Parses key data for loading a layout
      *
      * @param keyData the key child node from the area node-file
-     * @param decor whether the key is for decor (if false, assumes is for blocks)
+     * @param decor   whether the key is for decor (if false, assumes is for blocks)
      * @return the parsed key, mapping from character in the layout to corresponding tile info
      */
     private static Map<Character, TileInfo> parseKeyData(Node keyData, boolean decor) {
@@ -327,7 +329,7 @@ public class AreaLayoutLoader {
          * Members
          */
         public final List<String> texPaths = new ArrayList<>(); // list of texture paths to be randomized over
-        public float[] color = new float[] { 1f, 1f, 1f, 1f };  // tile color
+        public float[] color = new float[]{1f, 1f, 1f, 1f};  // tile color
         public Material.BlendMode bm = Material.BlendMode.NONE; // how to blend color and texture in the material
         public float frameTime = 1f;                            // how long each frame should be if tile is animated
         public int animFrames = 1;                              // how many frames there are if tile is animated
@@ -415,6 +417,7 @@ public class AreaLayoutLoader {
 
         /**
          * Parses an individual child and applies the setting it represents to the tile info
+         *
          * @param c the child to parse
          * @return whether the child was recognized
          */
@@ -498,30 +501,30 @@ public class AreaLayoutLoader {
         /**
          * Constructs the decor info by compiling the information from a given node. If the value of the root node
          * starts with the statements 'from' or 'resfrom', the next statement will be assumed to be a different path at
-         * which to find the tile info. This is useful for reusing the same tile info in multiple settings. 'from'
+         * which to find the decor info. This is useful for reusing the same decor info in multiple settings. 'from'
          * assumes the following path is relative to the Ambulare data folder (in the user's home folder) while
          * 'resfrom' assumes the following path is relative to the Ambulares's resource path. Note that these kinds of
          * statements cannot be chained together. A decor info node can have any child that a tile info can have as
          * well as:
-         *
+         * <p>
          * - pin [optional][default: none]: defines how the object will pin to nearby blocks. The options are as
          * follows: right, left, above, below, none. If none, the object will be centered exactly at the position it's
          * character is at in the layout. For any of the other options, it will pin to the nearest block in that
          * direction. For example, if set to below, the object will be on the ground/floor beneath it
-         *
+         * <p>
          * - x_offset [optional][default: 0f]: defines the horizontal offset to use when placing the object (in amount
          * of blocks). Positive values correspond to moving the object to the right while negative values correspond to
          * moving the object to the left. For example, an xoffset of -0.33f will move the decor 1/3 of a block to the
          * left
-         *
+         * <p>
          * - y_offset [optional][default: 0f]: defines the vertical offset to use when placing the object (in amount of
          * blocks). Positive values correspond to moving the object up while negative values correspond to moving the
          * object down. For example, a yoffset of 1.4f will move the decor 1.4 blocks upwards
-         *
+         * <p>
          * - x_random_interval [optional][default: 0f]: defines the horizontal interval from which a random offset value
          * will be chosen and applied in addition to x_offset. For example, an x_random_interval of 0.5f would generate
          * a random offset between -0.5f and 0.5f to apply on top of x_offset. Sign does not matter here
-         *
+         * <p>
          * - y_random_interval [optional][default: 0f]: defines the vertical interval from which a random offset value
          * will be chosen and applied in addition to y_offset. For example, a y_random_inteval of -0.25f would generate
          * a random offset between -0.25f and 0.25f to apply on top of y_offset. Sign does not matter here
@@ -534,6 +537,7 @@ public class AreaLayoutLoader {
 
         /**
          * Parses an individual child and applies the setting it represents to the decor info
+         *
          * @param c the child to parse
          * @return whether the child was recognized
          */
@@ -556,7 +560,7 @@ public class AreaLayoutLoader {
                     try {
                         this.xOffset = Float.parseFloat(c.getValue()); // try to convert to a float
                     } catch (Exception e) { // log if unsuccessful
-                        Utils.log(Utils.getImproperFormatErrorLine("x_offset","DecorInfo",
+                        Utils.log(Utils.getImproperFormatErrorLine("x_offset", "DecorInfo",
                                 "must be a proper floating pointer number", true),
                                 "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
                                 false);
@@ -565,7 +569,7 @@ public class AreaLayoutLoader {
                     try {
                         this.yOffset = Float.parseFloat(c.getValue()); // try to convert to a float
                     } catch (Exception e) { // log if unsuccessful
-                        Utils.log(Utils.getImproperFormatErrorLine("y_offset","DecorInfo",
+                        Utils.log(Utils.getImproperFormatErrorLine("y_offset", "DecorInfo",
                                 "must be a proper floating pointer number", true),
                                 "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
                                 false);
@@ -574,7 +578,7 @@ public class AreaLayoutLoader {
                     try {
                         this.xRandInterval = Math.abs(Float.parseFloat(c.getValue())); // try to convert to a float
                     } catch (Exception e) { // log if unsuccessful
-                        Utils.log(Utils.getImproperFormatErrorLine("x_random_interval","DecorInfo",
+                        Utils.log(Utils.getImproperFormatErrorLine("x_random_interval", "DecorInfo",
                                 "must be a proper floating pointer number", true),
                                 "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
                                 false);
@@ -583,13 +587,12 @@ public class AreaLayoutLoader {
                     try {
                         this.yRandInterval = Math.abs(Float.parseFloat(c.getValue())); // try to convert to a float
                     } catch (Exception e) { // log if unsuccessful
-                        Utils.log(Utils.getImproperFormatErrorLine("y_random_interval","DecorInfo",
+                        Utils.log(Utils.getImproperFormatErrorLine("y_random_interval", "DecorInfo",
                                 "must be a proper floating pointer number", true),
                                 "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
                                 false);
                     }
-                }
-                else return false; // if not any of the above, unrecognized
+                } else return false; // if not any of the above, unrecognized
                 return true; // return that it was recognized
             } else return true; // if tile info recognized it, return true
         }

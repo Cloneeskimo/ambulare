@@ -74,46 +74,6 @@ public class Material {
     }
 
     /**
-     * Creates a material from a node. The optional children of the node are listed below:
-     * - texture_path: the path to the texture for the material. If no texture path is given, no texture will be used.
-     * - resource_relative: whether the given texture path is resource relative. If this flag is not set, the path will
-     * be assumed to be resource-relative. If not resource-relative, the path should be relative to the Ambulare data
-     * folder
-     * - color: the color to use for the material. If this is not set and there is a texture, no color will be used. If
-     * this is not set and there is no texture, white will be used.
-     * - BlendMode: the blend mode to use when there is both a color and a texture ("none", "multiplicative", or
-     * "averaged"). If this is not set, "none" will be used
-     * If materials have errors while parsing, no crashes will occur
-     *
-     * @param node the node to create the material from
-     */
-    public Material(Node node) {
-        String texPath = null; // texture path starts as null
-        boolean resPath = true; // resource-relative starts as true
-        this.blendMode = BlendMode.NONE; // blend mode starts at no blending
-        try {
-            for (Node c : node.getChildren()) { // go through each child and parse the values
-                String n = c.getName(); // get name
-                // parse the data
-                if (n.equals("texture_path")) texPath = c.getValue();
-                else if (n.equals("resource_relative")) resPath = Boolean.parseBoolean(c.getValue());
-                else if (n.equals("color")) this.color = Utils.strToColor(c.getValue());
-                else if (n.equals("BlendMode")) this.blendMode = BlendMode.valueOf(c.getValue().toUpperCase());
-                else // if unrecognized child, log but don't crash
-                    Utils.log("Unrecognized child given for material info: " + c + ". Ignoring.",
-                            "graphics.Material", "Material(Node)", false);
-            }
-        } catch (Exception e) { // log any errors but don't crash
-            Utils.log("Unable to parse the following material info: " + node.toString() + "\n for reason: " +
-                    e.getMessage(), "graphics.Material", "Material(Node)", false);
-        }
-        // if a texture was given, use the texture
-        if (texPath != null) this.texture = new Texture(resPath ? texPath : Utils.getDataDir() + texPath, resPath);
-        // if no texture or color was specified, default to white
-        if (!this.isColored() && !this.isTextured()) this.color = new float[]{1.0f, 1.0f, 1.0f, 1.0f};
-    }
-
-    /**
      * Sets the necessary uniforms in the given shader program to render using this material
      *
      * @param sp the shader program whose uniforms are to be sed
