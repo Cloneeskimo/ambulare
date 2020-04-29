@@ -34,7 +34,7 @@ public class GameWorld {
      */
     public GameWorld(long windowHandle, Area startingArea) {
         this.objects = new ArrayList<>();
-        this.dnc = new DayNightCycle(0f, 3f, new float[]{
+        this.dnc = new DayNightCycle(0f, 8f, new float[]{
                 0.53f, 0.81f, 0.92f, 0.0f}, new float[]{0.1f, 0.1f, 0.1f, 0.0f}); // initialize D/N cycle settings
         this.initSP(); // initialize shader program
         this.cam = new Camera();

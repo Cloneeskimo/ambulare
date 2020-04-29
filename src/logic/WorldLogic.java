@@ -43,6 +43,7 @@ public class WorldLogic extends GameLogic {
                         new MSAT.MSATState(1, 1f),
                         new MSAT.MSATState(1, 1f)
                 })));
+        player.setScale(0.75f, 0.75f);
         player.setBoundingWidth(0.95f);
         player.setBoundingHeight(0.95f);
         player.setPos(Transformation.getCenterOfCell(new Pair<>(3, 5))); // move to grid cell 3, 5

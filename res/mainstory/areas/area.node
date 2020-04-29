@@ -1,10 +1,10 @@
 area:
 {
     # specify the name of the area
-    name: Test Area
+    name: Galen Forest
 
-    # provide a key mapping from characters in the layout to blocks to place there
-    key:
+    # provide a key mapping from characters in the layout to blocks
+    block_key:
     {
         # dirt
         d: resfrom /mainstory/blocks/dirt.node
@@ -13,15 +13,36 @@ area:
         g: resfrom /mainstory/blocks/grass.node
     }
 
+    # provides a key mapping characters in the layout to decor
+    decor_key:
+    {
+        # weeds
+        w:
+        {
+            texture_path: /textures/decor/foliage/weeds.png
+            texture_path: /textures/decor/foliage/weeds2.png
+            pin: below
+        }
+
+        # dead tree
+        t:
+        {
+            texture_path: /textures/decor/foliage/dead_tree.png
+            pin: below
+        }
+    }
+
     # specify the layout of the area
     layout:
     {
-        :         gg
-        : gg      dd
-        : dd
-        : dd
-        : ddggggggggg
-        : ddddddddddd
-        :  ddddddddd
+        :         ww            wt ww
+        :  w      gg            ggggg
+        : gg      dd            ddddd                   ww
+        : dd                                       tw  wdd
+        : dd wt w ww          ww        ww     w  dddwwddd
+        : ddggggggggg    ww t gg w      gg wt gg  dddggddd
+        : ddddddddddd    gggggddgg  gg gddggggddggdddddddd
+        :  ddddddddd     ddddddddd  dd dddddddddddddd
+        :                  ddd           ddddddddd
     }
 }

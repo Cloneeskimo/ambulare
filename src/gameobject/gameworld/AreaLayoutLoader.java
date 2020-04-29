@@ -1,10 +1,13 @@
 package gameobject.gameworld;
 
+import gameobject.GameObject;
 import graphics.AnimatedTexture;
 import graphics.Material;
+import graphics.Model;
 import graphics.Texture;
 import utils.Node;
 import utils.Pair;
+import utils.Transformation;
 import utils.Utils;
 
 import java.util.ArrayList;
@@ -27,17 +30,17 @@ public class AreaLayoutLoader {
     }
 
     /**
-     * Loads a layout using the given key and layout nodes
+     * Loads blocks using the given block key node and area layout node
      *
-     * @param keyData        the key child node from the area node-file
+     * @param keyData        the block_key child node from the area node-file
      * @param layoutData     the layout child node from the area node-file
      * @param blockPositions the material to positions map to populate
      * @param ats            the list of animated textures to populate
      * @return the block map for the loaded layout
      */
-    public static boolean[][] loadLayout(Node keyData, Node layoutData,
+    public static boolean[][] loadBlocks(Node keyData, Node layoutData,
                                          Map<Material, List<Pair<Integer>>> blockPositions, List<AnimatedTexture> ats) {
-        Map<Character, BlockInfo> key = parseKeyData(keyData); // parse key
+        Map<Character, TileInfo> key = parseKeyData(keyData, false); // parse key
 
         // create empty block map with appropriate size
         List<Node> rows = layoutData.getChildren(); // get all rows
@@ -56,18 +59,18 @@ public class AreaLayoutLoader {
             }
         }
         // create materials and block positions
-        /* maps block info to a mapping of texture to a mapping of modularization piece to materials. This is used to
+        /* maps tile info to a mapping of texture to a mapping of modularization piece to materials. This is used to
            ensure the least possible amount of material creation */
-        Map<BlockInfo, Map<String, Map<ModNameExt, Material>>> materialMap = new HashMap<>();
+        Map<TileInfo, Map<String, Map<ModNameExt, Material>>> materialMap = new HashMap<>();
         for (int y = 0; y < rows.size(); y++) { // go through each row
             String row = rows.get(rows.size() - 1 - y).getValue(); // get the row
             for (int x = 0; x < row.length(); x++) { // loop through each character in the row
-                BlockInfo bi = key.get(row.charAt(x)); // get the block info for that character
-                if (bi != null) { // if the block info isn't null
+                TileInfo bi = key.get(row.charAt(x)); // get the tile info for that character
+                if (bi != null) { // if the tile info isn't null
 
-                    /* get the texture-> modularization piece ->material map for that block info and create it if
-                       it doesn't exist */
-                    Map<String, Map<ModNameExt, Material>> forThatBlockInfo =
+                    /* get the texture -> modularization piece -> material map for that tile info and create it if it
+                       doesn't exist */
+                    Map<String, Map<ModNameExt, Material>> forThatTileInfo =
                             materialMap.computeIfAbsent(bi, k -> new HashMap<>());
 
                     // get the texture (or lack thereof)
@@ -82,7 +85,7 @@ public class AreaLayoutLoader {
 
                     // get the mod->material map for that texture and create it if it doesn't exist
                     Map<ModNameExt, Material> forThatTexture =
-                            forThatBlockInfo.computeIfAbsent(texPath, k -> new HashMap<>());
+                            forThatTileInfo.computeIfAbsent(texPath, k -> new HashMap<>());
 
                     // apply modularization - if not textured, assume no modularization
                     ModNameExt[] mods = texPath.equals("null") ? new ModNameExt[]{ModNameExt.NONE} :
@@ -94,7 +97,6 @@ public class AreaLayoutLoader {
                         // get the material for the modularization
                         Material m = forThatTexture.get(mods[i]);
                         if (m == null) { // if it doesn't yet exist, need to create it
-
                             if (!texPath.equals("null")) { // if textured
                                 // get info for texture path
                                 String[] fileInfo = Utils.getFileInfoForPath(bi.texResPath, texPath);
@@ -132,15 +134,115 @@ public class AreaLayoutLoader {
     }
 
     /**
+     * Loads decor using the given decor key node and area layout node. This should be done after blocks are loaded
+     *
+     * @param keyData the decor_key child node from the area node-file
+     * @param layoutData the layout child node from thee area node-file
+     * @param ats            the list of animated textures to populate
+     * @param blockMap the block map to use for pinning decors
+     * @return the list of game objects corresponding to all of the decor
+     */
+    public static List<GameObject> loadDecor(Node keyData, Node layoutData, List<AnimatedTexture> ats,
+                                             boolean[][] blockMap) {
+        Map<Character, TileInfo> key = parseKeyData(keyData, true); // parse key
+        List<GameObject> decor = new ArrayList<>(); // create decor list
+        List<Node> rows = layoutData.getChildren(); // get the rows of the layout
+        Map<DecorInfo, Map<String, Material>> materialMap = new HashMap<>(); // initialize material map
+        for (int y = 0; y < rows.size(); y++) { // go through each row
+            String row = rows.get(rows.size() - 1 - y).getValue(); // get the row
+            for (int x = 0; x < row.length(); x++) { // loop through each character in the row
+                DecorInfo di = (DecorInfo)key.get(row.charAt(x)); // get the decor info for that character
+                if (di != null) { // if there is decor there
+
+                    // get the texture -> material map for that tile info and create it if it doesn't exist
+                    Map<String, Material> forThatDecorInfo = materialMap.computeIfAbsent(di, k -> new HashMap<>());
+
+                    // get the texture (or lack thereof)
+                    String texPath = "null"; // if no texture, use "null" string
+                    List<String> possibleTextures = di.texPaths; // get the possible textures
+                    if (possibleTextures.size() > 0) { // if there is at least one texture
+                        if (possibleTextures.size() > 1) { // if there is more than one texture
+                            // choose a random one
+                            texPath = possibleTextures.get((int) (Math.random() * possibleTextures.size()));
+                        } else texPath = possibleTextures.get(0); // otherwise choose the only one
+                    }
+
+                    // get the material for that texture
+                    Material m = forThatDecorInfo.get(texPath);
+                    if (m == null) { // if the material doesn't exist yet, need to create it
+                        if (!texPath.equals("null")) { // if textured
+                            Texture t; // start at null
+                            if (di.animated) { // if animated
+                                t = new AnimatedTexture(texPath, di.texResPath, di.animFrames, di.frameTime,
+                                        true); // create animated texture
+                                ats.add((AnimatedTexture) t); // add to list of animated textures
+                            } else t = new Texture(texPath, di.texResPath); // if not, create regular texture
+                            m = new Material(t, di.color, di.bm); // create material with the correct texture
+                            // create new list for blocks with the corresponding material
+                        } else m = new Material(di.color); // create material with just color if not textured
+                        forThatDecorInfo.put(texPath, m); // put it in the map from textures -> material
+                    }
+
+                    // create game object with the material
+                    GameObject go = new GameObject(Model.getStdGridRect(1, 1), m);
+                    go.setScale(m.getTexture().getWidth() / 32f, m.getTexture().getHeight() / 32f);
+                    // move the game object to the correct position
+                    Pair<Integer> fbid = di.pin == 0 ? new Pair<>(x, y) : lastFreeBlockInDirection(blockMap, x, y,
+                            di.pin == 1 ? -1 : (di.pin == 3 ? 1 : 0),
+                            di.pin == 2 ? 1 : (di.pin == 4 ? -1 : 0)
+                    ); // get the nearest grid cell not containing a block in the direction of the pin
+                    Pair<Float> pos = Transformation.getCenterOfCell(fbid); // get the center of the cell
+                    switch (di.pin) { // switch on the pin and translate the object accordingly
+                        case 1: // left
+                            pos.x += (go.getWidth() / 2) - 0.5f;
+                            break;
+                        case 2: // above
+                            pos.y += -(go.getHeight() / 2) + 0.5f;
+                            break;
+                        case 3: // right
+                            pos.x += -(go.getWidth() / 2) + 0.5f;
+                            break;
+                        case 4: // below
+                            pos.y += (go.getHeight() / 2) - 0.5f;
+                    }
+                    go.setPos(pos); // set the updated position for the decor
+                    decor.add(go); // add to the decor lis
+                }
+            }
+        }
+        return decor; // return compiled list of decor
+    }
+
+    /**
+     * Calculates the last free position (containing no block) in the given direction from the given starting block
+     * @param blockMap the block map to use for checking
+     * @param x the starting x
+     * @param y the starting y
+     * @param dx the change in x for the direction
+     * @param dy the change in y for the direction
+     * @return a pair of integers containing the last free position (containing no block) in the given direction. If the
+     * starting position is not free, the starting position will be returned
+     */
+    private static Pair<Integer> lastFreeBlockInDirection(boolean[][] blockMap, int x, int y, int dx, int dy) {
+        while (!blockMap[x + dx][y + dy]) { // while there is no block in the given directory
+            x += dx; y += dy; // keep going in that direction
+            if (x + dx < 0 || x + dx >= blockMap.length) break;
+            if (y + dy < 0 || y + dy >= blockMap[0].length) break;
+        }
+        return new Pair<>(x, y); // return last free block
+    }
+
+    /**
      * Parses key data for loading a layout
      *
      * @param keyData the key child node from the area node-file
-     * @return the parsed key, mapping from character in the layout to corresponding block info
+     * @param decor whether the key is for decor (if false, assumes is for blocks)
+     * @return the parsed key, mapping from character in the layout to corresponding tile info
      */
-    private static Map<Character, BlockInfo> parseKeyData(Node keyData) {
-        Map<Character, BlockInfo> key = new HashMap<>(); // start as empty hashmap
-        // create a block info for each child and put it in the key
-        for (Node c : keyData.getChildren()) key.put(c.getName().charAt(0), new BlockInfo(c));
+    private static Map<Character, TileInfo> parseKeyData(Node keyData, boolean decor) {
+        Map<Character, TileInfo> key = new HashMap<>(); // start as empty hashmap
+        // create a tile info for each child and put it in the key
+        for (Node c : keyData.getChildren()) key.put(c.getName().charAt(0), decor ? new DecorInfo(c) : new TileInfo(c));
         return key;
     }
 
@@ -205,32 +307,31 @@ public class AreaLayoutLoader {
     }
 
     /**
-     * Encapsulates info about a block as laid out in a node-file. When the blocks are actually created, they are
-     * reduced to simple pairs representing their position, indexed by material in a map. BlockInfo is solely used for
-     * loading purposes
+     * Encapsulates info about a tile as laid out in a node-file. When the corresponding block/decor is created, the
+     * TileInfo is no longer used. Thus, TileInfo is just used for loading tiles
      */
-    public static class BlockInfo {
+    private static class TileInfo {
 
         /**
          * Members
          */
-        private final List<String> texPaths = new ArrayList<>(); // list of texture paths to be randomized over
-        private float[] color = new float[]{1f, 1f, 1f, 1f};  // block color
-        private Material.BlendMode bm = Material.BlendMode.NONE; // how to blend color and texture in the material
-        private float frameTime = 1f;                            // how long each frame should be if block is animated
-        private int animFrames = 1;                              // how many frames there are if block is animated
-        private boolean texResPath = true;                       // whether the texture paths are resource-relative
-        private boolean animated = false;                        // whether the block is animated
+        public final List<String> texPaths = new ArrayList<>(); // list of texture paths to be randomized over
+        public float[] color = new float[] { 1f, 1f, 1f, 1f };  // tile color
+        public Material.BlendMode bm = Material.BlendMode.NONE; // how to blend color and texture in the material
+        public float frameTime = 1f;                            // how long each frame should be if tile is animated
+        public int animFrames = 1;                              // how many frames there are if tile is animated
+        public boolean texResPath = true;                       // whether the texture paths are resource-relative
+        public boolean animated = false;                        // whether the tile is animated
 
         /**
-         * Constructs the block info by compiling the information from a given node. If the value of the root node
+         * Constructs the tile info by compiling the information from a given node. If the value of the root node
          * starts with the statements 'from' or 'resfrom', the next statement will be assumed to be a different path at
-         * which to find the block info. This is useful for reusing the same block info in multiple settings. 'from'
+         * which to find the tile info. This is useful for reusing the same tile info in multiple settings. 'from'
          * assumes the following path is relative to the Ambulare data folder (in the user's home folder) while
          * 'resfrom' assumes the following path is relative to the Ambulares's resource path. Note that these kinds of
-         * statements cannot be chained together. Here are a list of children that a block info node can have:
+         * statements cannot be chained together. Here are a list of children that a tile info node can have:
          * <p>
-         * - color [optional][default: 1f 1f 1f 1f]: specifies what color to assign to the block
+         * - color [optional][default: 1f 1f 1f 1f]: specifies what color to assign to the tile
          * <p>
          * - texture_path [optional][default: no texture]: specifies what path to look for textures in. There may be
          * more than one path listed. If this is the gave, a random texture path from the set of given paths will be
@@ -240,31 +341,32 @@ public class AreaLayoutLoader {
          * dirt_topleft.png will be searched for in the same directory as dirt.png. If a corner/edge piece is not found,
          * the default image will be used. Here is the full list of accepted corner/edge type extensions to file names:
          * topleft, top, topright, right, bottomright, bottom, bottomleft, left, column, row, columntop, columnbottom,
-         * rowrightcap, rowleftcap, insettopleft, insettopright, insetbottomleft, insetbottomright.
+         * rowrightcap, rowleftcap, insettopleft, insettopright, insetbottomleft, insetbottomright. Corner/edge
+         * detection (modularization) only occurs when loading blocks (not decor)
          * <p>
          * - resource_relative [optional][default: true]: specifies whether the given texture path is relative to
          * Ambulare's resource path. If this is false, the given path must be relative to Ambulare's data folder (in
          * the user's home folder).
          * <p>
          * - blend_mode [optional][default: none]: specifies how to blend color and texture. The options are: (1) none -
-         * no blending will occur. The block will appear as its texture if it has one, or its color if there is no
-         * texture. (2) multiplicative - the components of the block color and the components of the texture will be
-         * multiplied to create a final color. (3) averaged - the components of the block color and the components of
+         * no blending will occur. The tile will appear as its texture if it has one, or its color if there is no
+         * texture. (2) multiplicative - the components of the tile color and the components of the texture will be
+         * multiplied to create a final color. (3) averaged - the components of the tile color and the components of
          * the texture will be averaged to create a final color.
          * <p>
          * - animation_frames [optional][default: 1]: specifies how many animation frames are in the texture. Frames
          * should be placed in horizontal order and should be equal widths. If 1 (by default) no animation will occur
          * <p>
          * - animation_time [optional][default: 1.0f]: specifies how long (in seconds) each frame should appear if the
-         * block is animated
+         * tile is animated
          * <p>
          * Note that, if any of the info above is improperly formatted, a message saying as much will be logged. As
-         * such, when designing blocks to be loaded into the game, the logs should be checked often to make sure the
+         * such, when designing tile to be loaded into the game, the logs should be checked often to make sure the
          * loading process is unfolding correctly
          *
-         * @param info the node containing the info to create the corresponding block with
+         * @param info the node containing the info to create the corresponding tile with
          */
-        public BlockInfo(Node info) {
+        public TileInfo(Node info) {
 
             // load from elsewhere if from or resfrom statement used
             String value = info.getValue(); // get value
@@ -279,81 +381,149 @@ public class AreaLayoutLoader {
                     info = Node.resToNode(info.getValue().substring(8));
                 if (info == null) // if the new info is null, then throw an exception stating the path is invalid
                     Utils.handleException(new Exception(Utils.getImproperFormatErrorLine("(res)from statement",
-                            "BlockInfo", "invalid path in (res)from statement: " + value, false)),
-                            "gameobject.gameworld.AreaLayoutLoader", "BlockInfo(Node)", true);
+                            "TileInfo", "invalid path in (res)from statement: " + value, false)),
+                            "gameobject.gameworld.AreaLayoutLoader", "TileInfo(Node)", true);
             }
 
             // parse node
             try { // surround in try/catch so as to intercept and log any issues
-                if (!info.hasChildren()) return;
-                for (Node c : info.getChildren()) { // for each child
-                    String n = c.getName(); // get the name of the child
-                    if (n.equals("color")) { // color
-                        float[] color = Utils.strToColor(c.getValue()); // try to convert to a float array
-                        if (color == null) // log if unsuccessful
-                            Utils.log(Utils.getImproperFormatErrorLine("BlockInfo", "color",
-                                    "must be four valid floating point numbers separated by spaces",
-                                    true), "gameobject.gameworld.AreaLayoutLoader",
-                                    "BlockInfo(Node)", false);
-                        else this.color = color;
-                    } else if (n.equals("texture_path")) this.texPaths.add(c.getValue()); // texture path
-                        // resource relative texture path flag
-                    else if (n.equals("resource_relative")) this.texResPath = Boolean.parseBoolean(c.getValue());
-                    else if (n.equals("blend_mode")) { // blend mode
-                        // try to convert to a material's blend mode
-                        try {
-                            this.bm = Material.BlendMode.valueOf(c.getValue().toUpperCase());
-                        } catch (Exception e) { // log if unsuccessful
-                            Utils.log(Utils.getImproperFormatErrorLine("BlockInfo", "blend mode",
-                                    "must be either: none, multiplicative, or averaged", true),
-                                    "gameobject.gameworld.AreaLayoutLoader", "BlockInfo(Node)",
-                                    false);
-                        }
-                    } else if (n.equals("animation_frames")) { // animation frames
-                        try {
-                            this.animFrames = Integer.parseInt(c.getValue()); // try to convert to integer
-                        } catch (Exception e) { // log if unsuccessful
-                            Utils.log(Utils.getImproperFormatErrorLine("BlockInfo",
-                                    "animation frame count", "must be a proper integer greater than 0",
-                                    true), "gameobject.gameworld.AreaLayoutLoader",
-                                    "BlockInfo(Node)", false);
-                        }
-                        if (this.animFrames < 1) { // if the amount of frames is invalid, log and ignore
-                            Utils.log(Utils.getImproperFormatErrorLine("BlockInfo",
-                                    "animation frame count", "must be a proper integer greater than 0",
-                                    true), "gameobject.gameworld.AreaLayoutLoader",
-                                    "BlockInfo(Node)", false);
-                            this.animFrames = 1;
-                        }
-                        this.animated = this.animFrames > 1; // update animated flag based on amount of frames
-                    } else if (n.equals("animation_time")) { // animation time
-                        try {
-                            this.frameTime = Float.parseFloat(c.getValue()); // try to convert to a float
-                        } catch (Exception e) { // log if unsuccessful
-                            Utils.log(Utils.getImproperFormatErrorLine("BlockInfo",
-                                    "animation frame time",
-                                    "must be a proper floating pointer number greater than 0", true),
-                                    "gameobject.gameworld.AreaLayoutLoader", "BlockInfo(Node)",
-                                    false);
-                        }
-                        if (this.frameTime <= 0f) { // if the frame time is invalid, log and ignore
-                            Utils.log(Utils.getImproperFormatErrorLine("BlockInfo",
-                                    "animation frame time",
-                                    "must be a proper floating pointer number greater than 0", true),
-                                    "gameobject.gameworld.AreaLayoutLoader", "BlockInfo(Node)",
-                                    false);
-                            this.frameTime = 1f;
-                        }
-                    } else { // if an unrecognized child is given, log and ignore
-                        Utils.log("Unrecognized block info child: " + n + ". Ignoring",
-                                "gameobject.gameworld.AreaLayoutLoader", "BlockInfo(Node)", false);
+                if (!info.hasChildren()) return; // if no children, just return with default propertiess
+                for (Node c : info.getChildren()) { // go through each child
+                    if (!parseChild(c)) { // parse it
+                        Utils.log("Unrecognized child given for tile info:\n" + c + "Ignoring.",
+                                "gameobject.gameworld.AreaLayoutLoader", "TileInfo(Node)",
+                                false); // and log it if is not recognizedss
                     }
                 }
             } catch (Exception e) { // if any other exceptions occur, handle them
-                Utils.handleException(new Exception(Utils.getImproperFormatErrorLine("BlockInfo",
-                        "BlockInfo", e.getMessage(), false)), "gameobject.gameworld.AreaLayoutLoader",
-                        "BlockInfo(Node)", true);
+                Utils.handleException(new Exception(Utils.getImproperFormatErrorLine("TileInfo",
+                        "TileInfo", e.getMessage(), false)), "gameobject.gameworld.AreaLayoutLoader",
+                        "TileInfo(Node)", true);
             }
+        }
+
+        /**
+         * Parses an individual child and applies the setting it represents to the tile info
+         * @param c the child to parse
+         * @return whether the child was recognized
+         */
+        protected boolean parseChild(Node c) {
+            String n = c.getName(); // get the name of the child
+            if (n.equals("color")) { // color
+                float[] color = Utils.strToColor(c.getValue()); // try to convert to a float array
+                if (color == null) // log if unsuccessful
+                    Utils.log(Utils.getImproperFormatErrorLine("TileInfo", "color",
+                            "must be four valid floating point numbers separated by spaces",
+                            true), "gameobject.gameworld.AreaLayoutLoader",
+                            "parseChild(Node)", false);
+                else this.color = color;
+            } else if (n.equals("texture_path")) this.texPaths.add(c.getValue()); // texture path
+                // resource relative texture path flag
+            else if (n.equals("resource_relative")) this.texResPath = Boolean.parseBoolean(c.getValue());
+            else if (n.equals("blend_mode")) { // blend mode
+                // try to convert to a material's blend mode
+                try {
+                    this.bm = Material.BlendMode.valueOf(c.getValue().toUpperCase());
+                } catch (Exception e) { // log if unsuccessful
+                    Utils.log(Utils.getImproperFormatErrorLine("TileInfo", "blend mode",
+                            "must be either: none, multiplicative, or averaged", true),
+                            "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
+                            false);
+                }
+            } else if (n.equals("animation_frames")) { // animation frames
+                try {
+                    this.animFrames = Integer.parseInt(c.getValue()); // try to convert to integer
+                } catch (Exception e) { // log if unsuccessful
+                    Utils.log(Utils.getImproperFormatErrorLine("TileInfo",
+                            "animation frame count", "must be a proper integer greater than 0",
+                            true), "gameobject.gameworld.AreaLayoutLoader",
+                            "parseChild(Node)", false);
+                }
+                if (this.animFrames < 1) { // if the amount of frames is invalid, log and ignore
+                    Utils.log(Utils.getImproperFormatErrorLine("TileInfo",
+                            "animation frame count", "must be a proper integer greater than 0",
+                            true), "gameobject.gameworld.AreaLayoutLoader",
+                            "parseChild(Node)", false);
+                    this.animFrames = 1;
+                }
+                this.animated = this.animFrames > 1; // update animated flag based on amount of frames
+            } else if (n.equals("animation_time")) { // animation time
+                try {
+                    this.frameTime = Float.parseFloat(c.getValue()); // try to convert to a float
+                } catch (Exception e) { // log if unsuccessful
+                    Utils.log(Utils.getImproperFormatErrorLine("TileInfo",
+                            "animation frame time",
+                            "must be a proper floating pointer number greater than 0", true),
+                            "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
+                            false);
+                }
+                if (this.frameTime <= 0f) { // if the frame time is invalid, log and ignore
+                    Utils.log(Utils.getImproperFormatErrorLine("TileInfo",
+                            "animation frame time",
+                            "must be a proper floating pointer number greater than 0", true),
+                            "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
+                            false);
+                    this.frameTime = 1f;
+                }
+            } else return false; // return false if unrecognized child
+            return true;
+        }
+    }
+
+    /**
+     * Extends TileInfo by providing additional customization for designing decor in an area's layout
+     */
+    private static class DecorInfo extends TileInfo {
+
+        /**
+         * Members
+         */
+        private int pin; /* defines how the decor pins to nearby objects where the following values are used:
+                            (0) - none, (1) - left, (2) - above, (3) - right, (4) - below */
+
+        /**
+         * Constructs the decor info by compiling the information from a given node. If the value of the root node
+         * starts with the statements 'from' or 'resfrom', the next statement will be assumed to be a different path at
+         * which to find the tile info. This is useful for reusing the same tile info in multiple settings. 'from'
+         * assumes the following path is relative to the Ambulare data folder (in the user's home folder) while
+         * 'resfrom' assumes the following path is relative to the Ambulares's resource path. Note that these kinds of
+         * statements cannot be chained together. A decor info node can have any child that a tile info can have as
+         * well as:
+         *
+         * - pin [optional][default: none]: defines how the object will pin to nearby blocks. The options are as
+         * follows: right, left, above, below, none. If none, the object will be centered exactly at the position it's
+         * character is at in the layout. For any of the other options, it will pin to the nearest block in that
+         * direction. For example, if set to below, the object will be on the ground/floor beneath it
+         *
+         * @param info the node containing the info to create the corresponding tile with
+         */
+        public DecorInfo(Node info) {
+            super(info);
+        }
+
+        /**
+         * Parses an individual child and applies the setting it represents to the decor info
+         * @param c the child to parse
+         * @return whether the child was recognized
+         */
+        @Override
+        protected boolean parseChild(Node c) {
+            if (!super.parseChild(c)) { // first try to parse as a tile info child
+                String n = c.getName(); // get name of the child
+                if (n.equals("pin")) { // pin
+                    String v = c.getValue().toUpperCase(); // get the pin value
+                    if (v.equals("NONE")) this.pin = 0; // none
+                    else if (v.equals("LEFT")) this.pin = 1; // left
+                    else if (v.equals("ABOVE")) this.pin = 2; // above
+                    else if (v.equals("RIGHT")) this.pin = 3; // right
+                    else if (v.equals("BELOW")) this.pin = 4; // below
+                    else Utils.log(Utils.getImproperFormatErrorLine("pin", "DecorInfo",
+                                "pin must be one of the following: none, left, above, right, or below",
+                                true), "gameobject.gameworld.AreaLayoutLoader", "parseChild(c)",
+                                false); // if none of the above, log and ignore
+                } else return false; // if not any of the above, unrecognized
+                return true; // return that it was recognized
+            } else return true; // if tile info recognized it, return true
         }
     }
 }

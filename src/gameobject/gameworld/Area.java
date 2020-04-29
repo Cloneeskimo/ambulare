@@ -1,5 +1,6 @@
 package gameobject.gameworld;
 
+import gameobject.GameObject;
 import graphics.*;
 import utils.Node;
 import utils.Pair;
@@ -53,6 +54,7 @@ public class Area {
      */
     private final Map<Material, List<Pair<Integer>>> blockPositions; // a list of block positions grouped by material
     private final List<AnimatedTexture> ats;                         // a list of animated textures to update
+    private final List<GameObject> decor;                            // a list of decor in the area
     private final boolean[][] blockMap;                              // block map for collision detection with blocks
     private String name = "Unnamed";                                 // the name of the area
 
@@ -60,15 +62,21 @@ public class Area {
      * Constructs the area by compiling the information from a given node. Here are a list of children that a areas node
      * can have:
      * <p>
-     * - key [required]: the key maps characters in the layout to blocks. Each child of the key child should have its
-     * name be a single character that appears in the layout (if there are more than one character, only the first will
-     * be used) and the rest of the child should be formatted as a block info node. See AreaLayoutLoader.BlockInfo's
-     * constructor for more information.
+     * - block_key [required]: this key maps characters in the layout to tile info that describes the corresponding
+     * block. Each child of the block_key child should have its name be a single character that appears in the layout
+     * (if there are more than one character, only the first will be used) and the rest of the child should be formatted
+     * as a tile info node. See AreaLayoutLoader.TileInfo's constructor for more information.
      * <p>
      * - layout [required]: the layout should contain a child for each row, where the value of the row is the set of
-     * characters describing that row. Rows will be read and loaded top-down and left-to-right so that they appear in
-     * the same order as they do in the node-file. If a character is encountered that is not in the key, it will be
-     * ignored. The space character will also be ignored and interpreted as empty
+     * characters describing that row for which corresponding tiles will be searched for in the keys. Rows will be read
+     * and loaded top-down and left-to-right so that they appear in the same order as they do in the node-file. If a
+     * character is encountered that is not in the key, it will be ignored. The space character will also be ignored and
+     * interpreted as empty
+     * <p>
+     * - layout_key [optional][default: no decor]: this kep maps characters in the layout to decor info that describes
+     * the corresponding decor. Each child of the decor_key child should have its name be a single character that
+     * appears in the layout (if there are more than one character, only the first will be used) and the resst of the
+     * child should be formtated as a decor info node. See AreaLayoutLoader.DecorInfo's constructor for more information
      * <p>
      * - name [optional][default: Unnamed]: the name of the area
      * <p>
@@ -80,25 +88,31 @@ public class Area {
      */
     public Area(Node node) {
 
-        // load layout
-        Node keyData = node.getChild("key"); // get key child
-        if (keyData == null) Utils.handleException(new Exception("Area node-file did not produce a key. A key is " +
-                "required"), "gameobject.gameworld.Area", "Area(Node)", true); // if no key child, crash
+        // load blocks
+        Node blockKey = node.getChild("block_key"); // get block key child
+        if (blockKey == null) Utils.handleException(new Exception("Area node-file does not contain a block key. A " +
+                "block key is required"), "gameobject.gameworld.Area", "Area(Node)", true); // if no key child, crash
         Node layoutData = node.getChild("layout");
         if (layoutData == null) Utils.handleException(new Exception("Area node-file did not produce a layout. A " +
                 "layout is required"), "gameobject.gameworld.Area", "Area(Node)", true); // no layout child -> crash
         this.blockPositions = new HashMap<>();
         this.ats = new ArrayList<>();
-        this.blockMap = AreaLayoutLoader.loadLayout(keyData, layoutData, this.blockPositions, this.ats);
+        this.blockMap = AreaLayoutLoader.loadBlocks(blockKey, layoutData, this.blockPositions, this.ats);
+
+        // load decor
+        Node decorKey = node.getChild("decor_key"); // get decor key child
+        // if there is a key for decor, load the decor
+        if (decorKey != null) this.decor = AreaLayoutLoader.loadDecor(decorKey, layoutData, this.ats, this.blockMap);
+        else this.decor = new ArrayList<>(); // if no decor, use an empty list
 
         // load other area properties
         for (Node c : node.getChildren()) { // go through each child and parse the values
             String n = c.getName(); // get name of child
             if (n.equals("name")) { // if thee child is for area name
                 this.name = c.getValue(); // save name
-            } else { // if none of the above
-                if (!n.equals("layout") && !(n.equals("key"))) // if it's not layout or key
-                    Utils.log("Unrecognized child given for area info: " + c + ". Ignoring.",
+            } else { // if none of the above and if not a key or layout,
+                if (!n.equals("layout") && !(n.equals("block_key")) && !(n.equals("decor_key")))
+                    Utils.log("Unrecognized child given for area info:\n" + c + "Ignoring.",
                             "gameobject.gameworld.Area", "Area(Node)", false); // log unused child
             }
         }
@@ -110,7 +124,8 @@ public class Area {
      * @param interval the amount of time to account for
      */
     public void update(float interval) {
-        for (AnimatedTexture at : this.ats) at.update(interval);
+        for (AnimatedTexture at : this.ats) at.update(interval); // update animated texturese
+        for (GameObject o : this.decor) o.update(interval); // update decor
     }
 
     /**
@@ -120,6 +135,7 @@ public class Area {
      */
     public void render(ShaderProgram sp) {
         renderBlocks(sp, this.blockPositions); // render the blocks
+        for (GameObject o : this.decor) o.render(sp); // render the decor
     }
 
     /**
@@ -140,7 +156,8 @@ public class Area {
      * Cleans up the area
      */
     public void cleanup() {
-        for (AnimatedTexture at : this.ats) at.cleanup();
+        for (AnimatedTexture at : this.ats) at.cleanup(); // cleanup animated textures
+        for (GameObject o : this.decor) o.cleanup(); // cleanup decor
     }
 
     /**

@@ -1,4 +1,4 @@
-block info:
+block:
 {
     # specify the texture path for dirt block
     texture_path: /textures/blocks/dirt/dirt.png
