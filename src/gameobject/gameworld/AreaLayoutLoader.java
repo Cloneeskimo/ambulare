@@ -186,7 +186,8 @@ public class AreaLayoutLoader {
                     // create game object with the material
                     GameObject go = new GameObject(Model.getStdGridRect(1, 1), m);
                     go.setScale(m.getTexture().getWidth() / 32f, m.getTexture().getHeight() / 32f);
-                    // move the game object to the correct position
+
+                    // pin the game object
                     Pair<Integer> fbid = di.pin == 0 ? new Pair<>(x, y) : lastFreeBlockInDirection(blockMap, x, y,
                             di.pin == 1 ? -1 : (di.pin == 3 ? 1 : 0),
                             di.pin == 2 ? 1 : (di.pin == 4 ? -1 : 0)
@@ -204,6 +205,16 @@ public class AreaLayoutLoader {
                             break;
                         case 4: // below
                             pos.y += (go.getHeight() / 2) - 0.5f;
+                    }
+
+                    // apply offset and set final position
+                    pos.x += di.xOffset; // apply horizontal offset
+                    pos.y += di.yOffset; // apply vertical offset
+                    if (di.xRandInterval != 0f) { // apply random horizontal offset
+                        pos.x += (float)(Math.random() * 2 * di.xRandInterval) - di.xRandInterval;
+                    }
+                    if (di.yRandInterval != 0f) { // apply random vertical offset
+                        pos.y += (float)(Math.random() * 2 * di.yRandInterval) - di.yRandInterval;
                     }
                     go.setPos(pos); // set the updated position for the decor
                     decor.add(go); // add to the decor lis
@@ -412,7 +423,7 @@ public class AreaLayoutLoader {
             if (n.equals("color")) { // color
                 float[] color = Utils.strToColor(c.getValue()); // try to convert to a float array
                 if (color == null) // log if unsuccessful
-                    Utils.log(Utils.getImproperFormatErrorLine("TileInfo", "color",
+                    Utils.log(Utils.getImproperFormatErrorLine("color", "TileInfo",
                             "must be four valid floating point numbers separated by spaces",
                             true), "gameobject.gameworld.AreaLayoutLoader",
                             "parseChild(Node)", false);
@@ -425,7 +436,7 @@ public class AreaLayoutLoader {
                 try {
                     this.bm = Material.BlendMode.valueOf(c.getValue().toUpperCase());
                 } catch (Exception e) { // log if unsuccessful
-                    Utils.log(Utils.getImproperFormatErrorLine("TileInfo", "blend mode",
+                    Utils.log(Utils.getImproperFormatErrorLine("blend mode", "TileInfo",
                             "must be either: none, multiplicative, or averaged", true),
                             "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
                             false);
@@ -434,14 +445,14 @@ public class AreaLayoutLoader {
                 try {
                     this.animFrames = Integer.parseInt(c.getValue()); // try to convert to integer
                 } catch (Exception e) { // log if unsuccessful
-                    Utils.log(Utils.getImproperFormatErrorLine("TileInfo",
-                            "animation frame count", "must be a proper integer greater than 0",
+                    Utils.log(Utils.getImproperFormatErrorLine("animation frame count",
+                            "TileInfo", "must be a proper integer greater than 0",
                             true), "gameobject.gameworld.AreaLayoutLoader",
                             "parseChild(Node)", false);
                 }
                 if (this.animFrames < 1) { // if the amount of frames is invalid, log and ignore
-                    Utils.log(Utils.getImproperFormatErrorLine("TileInfo",
-                            "animation frame count", "must be a proper integer greater than 0",
+                    Utils.log(Utils.getImproperFormatErrorLine("animation frame count",
+                            "TileInfo", "must be a proper integer greater than 0",
                             true), "gameobject.gameworld.AreaLayoutLoader",
                             "parseChild(Node)", false);
                     this.animFrames = 1;
@@ -451,15 +462,15 @@ public class AreaLayoutLoader {
                 try {
                     this.frameTime = Float.parseFloat(c.getValue()); // try to convert to a float
                 } catch (Exception e) { // log if unsuccessful
-                    Utils.log(Utils.getImproperFormatErrorLine("TileInfo",
-                            "animation frame time",
+                    Utils.log(Utils.getImproperFormatErrorLine("animation frame time",
+                            "TileInfo",
                             "must be a proper floating pointer number greater than 0", true),
                             "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
                             false);
                 }
                 if (this.frameTime <= 0f) { // if the frame time is invalid, log and ignore
-                    Utils.log(Utils.getImproperFormatErrorLine("TileInfo",
-                            "animation frame time",
+                    Utils.log(Utils.getImproperFormatErrorLine("animation frame time",
+                            "TileInfo",
                             "must be a proper floating pointer number greater than 0", true),
                             "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
                             false);
@@ -478,8 +489,11 @@ public class AreaLayoutLoader {
         /**
          * Members
          */
-        private int pin; /* defines how the decor pins to nearby objects where the following values are used:
-                            (0) - none, (1) - left, (2) - above, (3) - right, (4) - below */
+        private int pin;                            /* defines how the decor pins to nearby objects where the following
+                                                       values are used: (0) - none, (1) - left, (2) - above,
+                                                       (3) - right, (4) - below */
+        private float xOffset, yOffset;             // offset values for placement
+        private float xRandInterval, yRandInterval; // intervals for random additional offset values for placement
 
         /**
          * Constructs the decor info by compiling the information from a given node. If the value of the root node
@@ -494,6 +508,23 @@ public class AreaLayoutLoader {
          * follows: right, left, above, below, none. If none, the object will be centered exactly at the position it's
          * character is at in the layout. For any of the other options, it will pin to the nearest block in that
          * direction. For example, if set to below, the object will be on the ground/floor beneath it
+         *
+         * - x_offset [optional][default: 0f]: defines the horizontal offset to use when placing the object (in amount
+         * of blocks). Positive values correspond to moving the object to the right while negative values correspond to
+         * moving the object to the left. For example, an xoffset of -0.33f will move the decor 1/3 of a block to the
+         * left
+         *
+         * - y_offset [optional][default: 0f]: defines the vertical offset to use when placing the object (in amount of
+         * blocks). Positive values correspond to moving the object up while negative values correspond to moving the
+         * object down. For example, a yoffset of 1.4f will move the decor 1.4 blocks upwards
+         *
+         * - x_random_interval [optional][default: 0f]: defines the horizontal interval from which a random offset value
+         * will be chosen and applied in addition to x_offset. For example, an x_random_interval of 0.5f would generate
+         * a random offset between -0.5f and 0.5f to apply on top of x_offset. Sign does not matter here
+         *
+         * - y_random_interval [optional][default: 0f]: defines the vertical interval from which a random offset value
+         * will be chosen and applied in addition to y_offset. For example, a y_random_inteval of -0.25f would generate
+         * a random offset between -0.25f and 0.25f to apply on top of y_offset. Sign does not matter here
          *
          * @param info the node containing the info to create the corresponding tile with
          */
@@ -521,7 +552,44 @@ public class AreaLayoutLoader {
                                 "pin must be one of the following: none, left, above, right, or below",
                                 true), "gameobject.gameworld.AreaLayoutLoader", "parseChild(c)",
                                 false); // if none of the above, log and ignore
-                } else return false; // if not any of the above, unrecognized
+                } else if (n.equals("x_offset")) { // horizontal offset
+                    try {
+                        this.xOffset = Float.parseFloat(c.getValue()); // try to convert to a float
+                    } catch (Exception e) { // log if unsuccessful
+                        Utils.log(Utils.getImproperFormatErrorLine("x_offset","DecorInfo",
+                                "must be a proper floating pointer number", true),
+                                "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
+                                false);
+                    }
+                } else if (n.equals("y_offset")) { // vertical offset
+                    try {
+                        this.yOffset = Float.parseFloat(c.getValue()); // try to convert to a float
+                    } catch (Exception e) { // log if unsuccessful
+                        Utils.log(Utils.getImproperFormatErrorLine("y_offset","DecorInfo",
+                                "must be a proper floating pointer number", true),
+                                "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
+                                false);
+                    }
+                } else if (n.equals("x_random_interval")) { // random horizontal offset
+                    try {
+                        this.xRandInterval = Math.abs(Float.parseFloat(c.getValue())); // try to convert to a float
+                    } catch (Exception e) { // log if unsuccessful
+                        Utils.log(Utils.getImproperFormatErrorLine("x_random_interval","DecorInfo",
+                                "must be a proper floating pointer number", true),
+                                "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
+                                false);
+                    }
+                } else if (n.equals("y_random_interval")) { // random vertical offset
+                    try {
+                        this.yRandInterval = Math.abs(Float.parseFloat(c.getValue())); // try to convert to a float
+                    } catch (Exception e) { // log if unsuccessful
+                        Utils.log(Utils.getImproperFormatErrorLine("y_random_interval","DecorInfo",
+                                "must be a proper floating pointer number", true),
+                                "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
+                                false);
+                    }
+                }
+                else return false; // if not any of the above, unrecognized
                 return true; // return that it was recognized
             } else return true; // if tile info recognized it, return true
         }

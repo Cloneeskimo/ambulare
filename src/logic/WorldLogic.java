@@ -41,9 +41,10 @@ public class WorldLogic extends GameLogic {
                         new MSAT.MSATState(1, 1f),
                         new MSAT.MSATState(1, 1f),
                         new MSAT.MSATState(1, 1f),
-                        new MSAT.MSATState(1, 1f)
+                        new MSAT.MSATState(1, 1f),
+                        new MSAT.MSATState(5, 0.05f),
+                        new MSAT.MSATState(5, 0.05f)
                 })));
-        player.setScale(0.75f, 0.75f);
         player.setBoundingWidth(0.95f);
         player.setBoundingHeight(0.95f);
         player.setPos(Transformation.getCenterOfCell(new Pair<>(3, 5))); // move to grid cell 3, 5
@@ -152,14 +153,15 @@ public class WorldLogic extends GameLogic {
         if (((TextObject) this.roc.getStaticGameObject(2)).setText("(" + String.format("%.2f", pos.x) +
                 ", " + String.format("%.2f", pos.y) + ")")) // change player pos text
             this.roc.ensurePlacement(2); // update placement if changed
-        player.setVX(0); // reset player velocity
-        if (window.isKeyPressed(GLFW_KEY_D)) {
-            player.incrementVX(4); // rightwards movement
-            player.setFacing(true);
-        }
-        if (window.isKeyPressed(GLFW_KEY_A)) {
-            player.incrementVX(-4); // leftwards movement
-            player.setFacing(false);
+        int vx = 0;
+        if (window.isKeyPressed(GLFW_KEY_D)) vx += 4;
+        if (window.isKeyPressed(GLFW_KEY_A)) vx -= 4;
+        player.setVX(vx);
+        if (vx == 0) {
+            player.setIsMoving(false);
+        } else {
+            player.setIsMoving(true);
+            player.setFacing(vx > 0);
         }
     }
 }

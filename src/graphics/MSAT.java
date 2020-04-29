@@ -74,7 +74,7 @@ public class MSAT extends AnimatedTexture {
      */
     public void setState(int state) {
         // re-calculate frame time left for new state
-        this.frameTimeLeft += (-this.states[this.state].frameTime + this.states[state].frameTime);
+        this.frameTimeLeft = this.states[state].frameTime;
         this.state = state; // update state
         this.setAppropriateFrame(); // calculate overall frame
     }

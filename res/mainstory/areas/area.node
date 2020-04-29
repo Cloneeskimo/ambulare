@@ -22,6 +22,7 @@ area:
             texture_path: /textures/decor/foliage/weeds.png
             texture_path: /textures/decor/foliage/weeds2.png
             pin: below
+            x_random_interval: 0.3f
         }
 
         # dead tree
@@ -29,6 +30,7 @@ area:
         {
             texture_path: /textures/decor/foliage/dead_tree.png
             pin: below
+            x_random_interval: 0.3f
         }
     }
 
