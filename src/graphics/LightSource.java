@@ -18,8 +18,9 @@ public class LightSource {
 
     /**
      * Constructs the light source with a custom glow, reach, and intensity (see members)
-     * @param glow the glow of the light source
-     * @param reach the reach of the light source
+     *
+     * @param glow      the glow of the light source
+     * @param reach     the reach of the light source
      * @param intensity the intensity of the light source
      */
     public LightSource(float[] glow, float reach, float intensity) {
@@ -32,7 +33,7 @@ public class LightSource {
      * Constructs the light source with the default glow, reach, and intensity (see members)
      */
     public LightSource() {
-        this(new float[] { 1.3f, 1.3f, 1.0f, 1.0f }, 5f, 1.3f);
+        this(new float[]{1.3f, 1.3f, 1.0f, 1.0f}, 5f, 1.3f);
     }
 
     /**

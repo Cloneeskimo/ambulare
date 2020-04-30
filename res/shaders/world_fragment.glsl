@@ -3,7 +3,7 @@
 #version 330
 
 // constants
-const int MAX_LIGHTS = 5; // the maximum amount of lights the shader will accept
+const int MAX_LIGHTS = 32; // the maximum amount of lights the shader will accept
 
 // a struct that describe the properties of a light that can be used in shading calculationss
 struct Light {

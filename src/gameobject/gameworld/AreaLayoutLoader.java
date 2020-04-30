@@ -528,6 +528,7 @@ public class AreaLayoutLoader {
          * - y_random_interval [optional][default: 0f]: defines the vertical interval from which a random offset value
          * will be chosen and applied in addition to y_offset. For example, a y_random_inteval of -0.25f would generate
          * a random offset between -0.25f and 0.25f to apply on top of y_offset. Sign does not matter here
+         * <p>
          *
          * @param info the node containing the info to create the corresponding tile with
          */

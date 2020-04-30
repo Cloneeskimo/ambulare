@@ -74,7 +74,7 @@ public class Material {
     }
 
     /**
-     * Sets the necessary uniforms in the given shader program to render using this material
+     * Sets the necessary uniforms in the given shader program to render using the material
      *
      * @param sp the shader program whose uniforms are to be sed
      */

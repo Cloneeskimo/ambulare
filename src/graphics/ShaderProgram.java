@@ -8,17 +8,28 @@ import java.util.Map;
 import static org.lwjgl.opengl.GL20.*;
 
 /**
- * Represents a GLSL shader program
+ * Represents a GLSL shader program. All uniforms must be registered and set before rendering. The shader program class
+ * provides essy ways to register and set an array of lights uniform of length MAX_LIGHTS and of name LIGHT_ARRAY_NAME
+ * for easy light integration
  */
 public class ShaderProgram {
 
     /**
+     * Static Data
+     */
+    private static final int MAX_LIGHTS = 32;                /* the largest number of lights that can be rendered per
+                                                                binding of one shader program*/
+    private static final String LIGHT_ARRAY_NAME = "lights"; /* the name to assume light array uniforms to be in shader
+                                                                program source codee*/
+
+    /**
      * Members
      */
-    private final int progID;                    // program id of the shader program
     private final Map<String, Integer> uniforms; // map of uniform names to locations
+    private final int progID;                    // program id of the shader program
     private int vShaderID;                       // program id of the vertex shader
     private int fShaderID;                       // program id of the fragment shader
+    private int lightNo;                         // how many light uniforms have been set since the last unbind/bind
 
     /**
      * Constructor
@@ -98,15 +109,16 @@ public class ShaderProgram {
     }
 
     /**
-     * Registers a light uniform with the given name by finding its position and saving it
-     * @param name the name of the light uniform to find
+     * Registers a light array uniform with the length MAX_LENGTH and with the name LIGHT_ARRAY_NAME
      */
-    public void registerLightUniform(String name) {
-        this.registerUniform(name + ".glow"); // register the light's glow
-        this.registerUniform(name + ".reach"); // register the light's reach
-        this.registerUniform(name + ".intensity"); // register the light's intensity
-        this.registerUniform(name + ".x"); // register the light's x position
-        this.registerUniform(name + ".y"); // register the light's y position
+    public void registerLightArrayUniform() {
+        for (int i = 0; i < MAX_LIGHTS; i++) {
+            this.registerUniform(LIGHT_ARRAY_NAME + "[" + i + "].glow");
+            this.registerUniform(LIGHT_ARRAY_NAME + "[" + i + "].reach");
+            this.registerUniform(LIGHT_ARRAY_NAME + "[" + i + "].intensity");
+            this.registerUniform(LIGHT_ARRAY_NAME + "[" + i + "].x");
+            this.registerUniform(LIGHT_ARRAY_NAME + "[" + i + "].y");
+        }
     }
 
     /**
@@ -156,14 +168,21 @@ public class ShaderProgram {
     }
 
     /**
-     * Sets the light uniform with the given name to the light corresponding to the given light source and position
-     * @param name the name of the uniform to set
+     * Inserts the light corresponding to the given light source and position into the shader program's lights array
+     * uniform. This will only accept up to MAX_LIGHTS amount of lights per binding of the shader program. This assumes
+     * that the light uniform is named LIGHT_ARRAY_NAME in the source code
+     *
      * @param light the light source whose light properties to use
-     * @param x the x position of the light
-     * @param y the y position of the light
+     * @param x     the x position of the light
+     * @param y     the y position of the light
      */
-    public void setLightUniform(String name, LightSource light, float x, float y) {
+    public void putInLightArrayUniform(LightSource light, float x, float y) {
+        if (this.lightNo >= MAX_LIGHTS) // if too many lights are being rendered, throw an exception
+            Utils.handleException(new Exception("Maximum amount of renderable lights exceeded: " + MAX_LIGHTS),
+                    "graphics.ShaderProgram", "setLightUniform(String, LightSource, float, float)", true);
         try {
+            String name = "lights[" + this.lightNo + "]"; // get the proper name for the light in the lights array
+            this.lightNo++; // iterate the lights array iterator
             float[] glow = light.getGlow(); // get the light's glow
             glUniform3f(this.uniforms.get(name + ".glow"), glow[0], glow[1], glow[2]); // set the light's glow
             glUniform1f(this.uniforms.get(name + ".reach"), light.getReach()); // set the light's reach
@@ -184,10 +203,11 @@ public class ShaderProgram {
     }
 
     /**
-     * Unbinds the shader program
+     * Unbinds the shader program and resets the lights array iterator
      */
     public void unbind() {
-        glUseProgram(0);
+        glUseProgram(0); // unbind program
+        this.lightNo = 0; // reset lights array iterator
     }
 
     /**

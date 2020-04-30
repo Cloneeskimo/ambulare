@@ -86,6 +86,8 @@ public class GameObject {
         if (!this.visible) return; // do not render if invisible
         sp.setUniform("x", this.x); // set x
         sp.setUniform("y", this.y); // set y
+        // update material's light's position if it is a light source material
+        if (this.material instanceof LightSourceMaterial) ((LightSourceMaterial) this.material).setPos(this.x, this.y);
         this.material.setUniforms(sp); // set material uniforms
         Texture t = this.material.getTexture(); // get material's texture
         // if the texture is animated, tell the model with texture coordinates to use

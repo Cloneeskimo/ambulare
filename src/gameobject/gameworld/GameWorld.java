@@ -69,7 +69,7 @@ public class GameWorld {
         sp.registerUniform("camY"); // register camera y uniform
         sp.registerUniform("camZoom"); // register camera zoom uniform
         sp.registerUniform("sunPresence"); // register sun presence uniform
-        for (int i = 0; i < MAX_LIGHTS; i++) sp.registerLightUniform("lights[" + i + "]"); // register lights
+        sp.registerLightArrayUniform(); // register light array uniform
     }
 
     /**
