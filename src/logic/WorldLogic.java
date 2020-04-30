@@ -37,14 +37,14 @@ public class WorldLogic extends GameLogic {
 
         // create and add player
         player = new Entity(Model.getStdGridRect(1, 2),
-                new Material(new MSAT("/textures/entity/player.png", true, new MSAT.MSATState[]{
+                new LightSourceMaterial(new MSAT("/textures/entity/player.png", true, new MSAT.MSATState[]{
                         new MSAT.MSATState(1, 1f),
                         new MSAT.MSATState(1, 1f),
                         new MSAT.MSATState(1, 1f),
                         new MSAT.MSATState(1, 1f),
                         new MSAT.MSATState(5, 0.05f),
                         new MSAT.MSATState(5, 0.05f)
-                })));
+                }), new LightSource(new float[] {1f, 1f, 1f, 1f}, 5f, 1.5f)));
         player.setBoundingWidth(0.95f);
         player.setBoundingHeight(0.95f);
         player.setPos(Transformation.getCenterOfCell(new Pair<>(3, 5))); // move to grid cell 3, 5

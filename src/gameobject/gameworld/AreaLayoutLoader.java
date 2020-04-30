@@ -1,10 +1,7 @@
 package gameobject.gameworld;
 
 import gameobject.GameObject;
-import graphics.AnimatedTexture;
-import graphics.Material;
-import graphics.Model;
-import graphics.Texture;
+import graphics.*;
 import utils.Node;
 import utils.Pair;
 import utils.Transformation;
@@ -177,9 +174,21 @@ public class AreaLayoutLoader {
                                         true); // create animated texture
                                 ats.add((AnimatedTexture) t); // add to list of animated textures
                             } else t = new Texture(texPath, di.texResPath); // if not, create regular texture
-                            m = new Material(t, di.color, di.bm); // create material with the correct texture
+                            // if the decor should emit light
+                            if (di.light != null) {
+                                m = new LightSourceMaterial(t, di.color, di.bm, di.light); // create material with light
+                                ((LightSourceMaterial)m).setOffset(di.lightXOffset, di.lightYOffset); // add offset
+                            }
+                            else m = new Material(t, di.color, di.bm); // otherwise create as a normal material
                             // create new list for blocks with the corresponding material
-                        } else m = new Material(di.color); // create material with just color if not textured
+                        } else { // if no texture
+                            // if the decor should emit light
+                            if (di.light != null) {
+                                m = new LightSourceMaterial(di.color, di.light); // create material with light
+                                ((LightSourceMaterial)m).setOffset(di.lightXOffset, di.lightYOffset); // add offset
+                            }
+                            else m = new Material(di.color); // other create as a normal material
+                        }
                         forThatDecorInfo.put(texPath, m); // put it in the map from textures -> material
                     }
 
@@ -342,7 +351,7 @@ public class AreaLayoutLoader {
          * which to find the tile info. This is useful for reusing the same tile info in multiple settings. 'from'
          * assumes the following path is relative to the Ambulare data folder (in the user's home folder) while
          * 'resfrom' assumes the following path is relative to the Ambulares's resource path. Note that these kinds of
-         * statements cannot be chained together. Here are a list of children that a tile info node can have:
+         * statements cannot be chained together. A tile info node can have the following children:
          * <p>
          * - color [optional][default: 1f 1f 1f 1f]: specifies what color to assign to the tile
          * <p>
@@ -374,7 +383,7 @@ public class AreaLayoutLoader {
          * tile is animated
          * <p>
          * Note that, if any of the info above is improperly formatted, a message saying as much will be logged. As
-         * such, when designing tile to be loaded into the game, the logs should be checked often to make sure the
+         * such, when designing tiles to be loaded into the game, the logs should be checked often to make sure the
          * loading process is unfolding correctly
          *
          * @param info the node containing the info to create the corresponding tile with
@@ -400,7 +409,7 @@ public class AreaLayoutLoader {
 
             // parse node
             try { // surround in try/catch so as to intercept and log any issues
-                if (!info.hasChildren()) return; // if no children, just return with default propertiess
+                if (!info.hasChildren()) return; // if no children, just return with default properties
                 for (Node c : info.getChildren()) { // go through each child
                     if (!parseChild(c)) { // parse it
                         Utils.log("Unrecognized child given for tile info:\n" + c + "Ignoring.",
@@ -492,11 +501,14 @@ public class AreaLayoutLoader {
         /**
          * Members
          */
+        private float xOffset, yOffset;             // offset values for placement
+        private float xRandInterval, yRandInterval; // intervals for random additional offset values for placement
         private int pin;                            /* defines how the decor pins to nearby objects where the following
                                                        values are used: (0) - none, (1) - left, (2) - above,
                                                        (3) - right, (4) - below */
-        private float xOffset, yOffset;             // offset values for placement
-        private float xRandInterval, yRandInterval; // intervals for random additional offset values for placement
+        private LightSource light;                  // a light source if the decor should emit light
+        private float lightXOffset;                 // x offset of the light if the decor should emit light
+        private float lightYOffset;                 // y offset of the light if the decor should emit light
 
         /**
          * Constructs the decor info by compiling the information from a given node. If the value of the root node
@@ -529,6 +541,20 @@ public class AreaLayoutLoader {
          * will be chosen and applied in addition to y_offset. For example, a y_random_inteval of -0.25f would generate
          * a random offset between -0.25f and 0.25f to apply on top of y_offset. Sign does not matter here
          * <p>
+         * - light_source [optional][default: none]: defines a light source that should come from the decor. This node
+         * should have a child formatted as a light source node
+         * <p>
+         * - x_light_offset [optional][default: 0f]: defines the horizontal offset, in blocks, of the center of the
+         * light source if the decor has one. For example, -1f will place the center of the light one block to the left
+         * of the center of the decor itself
+         * <p>
+         * - y_light_offset [optional][default: 0f]: defines the vertical offset, in blocks, of the center of the light
+         * source if the decor has one. For example, .6f will place the center of the light 6/10 of a block above the
+         * center of the decor itself
+         * <p>
+         * Note that, if any of the info above is improperly formatted, a message saying as much will be logged. As
+         * such, when designing decor to be loaded into the game, the logs should be checked often to make sure the
+         * loading process is unfolding correctly
          *
          * @param info the node containing the info to create the corresponding tile with
          */
@@ -593,7 +619,26 @@ public class AreaLayoutLoader {
                                 "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
                                 false);
                     }
-                } else return false; // if not any of the above, unrecognized
+                } else if (n.equals("x_light_offset")) { // light x offset
+                    try {
+                        this.lightXOffset = Float.parseFloat(c.getValue()); // try to convert to a float
+                    } catch (Exception e) { // log if unsuccessful
+                        Utils.log(Utils.getImproperFormatErrorLine("x_light_offset", "DecorInfo",
+                                "must be a proper floating pointer number", true),
+                                "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
+                                false);
+                    }
+                } else if (n.equals("y_light_offset")) { // light y offset
+                    try {
+                        this.lightYOffset = Float.parseFloat(c.getValue()); // try to convert to a float
+                    } catch (Exception e) { // log if unsuccessful
+                        Utils.log(Utils.getImproperFormatErrorLine("y_light_offset", "DecorInfo",
+                                "must be a proper floating pointer number", true),
+                                "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
+                                false);
+                    }
+                } else if (n.equals("light_source")) this.light = new LightSource(c); // light source
+                else return false; // if not any of the above, unrecognized
                 return true; // return that it was recognized
             } else return true; // if tile info recognized it, return true
         }

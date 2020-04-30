@@ -57,11 +57,9 @@ public class Area {
     private final List<GameObject> decor;                            // a list of decor in the area
     private final boolean[][] blockMap;                              // block map for collision detection with blocks
     private String name = "Unnamed";                                 // the name of the area
-    private LightSource[] ls;                                        // the set of light sources
 
     /**
-     * Constructs the area by compiling the information from a given node. Here are a list of children that a areas node
-     * can have:
+     * Constructs the area by compiling the information from a given node. An area node can have the following children:
      * <p>
      * - block_key [required]: this key maps characters in the layout to tile info that describes the corresponding
      * block. Each child of the block_key child should have its name be a single character that appears in the layout
@@ -88,13 +86,6 @@ public class Area {
      * @param node the node to create the area from
      */
     public Area(Node node) {
-
-        // create some lights for demonstration
-        this.ls = new LightSource[]{
-                new LightSource(new float[]{1.3f, 1.3f, 1.0f, 1.0f}, 5f, 1f),
-                new LightSource(new float[]{1f, 3f, 1f, 1f}, 6f, 1f),
-                new LightSource(new float[]{2.4f, 2.4f, 2.4f, 1f}, 4f, 1f)
-        };
 
         // load blocks
         Node blockKey = node.getChild("block_key"); // get block key child
@@ -142,9 +133,6 @@ public class Area {
      * @param sp the shader program to use for rendering
      */
     public void render(ShaderProgram sp) {
-        sp.putInLightArrayUniform(this.ls[0], 4f, 4f);
-        sp.putInLightArrayUniform(this.ls[1], 18f, 3f);
-        sp.putInLightArrayUniform(this.ls[2], 32f, 3f);
         renderBlocks(sp, this.blockPositions); // render the blocks
         for (GameObject o : this.decor) o.render(sp); // render the decor
     }
