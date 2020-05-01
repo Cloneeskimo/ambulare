@@ -12,14 +12,26 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/*
+ * AreaLayoutLoader.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/27/2020
+ */
+
 /**
- * Utility class used for loading area layout
+ * This utility class is used for loading various layout-related things for areas. See the area class for more info on
+ * what exactly areas hold and how to format area node-files. There is a lot to area layout loading, hence the
+ * offloading to static methods in this class instead of clogging the area class with the code
  */
 public class AreaLayoutLoader {
 
     /**
-     * All possible types of modularization and the corresponding image file name extension (except for NONE which
-     * represents no extension)
+     * Modularization is a word that doesn't really exist but I think it sounds cool so it's what I use for the process
+     * by which edges and corners are detected and the textures of the corresponding objects are updated accordingly.
+     * This enum defines the different types of modularization and thus the different textures that modularizable
+     * objects can provide. Most of them are self-explanatory. Here, insets are defined as blocks that are covered
+     * in all eight directions (including diagonals) except for a single diagonal direction
      */
     private enum ModNameExt {
         topleft, top, topright, right, bottomright, bottom, bottomleft, left, column, row, columntop, columnbottom,
@@ -27,7 +39,7 @@ public class AreaLayoutLoader {
     }
 
     /**
-     * Loads blocks using the given block key node and area layout node
+     * Loads blocks of an area's layout using the given block key node and layout node
      *
      * @param keyData        the block_key child node from the area node-file
      * @param layoutData     the layout child node from the area node-file
@@ -37,40 +49,40 @@ public class AreaLayoutLoader {
      */
     public static boolean[][] loadBlocks(Node keyData, Node layoutData,
                                          Map<Material, List<Pair<Integer>>> blockPositions, List<AnimatedTexture> ats) {
-        Map<Character, TileInfo> key = parseKeyData(keyData, false); // parse key
+        Map<Character, TileInfo> key = parseKeyData(keyData, false); // parse block key first
 
         // create empty block map with appropriate size
         List<Node> rows = layoutData.getChildren(); // get all rows
-        int w = 0;
-        for (Node node : rows) { // loop through each row and keep track of the widest one
-            if (node.getValue().length() > w) w = node.getValue().length();
-        }
+        int w = 0; // keep track of the width the block map should be
+        // loop through each row and record the widest one
+        for (Node node : rows) if (node.getValue().length() > w) w = node.getValue().length();
         boolean[][] blockMap = new boolean[w][rows.size()]; // create the correctly sized block map
 
         // populate block map based on where blocks are
         for (int y = 0; y < rows.size(); y++) { // for each row
             String row = rows.get(rows.size() - 1 - y).getValue(); // get the row
             for (int x = 0; x < row.length(); x++) { // for each character in the row
-                // if the block info for that character isn't null, then there is a block there
+                // if the block info for that character isn't null, then there is a block there, so the update block map
                 blockMap[x][y] = (key.get(row.charAt(x))) != null;
             }
         }
-        // create materials and block positions
-        /* maps tile info to a mapping of texture to a mapping of modularization piece to materials. This is used to
-           ensure the least possible amount of material creation */
-        Map<TileInfo, Map<String, Map<ModNameExt, Material>>> materialMap = new HashMap<>();
+
+        // create materials and add the corresponding block positions to the block positions map
+        /* this maps tile info to a mapping of texture to a mapping of modularization piece to materials. This is to
+           ensure the least possible amount of material creation. This is confusing what it basically allows the code to
+           do is ask: For this tile info, this texture, and this modularization, what material should I use? */
+        Map<TileInfo, Map<String, Map<ModNameExt, Material>>> materialMap = new HashMap<>(); // create empty map for now
         for (int y = 0; y < rows.size(); y++) { // go through each row
             String row = rows.get(rows.size() - 1 - y).getValue(); // get the row
             for (int x = 0; x < row.length(); x++) { // loop through each character in the row
                 TileInfo bi = key.get(row.charAt(x)); // get the tile info for that character
-                if (bi != null) { // if the tile info isn't null
+                if (bi != null) { // if the tile info isn't null (there is a block there)
 
-                    /* get the texture -> modularization piece -> material map for that tile info and create it if it
-                       doesn't exist */
+                    // see if the map has materials for that tile info yet. If not, create an empty map for it
                     Map<String, Map<ModNameExt, Material>> forThatTileInfo =
                             materialMap.computeIfAbsent(bi, k -> new HashMap<>());
 
-                    // get the texture (or lack thereof)
+                    // get the texture to use
                     String texPath = "null"; // if no texture, use "null" string
                     List<String> possibleTextures = bi.texPaths; // get the possible textures
                     if (possibleTextures.size() > 0) { // if there is at least one texture
@@ -80,7 +92,7 @@ public class AreaLayoutLoader {
                         } else texPath = possibleTextures.get(0); // otherwise choose the only one
                     }
 
-                    // get the mod->material map for that texture and create it if it doesn't exist
+                    // see if the map has materials for that texture yet. If not, create an empty map for it
                     Map<ModNameExt, Material> forThatTexture =
                             forThatTileInfo.computeIfAbsent(texPath, k -> new HashMap<>());
 
@@ -88,10 +100,11 @@ public class AreaLayoutLoader {
                     ModNameExt[] mods = texPath.equals("null") ? new ModNameExt[]{ModNameExt.NONE} :
                             getPreferredModularization(x, y, blockMap); // get preferred modularization
                     boolean materialChosen = false; // no material chosen yet
-                    // while no material has been chosen and there are still different kinds of modularization to try
+                    /* getPreferredModularization may return multiple possible types of modularization so here we loop
+                       them all and take the first one that has a corresponding texture */
                     for (int i = 0; i < mods.length && !materialChosen; i++) {
 
-                        // get the material for the modularization
+                        // see if a material already exists for that kind of modularization
                         Material m = forThatTexture.get(mods[i]);
                         if (m == null) { // if it doesn't yet exist, need to create it
                             if (!texPath.equals("null")) { // if textured
@@ -100,28 +113,28 @@ public class AreaLayoutLoader {
                                 // compile the supposed path to the image file for that modularization
                                 String path = fileInfo[0] + fileInfo[1] + (mods[i].equals(ModNameExt.NONE)
                                         ? "" : "_" + mods[i].toString()) + fileInfo[2];
-                                if (Utils.fileExists(path, bi.texResPath)) { // if the file at that path exists
-                                    Texture t; // start at null
+                                if (Utils.fileExists(path, bi.texResPath)) { // if the texture for this mod. exists
+                                    Texture t; // create the new texture
                                     if (bi.animated) { // if animated
                                         t = new AnimatedTexture(path, bi.texResPath, bi.animFrames, bi.frameTime,
-                                                true); // create animated texture
-                                        ats.add((AnimatedTexture) t); // add to list of animated textures
-                                    } else t = new Texture(path, bi.texResPath); // if not, create regular texture
+                                                true); // initialize as an animated texture
+                                        ats.add((AnimatedTexture) t); // and add to list of animated textures
+                                    } else t = new Texture(path, bi.texResPath); // if not, init as regular texture
                                     m = new Material(t, bi.color, bi.bm); // create material with the correct texture
-                                    forThatTexture.put(mods[i], m); // put it in the map from mod -> material
+                                    forThatTexture.put(mods[i], m); // put it in the map for this modularization
                                     // create new list for blocks with the corresponding material
                                     blockPositions.put(m, new ArrayList<>());
                                 }
                             } else { // if not textured
                                 m = new Material(bi.color); // create material with just color
-                                forThatTexture.put(mods[i], m); // put it in the map from mod -> material
+                                forThatTexture.put(mods[i], m); // put it in the map
                                 // create new list for blocks with the corresponding material
                                 blockPositions.put(m, new ArrayList<>());
                             }
                         }
                         if (m != null) { // if a material now exists for that mod
                             blockPositions.get(m).add(new Pair<>(x, y)); // add the block pos to list for that material
-                            materialChosen = true; // flag that a material has been chosen
+                            materialChosen = true; // flag that a material has been chosen to move onto next block
                         }
                     }
                 }
@@ -131,7 +144,8 @@ public class AreaLayoutLoader {
     }
 
     /**
-     * Loads decor using the given decor key node and area layout node. This should be done after blocks are loaded
+     * Loads decor using the given decor key node and layout node. This should be done after blocks are loaded because
+     * it requires a block map
      *
      * @param keyData    the decor_key child node from the area node-file
      * @param layoutData the layout child node from thee area node-file
@@ -144,14 +158,18 @@ public class AreaLayoutLoader {
         Map<Character, TileInfo> key = parseKeyData(keyData, true); // parse key
         List<GameObject> decor = new ArrayList<>(); // create decor list
         List<Node> rows = layoutData.getChildren(); // get the rows of the layout
-        Map<DecorInfo, Map<String, Material>> materialMap = new HashMap<>(); // initialize material map
+        /* similar to block loading, a mapping from decor info and texture to material is used to minimize the amount of
+           materials needed to represent the decor. This essentially allows the algorithm to ask, 'does a material
+           already exists for this decor info and this texture? If so, use it. If not, create it and then put it in the
+           map to use next time we encounter this decor info and texture' */
+        Map<DecorInfo, Map<String, Material>> materialMap = new HashMap<>(); // initialize map as empty at first
         for (int y = 0; y < rows.size(); y++) { // go through each row
             String row = rows.get(rows.size() - 1 - y).getValue(); // get the row
             for (int x = 0; x < row.length(); x++) { // loop through each character in the row
                 DecorInfo di = (DecorInfo) key.get(row.charAt(x)); // get the decor info for that character
                 if (di != null) { // if there is decor there
 
-                    // get the texture -> material map for that tile info and create it if it doesn't exist
+                    // see if materials exists for that decor info yet. If not, create a new map for them
                     Map<String, Material> forThatDecorInfo = materialMap.computeIfAbsent(di, k -> new HashMap<>());
 
                     // get the texture (or lack thereof)
@@ -164,37 +182,34 @@ public class AreaLayoutLoader {
                         } else texPath = possibleTextures.get(0); // otherwise choose the only one
                     }
 
-                    // get the material for that texture
-                    Material m = forThatDecorInfo.get(texPath);
+                    // get the material
+                    Material m = forThatDecorInfo.get(texPath); // see if a material exists for that texture yet
                     if (m == null) { // if the material doesn't exist yet, need to create it
                         if (!texPath.equals("null")) { // if textured
-                            Texture t; // start at null
+                            Texture t; // create the texture
                             if (di.animated) { // if animated
                                 t = new AnimatedTexture(texPath, di.texResPath, di.animFrames, di.frameTime,
-                                        true); // create animated texture
+                                        true); // initialize as an animated texture
                                 ats.add((AnimatedTexture) t); // add to list of animated textures
-                            } else t = new Texture(texPath, di.texResPath); // if not, create regular texture
-                            // if the decor should emit light
-                            if (di.light != null) {
+                            } else t = new Texture(texPath, di.texResPath); // if not, initialize as a regular texture
+                            if (di.light != null) { // if the decor should emit light
                                 m = new LightSourceMaterial(t, di.color, di.bm, di.light); // create material with light
                                 ((LightSourceMaterial) m).setOffset(di.lightXOffset, di.lightYOffset); // add offset
                             } else m = new Material(t, di.color, di.bm); // otherwise create as a normal material
-                            // create new list for blocks with the corresponding material
-                        } else { // if no texture
-                            // if the decor should emit light
-                            if (di.light != null) {
+                        } else { // if no texture create the material with just color
+                            if (di.light != null) { // if the decor should emit light
                                 m = new LightSourceMaterial(di.color, di.light); // create material with light
                                 ((LightSourceMaterial) m).setOffset(di.lightXOffset, di.lightYOffset); // add offset
-                            } else m = new Material(di.color); // other create as a normal material
+                            } else m = new Material(di.color); // otherwise create as a normal material
                         }
-                        forThatDecorInfo.put(texPath, m); // put it in the map from textures -> material
+                        forThatDecorInfo.put(texPath, m); // put it in the map for that texture/color
                     }
 
-                    // create game object with the material
+                    // create a game object using the material
                     GameObject go = new GameObject(Model.getStdGridRect(1, 1), m);
                     go.setScale(m.getTexture().getWidth() / 32f, m.getTexture().getHeight() / 32f);
 
-                    // pin the game object
+                    // pin the game object according to the deco info's pin options (if there os a pin)
                     Pair<Integer> fbid = di.pin == 0 ? new Pair<>(x, y) : lastFreeBlockInDirection(blockMap, x, y,
                             di.pin == 1 ? -1 : (di.pin == 3 ? 1 : 0),
                             di.pin == 2 ? 1 : (di.pin == 4 ? -1 : 0)
@@ -224,7 +239,7 @@ public class AreaLayoutLoader {
                         pos.y += (float) (Math.random() * 2 * di.yRandInterval) - di.yRandInterval;
                     }
                     go.setPos(pos); // set the updated position for the decor
-                    decor.add(go); // add to the decor lis
+                    decor.add(go); // add to the decor list
                 }
             }
         }
@@ -239,13 +254,15 @@ public class AreaLayoutLoader {
      * @param y        the starting y
      * @param dx       the change in x for the direction
      * @param dy       the change in y for the direction
-     * @return a pair of integers containing the last free position (containing no block) in the given direction. If the
-     * starting position is not free, the starting position will be returned
+     * @return a pair of integers containing the last free position (containing no block) in the given direction. This
+     * will not take into account whether the starting position itself is free
      */
     private static Pair<Integer> lastFreeBlockInDirection(boolean[][] blockMap, int x, int y, int dx, int dy) {
-        while (!blockMap[x + dx][y + dy]) { // while there is no block in the given directory
+        while (!blockMap[x + dx][y + dy]) { // while there is no block in the given direction
+            // keep going in that direction
             x += dx;
-            y += dy; // keep going in that direction
+            y += dy;
+            // if the next move is out of bounds, break from the loop and declare this as the last free block
             if (x + dx < 0 || x + dx >= blockMap.length) break;
             if (y + dy < 0 || y + dy >= blockMap[0].length) break;
         }
@@ -256,30 +273,32 @@ public class AreaLayoutLoader {
      * Parses key data for loading a layout
      *
      * @param keyData the key child node from the area node-file
-     * @param decor   whether the key is for decor (if false, assumes is for blocks)
+     * @param decor   whether the key is for decor (if false, the method assumes the key is for blocks)
      * @return the parsed key, mapping from character in the layout to corresponding tile info
      */
     private static Map<Character, TileInfo> parseKeyData(Node keyData, boolean decor) {
         Map<Character, TileInfo> key = new HashMap<>(); // start as empty hashmap
         // create a tile info for each child and put it in the key
         for (Node c : keyData.getChildren()) key.put(c.getName().charAt(0), decor ? new DecorInfo(c) : new TileInfo(c));
-        return key;
+        return key; // return the compiled key
     }
 
     /**
-     * Given the block map and a position to consider, will calculate preferred kinds of modularization
+     * Given the block map and a position to consider, will calculate a list of kinds of modularization in order of
+     * preference
      *
      * @param x        the x of the grid cell to consider
      * @param y        the y of the grid cell to consider
-     * @param blockMap the block map to use for consideration
-     * @return an array containing kinds of modularization in preferred order
+     * @param blockMap the block map to use for edge/corner/inset detection
+     * @return an array containing kinds of modularization in preferred order. The last one in the list will always be
+     * "NONE" signifying to just use the default texture if none of the predecessors work
      */
     private static ModNameExt[] getPreferredModularization(int x, int y, boolean[][] blockMap) {
         boolean left = x > 0 && (blockMap[x - 1][y]); // determine if a block exists to the left
         boolean right = x < blockMap.length - 1 && (blockMap[x + 1][y]); // determine if a block exists to the right
         boolean below = y > 0 && (blockMap[x][y - 1]); // determine if a block exists below
         boolean above = y < blockMap[0].length - 1 && (blockMap[x][y + 1]); // determine if a block exists above
-        // if surrounded on all four sides, calculate diagonals to for inset modularization
+        // if surrounded on all four sides, calculate diagonals for inset modularization
         if (left && right && below && above) {
             boolean topLeft = blockMap[x - 1][y + 1]; // determine if a block exists above and to the left
             boolean topRight = blockMap[x + 1][y + 1]; // determine if a block exists above and to the right
@@ -323,12 +342,14 @@ public class AreaLayoutLoader {
         if (left) return new ModNameExt[]{ModNameExt.rowrightcap, ModNameExt.row, ModNameExt.NONE};
         // if only surrounded to the right -> prefer a row left cap but settle with a row
         if (right) return new ModNameExt[]{ModNameExt.rowleftcap, ModNameExt.row, ModNameExt.NONE};
+        // if none of the above kinds of modularization fit, just return no modularization
         return new ModNameExt[]{ModNameExt.NONE};
     }
 
     /**
-     * Encapsulates info about a tile as laid out in a node-file. When the corresponding block/decor is created, the
-     * TileInfo is no longer used. Thus, TileInfo is just used for loading tiles
+     * Encapsulates info about a tile as laid out in a node-file. For info on node-files, see utils.Node.java. For info
+     * on how to format a tile info node-file, see tile info's constructor. When the corresponding object is created,
+     * the TileInfo is no longer used. Thus, TileInfo is just used for loading purposes
      */
     private static class TileInfo {
 
@@ -336,10 +357,11 @@ public class AreaLayoutLoader {
          * Members
          */
         public final List<String> texPaths = new ArrayList<>(); // list of texture paths to be randomized over
-        public float[] color = new float[]{1f, 1f, 1f, 1f};  // tile color
-        public Material.BlendMode bm = Material.BlendMode.NONE; // how to blend color and texture in the material
-        public float frameTime = 1f;                            // how long each frame should be if tile is animated
-        public int animFrames = 1;                              // how many frames there are if tile is animated
+        public float[] color = new float[]{1f, 1f, 1f, 1f};     // tile color
+        public Material.BlendMode bm = Material.BlendMode.NONE; /* how to blend color and texture in the material. For
+            info on how colors and textures can be blended, see graphics.Material.java's BlendMode enum */
+        public float frameTime = 1f;                            // how long each frame should last if tile is animated
+        public int animFrames = 1;                              // how many frames there should be if tile is animated
         public boolean texResPath = true;                       // whether the texture paths are resource-relative
         public boolean animated = false;                        // whether the tile is animated
 
@@ -354,7 +376,7 @@ public class AreaLayoutLoader {
          * - color [optional][default: 1f 1f 1f 1f]: specifies what color to assign to the tile
          * <p>
          * - texture_path [optional][default: no texture]: specifies what path to look for textures in. There may be
-         * more than one path listed. If this is the gave, a random texture path from the set of given paths will be
+         * more than one path listed. If this is the case, a random texture path from the set of given paths will be
          * chosen. For automatic corner/edge detection (modularization), other files can be listed in the same directory
          * with the following naming scheme: [original name]_[corner/edge type].[original extension]. For example, if
          * the default texture is named dirt.png but it is in the top left corner of a group of blocks, an image named
@@ -362,17 +384,18 @@ public class AreaLayoutLoader {
          * the default image will be used. Here is the full list of accepted corner/edge type extensions to file names:
          * topleft, top, topright, right, bottomright, bottom, bottomleft, left, column, row, columntop, columnbottom,
          * rowrightcap, rowleftcap, insettopleft, insettopright, insetbottomleft, insetbottomright. Corner/edge
-         * detection (modularization) only occurs when loading blocks (not decor)
+         * detection (modularization) only occurs when loading blocks (not decor). For more information on
+         * modularization, see gameobject.gameworld.AreaLayoutLoader.java's ModNameExt enum
          * <p>
          * - resource_relative [optional][default: true]: specifies whether the given texture path is relative to
          * Ambulare's resource path. If this is false, the given path must be relative to Ambulare's data folder (in
-         * the user's home folder).
+         * the user's home folder)
          * <p>
          * - blend_mode [optional][default: none]: specifies how to blend color and texture. The options are: (1) none -
          * no blending will occur. The tile will appear as its texture if it has one, or its color if there is no
          * texture. (2) multiplicative - the components of the tile color and the components of the texture will be
          * multiplied to create a final color. (3) averaged - the components of the tile color and the components of
-         * the texture will be averaged to create a final color.
+         * the texture will be averaged to create a final color
          * <p>
          * - animation_frames [optional][default: 1]: specifies how many animation frames are in the texture. Frames
          * should be placed in horizontal order and should be equal widths. If 1 (by default) no animation will occur
@@ -384,7 +407,7 @@ public class AreaLayoutLoader {
          * such, when designing tiles to be loaded into the game, the logs should be checked often to make sure the
          * loading process is unfolding correctly
          *
-         * @param info the node containing the info to create the corresponding tile with
+         * @param info the node containing the info to create the tile info with
          */
         public TileInfo(Node info) {
 
@@ -412,18 +435,18 @@ public class AreaLayoutLoader {
                     if (!parseChild(c)) { // parse it
                         Utils.log("Unrecognized child given for tile info:\n" + c + "Ignoring.",
                                 "gameobject.gameworld.AreaLayoutLoader", "TileInfo(Node)",
-                                false); // and log it if is not recognizedss
+                                false); // and log it if is not recognized
                     }
                 }
             } catch (Exception e) { // if any other exceptions occur, handle them
                 Utils.handleException(new Exception(Utils.getImproperFormatErrorLine("TileInfo",
                         "TileInfo", e.getMessage(), false)), "gameobject.gameworld.AreaLayoutLoader",
-                        "TileInfo(Node)", true);
+                        "TileInfo(Node)", true); // unrecognized exceptions cause crashes
             }
         }
 
         /**
-         * Parses an individual child and applies the setting it represents to the tile info
+         * Parses an individual child of a tile info node and applies the setting it represents to the tile info
          *
          * @param c the child to parse
          * @return whether the child was recognized
@@ -431,79 +454,79 @@ public class AreaLayoutLoader {
         protected boolean parseChild(Node c) {
             String n = c.getName(); // get the name of the child
             if (n.equals("color")) { // color
-                float[] color = Utils.strToColor(c.getValue()); // try to convert to a float array
-                if (color == null) // log if unsuccessful
+                float[] color = Utils.strToColor(c.getValue()); // try to convert to a float array of color components
+                if (color == null) // if conversion was unsuccessful
                     Utils.log(Utils.getImproperFormatErrorLine("color", "TileInfo",
                             "must be four valid floating point numbers separated by spaces",
                             true), "gameobject.gameworld.AreaLayoutLoader",
-                            "parseChild(Node)", false);
-                else this.color = color;
+                            "parseChild(Node)", false); // log as much
+                else this.color = color; // otherwise save the color
             } else if (n.equals("texture_path")) this.texPaths.add(c.getValue()); // texture path
                 // resource relative texture path flag
             else if (n.equals("resource_relative")) this.texResPath = Boolean.parseBoolean(c.getValue());
             else if (n.equals("blend_mode")) { // blend mode
-                // try to convert to a material's blend mode
-                try {
+                try { // try to convert to a material's blend mode
                     this.bm = Material.BlendMode.valueOf(c.getValue().toUpperCase());
-                } catch (Exception e) { // log if unsuccessful
+                } catch (Exception e) { // if conversion was unsuccessful
                     Utils.log(Utils.getImproperFormatErrorLine("blend mode", "TileInfo",
                             "must be either: none, multiplicative, or averaged", true),
                             "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
-                            false);
+                            false); // log as much
                 }
             } else if (n.equals("animation_frames")) { // animation frames
-                try {
-                    this.animFrames = Integer.parseInt(c.getValue()); // try to convert to integer
-                } catch (Exception e) { // log if unsuccessful
+                try { // try to convert to an integer
+                    this.animFrames = Integer.parseInt(c.getValue());
+                } catch (Exception e) { // if conversion was unsuccessful
                     Utils.log(Utils.getImproperFormatErrorLine("animation frame count",
                             "TileInfo", "must be a proper integer greater than 0",
                             true), "gameobject.gameworld.AreaLayoutLoader",
-                            "parseChild(Node)", false);
+                            "parseChild(Node)", false); // log as much
                 }
-                if (this.animFrames < 1) { // if the amount of frames is invalid, log and ignore
+                if (this.animFrames < 1) { // if the amount of frames is invalid
                     Utils.log(Utils.getImproperFormatErrorLine("animation frame count",
                             "TileInfo", "must be a proper integer greater than 0",
                             true), "gameobject.gameworld.AreaLayoutLoader",
-                            "parseChild(Node)", false);
-                    this.animFrames = 1;
+                            "parseChild(Node)", false); // log as much
+                    this.animFrames = 1; // and return to default amount of frames
                 }
                 this.animated = this.animFrames > 1; // update animated flag based on amount of frames
             } else if (n.equals("animation_time")) { // animation time
-                try {
-                    this.frameTime = Float.parseFloat(c.getValue()); // try to convert to a float
-                } catch (Exception e) { // log if unsuccessful
+                try { // try to convert to a float
+                    this.frameTime = Float.parseFloat(c.getValue());
+                } catch (Exception e) { // if conversion was unsuccessful
                     Utils.log(Utils.getImproperFormatErrorLine("animation frame time",
                             "TileInfo",
                             "must be a proper floating pointer number greater than 0", true),
                             "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
-                            false);
+                            false); // log as much
                 }
-                if (this.frameTime <= 0f) { // if the frame time is invalid, log and ignore
+                if (this.frameTime <= 0f) { // if the frame time is invalid
                     Utils.log(Utils.getImproperFormatErrorLine("animation frame time",
                             "TileInfo",
                             "must be a proper floating pointer number greater than 0", true),
                             "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
-                            false);
-                    this.frameTime = 1f;
+                            false); // log as much
+                    this.frameTime = 1f; // and return to default frame time
                 }
             } else return false; // return false if unrecognized child
-            return true;
+            return true; // return true if the child was recognized
         }
     }
 
     /**
-     * Extends TileInfo by providing additional customization for designing decor in an area's layout
+     * Extends TileInfo by providing additional customization for designing decor in an area's layout. For specifics,
+     * see DecorInfo's members and constructor
      */
     private static class DecorInfo extends TileInfo {
 
         /**
          * Members
          */
-        private float xOffset, yOffset;             // offset values for placement
+        private float xOffset, yOffset;             // offset values for placement (in units of grid cells)
         private float xRandInterval, yRandInterval; // intervals for random additional offset values for placement
-        private int pin;                            /* defines how the decor pins to nearby objects where the following
-                                                       values are used: (0) - none, (1) - left, (2) - above,
-                                                       (3) - right, (4) - below */
+        private int pin;                            /* defines how the decor pins to nearby blocks. The following values
+                                                       can be used: (0) - none, (1) - left, (2) - above, (3) - right,
+                                                       (4) - below */
         private LightSource light;                  // a light source if the decor should emit light
         private float lightXOffset;                 // x offset of the light if the decor should emit light
         private float lightYOffset;                 // y offset of the light if the decor should emit light
@@ -523,8 +546,8 @@ public class AreaLayoutLoader {
          * direction. For example, if set to below, the object will be on the ground/floor beneath it
          * <p>
          * - x_offset [optional][default: 0f]: defines the horizontal offset to use when placing the object (in amount
-         * of blocks). Positive values correspond to moving the object to the right while negative values correspond to
-         * moving the object to the left. For example, an xoffset of -0.33f will move the decor 1/3 of a block to the
+         * of blocks). Positive values correspond to moving the decor to the right while negative values correspond to
+         * moving the decor to the left. For example, an xoffset of -0.33f will move the decor 1/3 of a block to the
          * left
          * <p>
          * - y_offset [optional][default: 0f]: defines the vertical offset to use when placing the object (in amount of
@@ -554,7 +577,7 @@ public class AreaLayoutLoader {
          * such, when designing decor to be loaded into the game, the logs should be checked often to make sure the
          * loading process is unfolding correctly
          *
-         * @param info the node containing the info to create the corresponding tile with
+         * @param info the node containing the info to create the decor info with
          */
         public DecorInfo(Node info) {
             super(info);
@@ -571,7 +594,7 @@ public class AreaLayoutLoader {
             if (!super.parseChild(c)) { // first try to parse as a tile info child
                 String n = c.getName(); // get name of the child
                 if (n.equals("pin")) { // pin
-                    String v = c.getValue().toUpperCase(); // get the pin value
+                    String v = c.getValue().toUpperCase(); // get the pin value and set the decor info pin based off it
                     if (v.equals("NONE")) this.pin = 0; // none
                     else if (v.equals("LEFT")) this.pin = 1; // left
                     else if (v.equals("ABOVE")) this.pin = 2; // above
@@ -582,63 +605,63 @@ public class AreaLayoutLoader {
                                 true), "gameobject.gameworld.AreaLayoutLoader", "parseChild(c)",
                                 false); // if none of the above, log and ignore
                 } else if (n.equals("x_offset")) { // horizontal offset
-                    try {
-                        this.xOffset = Float.parseFloat(c.getValue()); // try to convert to a float
-                    } catch (Exception e) { // log if unsuccessful
+                    try { // try to convert to a float
+                        this.xOffset = Float.parseFloat(c.getValue());
+                    } catch (Exception e) { // if conversion was unsuccessful
                         Utils.log(Utils.getImproperFormatErrorLine("x_offset", "DecorInfo",
                                 "must be a proper floating pointer number", true),
                                 "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
-                                false);
+                                false); // log as much
                     }
                 } else if (n.equals("y_offset")) { // vertical offset
-                    try {
-                        this.yOffset = Float.parseFloat(c.getValue()); // try to convert to a float
-                    } catch (Exception e) { // log if unsuccessful
+                    try { // try to convert to a float
+                        this.yOffset = Float.parseFloat(c.getValue());
+                    } catch (Exception e) { // if conversion was unsuccessful
                         Utils.log(Utils.getImproperFormatErrorLine("y_offset", "DecorInfo",
                                 "must be a proper floating pointer number", true),
                                 "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
-                                false);
+                                false); // log as much
                     }
                 } else if (n.equals("x_random_interval")) { // random horizontal offset
-                    try {
-                        this.xRandInterval = Math.abs(Float.parseFloat(c.getValue())); // try to convert to a float
-                    } catch (Exception e) { // log if unsuccessful
+                    try { // try to convert to a float
+                        this.xRandInterval = Math.abs(Float.parseFloat(c.getValue()));
+                    } catch (Exception e) { // if conversion was unsuccessful
                         Utils.log(Utils.getImproperFormatErrorLine("x_random_interval", "DecorInfo",
                                 "must be a proper floating pointer number", true),
                                 "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
-                                false);
+                                false); // log as much
                     }
                 } else if (n.equals("y_random_interval")) { // random vertical offset
-                    try {
-                        this.yRandInterval = Math.abs(Float.parseFloat(c.getValue())); // try to convert to a float
-                    } catch (Exception e) { // log if unsuccessful
+                    try { // try to convert to a float
+                        this.yRandInterval = Math.abs(Float.parseFloat(c.getValue()));
+                    } catch (Exception e) { // if conversion was unsuccessful
                         Utils.log(Utils.getImproperFormatErrorLine("y_random_interval", "DecorInfo",
                                 "must be a proper floating pointer number", true),
                                 "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
-                                false);
+                                false); // log as much
                     }
                 } else if (n.equals("x_light_offset")) { // light x offset
-                    try {
-                        this.lightXOffset = Float.parseFloat(c.getValue()); // try to convert to a float
-                    } catch (Exception e) { // log if unsuccessful
+                    try { // try to convert to a float
+                        this.lightXOffset = Float.parseFloat(c.getValue());
+                    } catch (Exception e) { // if conversion was unsuccessful
                         Utils.log(Utils.getImproperFormatErrorLine("x_light_offset", "DecorInfo",
                                 "must be a proper floating pointer number", true),
                                 "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
-                                false);
+                                false); // log as much
                     }
                 } else if (n.equals("y_light_offset")) { // light y offset
-                    try {
-                        this.lightYOffset = Float.parseFloat(c.getValue()); // try to convert to a float
-                    } catch (Exception e) { // log if unsuccessful
+                    try { // try to convert to a float
+                        this.lightYOffset = Float.parseFloat(c.getValue());
+                    } catch (Exception e) { // if conversion was unsuccessful
                         Utils.log(Utils.getImproperFormatErrorLine("y_light_offset", "DecorInfo",
                                 "must be a proper floating pointer number", true),
                                 "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
-                                false);
+                                false); // log as much
                     }
                 } else if (n.equals("light_source")) this.light = new LightSource(c); // light source
-                else return false; // if not any of the above, unrecognized
+                else return false; // if not any of the above, return that the child is unrecognized
                 return true; // return that it was recognized
-            } else return true; // if tile info recognized it, return true
+            } else return true; // if tile info class recognized it, return true
         }
     }
 }
