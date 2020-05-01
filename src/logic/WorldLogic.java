@@ -150,8 +150,7 @@ public class WorldLogic extends GameLogic {
         super.update(interval);
         Pair pos = new Pair(player.getX(), player.getY()); // pair player position
         Transformation.getGridCell(pos);
-        if (((TextObject) this.roc.getStaticGameObject(2)).setText("(" + String.format("%.2f", pos.x) +
-                ", " + String.format("%.2f", pos.y) + ")")) // change player pos text
+        if (((TextObject) this.roc.getStaticGameObject(2)).setText(pos.x +  ", " + pos.y + ")")) // change player pos text
             this.roc.ensurePlacement(2); // update placement if changed
         int vx = 0;
         if (window.isKeyPressed(GLFW_KEY_D)) vx += 4;

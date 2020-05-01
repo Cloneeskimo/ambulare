@@ -3,7 +3,6 @@ package gameobject.gameworld;
 import gameobject.GameObject;
 import graphics.Material;
 import graphics.Model;
-import utils.AABB;
 import utils.PhysicsEngine;
 
 import java.util.ArrayList;
@@ -198,8 +197,9 @@ public class WorldObject extends GameObject {
      * height will make the AABB bigger/smaller. This may be useful if, for example, the object's texture doesn't fit
      * the entire model
      */
-    public AABB getAABB() {
-        return new AABB(this.getX(), this.getY(), this.getWidth() * this.bw, this.getHeight() * this.bh);
+    public PhysicsEngine.AABB getAABB() {
+        return new PhysicsEngine.AABB(this.getX(), this.getY(), this.getWidth() * this.bw,
+                this.getHeight() * this.bh);
     }
 
     /**

@@ -1,178 +1,191 @@
 package utils;
 
 import gameobject.gameworld.WorldObject;
+import org.lwjgl.system.CallbackI;
 
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Provides framework for performing physics. Specifically, the physics engine performs moves for world objects. In
  * doing so, it checks for collisions with blocks using a block map, and collisions with other collidable world objects.
- * It also outlines a set of properties than each world object must have which are used to calculate reactions to
- * collisions.
+ * Note that the physics engine rounds all velocities and positions it is given and it produces to the amount of digits
+ * corresponding to ROUNDED_FORMAT in order to avoid precision errors. However, errors will still occur when dealing
+ * with very large floating point numbers. ROUNDED_FORMAT can be modified to deal with this by rounding to fewer decimal
+ * points at the cost of more precise movements. The physics engine also outlines a set of properties than each world
+ * object must have which are used to calculate reactions to collisions
  */
 public class PhysicsEngine {
 
     /**
      * Static Data
      */
-    public static final float TERMINAL_VELOCITY = -50f; // the minimum vertical velocity from gravity
-    private static final double COLLISION_THRESHOLD = -1E-6; /* the minimum distance between world objects at which they
-        are not considered to be colliding. Should be slightly less than zero to avoid precision issues */
-    private static final float NEXT_TO_PRECISION = 0.0001f; /* the amount away from game objects to look to determine
-        if there is something there. */
-    private static boolean[][] blockMap; /* the block map to use for collision detection with blocks */
+    private static final DecimalFormat ROUNDED_FORMAT = new DecimalFormat("0.000"); /* formats numbers so that
+        they are appropriately rounded for physics calculations. Without rounding, precision errors occur and correctly
+        calculating push-back vector during collision resolution becomes infinitely more difficult and prone to bugs.
+        Thus, rounding all numbers in the form allows for much more stability. The physics engine handless this rounding
+        automatically */
+    public static final float UNIT_AND_HALF = 0.0015f; /* the minimum unit (as specified by the rounding performed by
+        the physics engine by ROUNDED_FORMAT) to be added to a push-back vector in order to resolve a collision */
+    public static final float TERMINAL_VELOCITY = -50f; /* the minimum vertical velocity from gravity. Note that the
+        the physics engine does not apply gravity. It is up to the object to apply it, hence public access */
+    private static boolean[][] blockMap; // the block map to use for collision detection with blocks
 
     /**
-     * Attempts to move the given world object by the given amount. If a collision occurs, will move the most it
-     * possibly can without having its axis-aligned bounding box overlap any other world object's axis-aligned
-     * bounding boxes or any blocks. After a collision, will calculate and perform an appropriate reaction based on
-     * all involved parties' physics properties
-     *
-     * @param o  the world object to move
-     * @param dx the x component to move the object by
-     * @param dy the y component to move the object by
+     * Attempts to moves the given world object by the given change in x and y. This method will round the values as
+     * specifies by the physics engine's ROUNDED_FORMAT to avoid precision issues. It will also check for collisions
+     * with blocks in the physics engine's block map and with other world objects as specified by the given world
+     * object's collidables list. In the case of collision, this method will perform collision resolution and reactions
+     * @param o the world object to move
+     * @param dx the amount on the x axis to move the world object by
+     * @param dy the amount on the y axis to move the world object by
      * @return whether or not any movement actually occurred
      */
     public static boolean move(WorldObject o, float dx, float dy) {
-        if (!o.getPhysicsProperties().collidable) { // if object isn't collidable in the first place
-            // make the move regardless of collision
-            o.setX(o.getX() + dx);
-            o.setY(o.getY() + dy);
-            return (dx != 0 && dy != 0); // and return whether dx or dy are non-zero values
-        }
-        // save original positions
+        // properly round the values
+        dx = round(dx);
+        dy = round(dy);
+        // save the original position to check if any changed occurred and to make later calculations easier
         float ox = o.getX();
         float oy = o.getY();
-        Object a = moveX(o, dx); // move x and save object collided with if there is one
-        moveY(o, dy, a); // move y and tell it to exclude the object collided with in x
-        return (o.getX() != ox || o.getY() != oy); // return whether either x or y actually changed
-    }
+        if (!o.getPhysicsProperties().collidable) { // if the given object isn't even collidable
+            // just perform the move without considering collision
+            o.setX(ox + dx);
+            o.setY(oy + dy);
+        } else { // if the given object is indeed collidable
 
-    /**
-     * Attempts to move the x-component of a given world object. Will perform all necessary collision detections and
-     * reactions
-     *
-     * @param o  the object to move
-     * @param dx the x component to move the object by
-     * @return the object collided with (either a WorldObject or a block position), or null if no collision occurred
-     */
-    private static Object moveX(WorldObject o, float dx) {
-        o.setX(o.getX() + dx); // make the move
-        Pair<Integer> a = checkBlocks(o, null, false); // check for block collisions first
-        if (a != null) { // if hit a block
-            float pushback = calcPBFromBlock(o.getAABB(), a, false); // calculate the pushback from the block
-            rectifyXCollision(o, a, pushback); // rectify the collision using pushback
-            Pair<Float> rxn = performReaction(o.getVX(), o.getPhysicsProperties()); // perform the reaction
-            o.setVX(rxn.x); // set the new velocity
-            o.setVY(o.getVY() * rxn.y); // use the opposite component multiplier
-            return a; // return the hit block position
-        } else { // otherwise, check other world objects
-            AABB aabb = null; // don't get axis-aligned bounding box until absolutely necessary
-            for (WorldObject wo : o.getCollidables()) { // for each world object
-                if (wo.getPhysicsProperties().collidable && wo != o) { // if it is collidable and isn't the same object
-                    if (aabb == null) aabb = o.getAABB(); // make sure have axis-aligned bounding box
-                    Pair<Float> pb = AABBColliding(aabb, wo.getAABB()); // check if o and wo are colliding
-                    if (pb != null) { // if the objects are colliding
-                        float pushback = pb.x; // get pushback from return
-                        rectifyXCollision(o, wo, pushback); // rectify the collision using pushback
-                        Pair<Float>[] rxn = performReaction(o.getVX(), wo.getVX(), o.getPhysicsProperties(),
-                                wo.getPhysicsProperties()); // get reaction from collision
-                        o.setVX(rxn[0].x); // set o's new velocity
-                        o.setVY(o.getVY() * rxn[0].y); // apply o's y velocity multiplier
-                        wo.setVX(rxn[1].x); // set wo's new velocity
-                        wo.setVY(wo.getVY() * rxn[1].y); // apply p's y velocity multiplier
-                        return wo; // return the hit world object
+            /*
+             * check x axis
+             */
+            if (dx != 0) { // if an x movement is desired
+                o.setX(round(ox + dx)); // make the move and round the new position
+                AABB aabb = o.getAABB(); // get the axis-aligned bounding box after movement
+
+                /*
+                 * check blocks on x axis
+                 */
+                Pair<Integer> cell = checkBlocks(aabb); // check for collisions with blocks
+                if (cell != null) { // if a block collision occurred
+                    float pb = calcPBFromBlock(aabb, cell, false); // calculate the push-back for resolution
+                    if ((float) cell.x + 0.5f < o.getX()) pb *= -1; // make sure the sign is correct
+                    o.setX(round(o.getX() + pb)); // perform collision resolution
+                    Pair<Float> rxn = performReaction(o.getVX(), o.getPhysicsProperties()); // calculate a reaction
+                    // apply the reaction to the object's velocity
+                    o.setVX(rxn.x);
+                    o.setVY(rxn.y * o.getVY());
+                }
+
+                /*
+                 * check world objects on x axis
+                 */
+                else { // only check for world object collision if no block collision has occurred
+                    for (WorldObject other : o.getCollidables()) { // loop through every other object
+                        if (other != o && other.getPhysicsProperties().collidable) { // if collidable and different
+                            AABB aabb2 = other.getAABB(); // get the other object's axis-aligned bounding box
+                            Pair<Float> pb = AABBColliding(aabb, other.getAABB()); // check for collision
+                            if (pb != null) { // if there is a push-back (and thus a collision)
+                                if (aabb2.getCX() < aabb.getCX()) pb.x *= -1; // make sure the sign is correct
+                                o.setX(round(o.getX() + pb.x)); // perform collisino resolution
+                                Pair<Float>[] rxn = performReaction(o.getVX(), other.getVX(), o.getPhysicsProperties(),
+                                        other.getPhysicsProperties()); // calculate a reaction
+                                // apply the reaction to the object's velocity
+                                o.setVX(rxn[0].x);
+                                o.setVY(rxn[0].y * o.getVY());
+                                // apply the reaction to the other object's velocity
+                                other.setVX(rxn[1].x);
+                                other.setVY(rxn[1].y * other.getVY());
+                                break; // break - don't continue checking other objects
+                            }
+                        }
                     }
                 }
             }
-        }
-        return null; // if no x collisions, return null
-    }
 
-    /**
-     * Attempts to move the y-component of a given world object. Will perform all necessary collision detections and
-     * reactions
-     *
-     * @param o       the object to move
-     * @param dy      the y component to move the object by
-     * @param exclude an object that should be excluded from collision detection. Usually, if a collision occurred in
-     *                an x-component move, the excluded object is the collided object
-     */
-    private static void moveY(WorldObject o, float dy, Object exclude) {
-        o.setY(o.getY() + dy); // make the move
-        // if a block was previously hit, get it to pass along to the block checking method
-        Pair<Integer> b = (exclude == null) ? null : ((exclude instanceof Pair) ? ((Pair) exclude) : null);
-        Pair<Integer> a = checkBlocks(o, b, true); // check for block collisions first
-        if (a != null) { // if hit a block
-            float pushback = calcPBFromBlock(o.getAABB(), a, true); // calculate the pushback from the block
-            rectifyYCollision(o, a, pushback); // rectify the collision using pushback
-            Pair<Float> rxn = performReaction(o.getVY(), o.getPhysicsProperties()); // perform the reaction
-            o.setVY(rxn.x); // set the new velocity
-            o.setVX(o.getVX() * rxn.y); // use the opposite component multiplier
-        } else { // otherwise, check other world objects
-            AABB aabb = null; // don't get axis-aligned bounding box until absolutely necessary
-            for (WorldObject wo : o.getCollidables()) { // for each world object
-                // if it is collidable, isn't the same object, or isn't the excluded object
-                if (wo.getPhysicsProperties().collidable && wo != o && wo != exclude) {
-                    if (aabb == null) aabb = o.getAABB(); // make sure have axis-aligned bounding box
-                    Pair<Float> pb = AABBColliding(aabb, wo.getAABB()); // check if o and wo are colliding
-                    if (pb != null) { // if the objects are colliding
-                        float pushback = pb.y; // get pushback from return
-                        rectifyYCollision(o, wo, pushback); // rectify the collision using pushback
-                        Pair<Float>[] rxn = performReaction(o.getVY(), wo.getVY(), o.getPhysicsProperties(),
-                                wo.getPhysicsProperties()); // perform a reaction based on the collision
-                        // the reaction returns two pairs corresponding to new velocity values/multipliers
-                        o.setVY(rxn[0].x); // set o's new y velocity
-                        o.setVX(o.getVX() * rxn[0].y); // use o's x velocity multiplier
-                        wo.setVY(rxn[1].x); // set wo's new y velocity
-                        wo.setVX(wo.getVX() * rxn[1].y); // use wo's x velocity multiplier
-                        return; // don't check any other objects
+            /*
+             * check y axis
+             */
+            if (dy != 0) { // if a y movement is desired
+                o.setY(round(oy + dy)); // make the move and round the new position
+                AABB aabb = o.getAABB(); // get the axis-aligned bounding box after movement
+
+                /*
+                 * check blocks on y axis
+                 */
+                Pair<Integer> cell = checkBlocks(aabb); // check for collisions with blocks
+                if (cell != null) { // if a block collision occurred
+                    float pb = calcPBFromBlock(aabb, cell, true); // calculate the push-back for resolution
+                    if ((float) cell.y + 0.5f < o.getY()) pb *= -1; // make sure the sign is correct
+                    o.setY(round(o.getY() + pb)); // perform collision resolution
+                    Pair<Float> rxn = performReaction(o.getVY(), o.getPhysicsProperties()); // calculate a reaction
+                    // apply the reaction to the object's velocity
+                    o.setVY(rxn.x);
+                    o.setVX(rxn.y * o.getVX());
+
+                }
+
+                /*
+                 * check world objects on y axis
+                 */
+                else { // only check for world object collision if no block collision has occurred
+                    for (WorldObject other : o.getCollidables()) { // loop through every other object
+                        if (other != o && other.getPhysicsProperties().collidable) { // if collidable and different
+                            AABB aabb2 = other.getAABB(); // get the other object's axis-aligned bounding box
+                            Pair<Float> pb = AABBColliding(aabb, aabb2); // check for collision
+                            if (pb != null) { // if there is a push-back (and thus a collision)
+                                if (aabb2.getCY() < aabb.getCY()) pb.y *= -1; // make sure the sign is correct
+                                o.setY(round(o.getY() + pb.y)); // perform collision resolution
+                                Pair<Float>[] rxn = performReaction(o.getVY(), other.getVY(), o.getPhysicsProperties(),
+                                        other.getPhysicsProperties()); // calculate a reaction
+                                // apply the reaction to the object's velocity
+                                o.setVY(rxn[0].x);
+                                o.setVX(rxn[0].y * o.getVX());
+                                // apply the reaction to the other object's velocity
+                                other.setVY(rxn[1].x);
+                                other.setVX(rxn[1].y * other.getVX());
+                                break;
+                            }
+                        }
                     }
+
                 }
             }
         }
+        return oy != o.getY() || ox != o.getX(); // if either x or y has changed, return that a change has occurred
     }
 
     /**
-     * Checks a given world object for collision with blocks in the block map
-     *
-     * @param o       the object to check
-     * @param exclude any block positions to exclude from collision detection. Usually, if a collision occurred in
-     *                an x-component move, the y-component is checked with the position of the collided block from the
-     *                x-component move as the excluded block position
-     * @param y       whether this is a check based on a y-component move
-     * @return the position of the that was collided, or null if no collision occurred
+     * Rounds the given number to the proper format to be used by the physics engine
+     * @param x the number to round
+     * @return the rounded number
      */
-    private static Pair<Integer> checkBlocks(WorldObject o, Pair<Integer> exclude, boolean y) {
-        List<Pair<Float>> points = getPointsToTest(o.getAABB());
-        for (Pair<Float> point : points) { // for each point to check
-            Pair<Integer> p = Transformation.getGridCell(point); // get the grid cell it is in
-            // if the corner is within the bounds of the block map
-            if (p.x >= 0 && p.x < blockMap.length && p.y >= 0 && p.y < blockMap[0].length) {
-                if (blockMap[p.x][p.y]) { // if a block is actually there
-                    // if it's not the excluded block (or if there is no excluded block)
-                    if (exclude == null || (!p.x.equals(exclude.x)) && !(p.y.equals(exclude.y))) {
-                        /* before we can conclude that a collision has occurred, the pushback of an opposite component
-                           collision must be calculated. If it is within some very small threshold, then that means the
-                           object is snug against the block in question in the other component. Technically, this would
-                           lead to a false collision if unchecked in this manner. One example of a negative consequence
-                           would be unintentional wall climbing */
-                        float oppPB = calcPBFromBlock(o.getAABB(), p, !y); // calculate the opposite pushback
-                        // if the opposite push back is not within the given threshold, then it is a valid collision
-                        if (oppPB > -COLLISION_THRESHOLD || oppPB < COLLISION_THRESHOLD) return p;
-                    }
-                }
+    private static float round(float x) {
+        return Float.parseFloat(ROUNDED_FORMAT.format(x));
+    }
+
+    /**
+     * Checks an axis-aligned bounding box for collision with blocks in the block map
+     * @param aabb the axis-aligned bounding box to check for collision with blocks
+     * @return the grid cell collided with if a collision occurs
+     */
+    private static Pair<Integer> checkBlocks(AABB aabb) {
+        List<Pair<Float>> points = getPointsToTest(aabb); // calculate the points to apply on the grid for testing
+        for (Pair<Float> point : points) { // for each point
+            Pair<Integer> cell = Transformation.getGridCell(point); // get the corresponding grid cell
+            // if the grid cell is not out of bounds
+            if (cell.x >= 0 && cell.x < blockMap.length && cell.y >= 0 && cell.y < blockMap[0].length) {
+                if (blockMap[cell.x][cell.y]) return cell; // return the cell if it is occupied by a block
             }
         }
-        return null; // if none of the corners were within used cells of the block map, no block collision occurred
+        return null; // if no points were within a cell, return that no collision has occurred
     }
 
     /**
      * Populates a list of points to check for block collision. This includes the corners as well as additional
-     * points along the edges of objects whose width or height are greater than 1f
+     * points along the edges of axis-aligned bounding boxes whose width or height are greater than 1f
      *
-     * @param a the axis-aligned bounding box of the object for whom to populate a list of points
+     * @param a the axis-aligned bounding box for whom to populate a list of points to test
      * @return the populated list of points
      */
     private static List<Pair<Float>> getPointsToTest(AABB a) {
@@ -213,59 +226,34 @@ public class PhysicsEngine {
      * @return the appropriate push back value
      */
     private static float calcPBFromBlock(AABB o, Pair<Integer> b, boolean y) {
-        // calculate overlap between block and axis-aligned bounding box and return that
-        if (y) return Math.abs(o.getCY() - Transformation.getCenterOfCellComponent(b.y)) - o.getH2() - 0.5f;
-        else return Math.abs(o.getCX() - Transformation.getCenterOfCellComponent(b.x)) - o.getW2() - 0.5f;
+        // calculate overlap between block and axis-aligned bounding box and return that plus a single unit
+        if (y) return Math.abs(o.getCY() - Transformation.getCenterOfCellComponent(b.y)) - o.getH2() - 0.5f
+                - UNIT_AND_HALF;
+        else return Math.abs(o.getCX() - Transformation.getCenterOfCellComponent(b.x)) - o.getW2() - 0.5f
+                - UNIT_AND_HALF;
     }
 
     /**
-     * Checks if two world objects are colliding by considering their axis-aligned bounding boxes
+     * Checks if two axis-aligned bounding boxes are colliding
      *
-     * @param a the first object's AABB
-     * @param b the second object's AABB
-     * @return null if no collision, or a Pair containing the necessary x or y push-back to back out of the collision
+     * @param a the first AABB
+     * @param b the second AABB
+     * @return null if no collision, or a pair of floats containing the necessary x/y push-back to resolve the collision
      */
     private static Pair<Float> AABBColliding(AABB a, AABB b) {
         // get the x distance between them
         float dx = Math.abs(a.getCX() - b.getCX()) - a.getW2() - b.getW2();
-        if (dx >= COLLISION_THRESHOLD) return null; // if it's greater than threshold, no collision
+        if (dx > 0) return null; // if it's greater than 0, return no collision
         // get the y distance between them
         float dy = Math.abs(a.getCY() - b.getCY()) - a.getH2() - b.getH2();
-        if (dy >= COLLISION_THRESHOLD) return null; // if it's greater than threshold, no collision
-        return new Pair<>(dx, dy); // if both were less than threshold, collision
+        if (dy > 0) return null; // if it's greater than 0, return no collision
+        // if both components had negative distances (positive overlaps), return the overlap plus a unit as push-backs
+        return new Pair<>(round(dx - UNIT_AND_HALF), round(dy - UNIT_AND_HALF));
     }
 
     /**
-     * Rectifies an X collision by pushing the colliding object out of the collided object
-     *
-     * @param o        the colliding object
-     * @param a        the collided object (either a world object or a block position)
-     * @param pushback the pushback
-     */
-    private static void rectifyXCollision(WorldObject o, Object a, float pushback) {
-        float pbDir = (a instanceof WorldObject) ? // calculate the direction of the pushback
-                (((WorldObject) a).getX() > o.getX() ? 1f : -1f) :
-                (Transformation.getCenterOfCellComponent(((Pair<Integer>) a).x) > o.getX() ? 1f : -1f);
-        o.setX(o.getX() + pbDir * pushback); // push o back out of the collision
-    }
-
-    /**
-     * Rectifies a Y collision by pushing the colliding object out of the collided object
-     *
-     * @param o        the colliding object
-     * @param a        the collided object (either a world object or a block position)
-     * @param pushback the pushback
-     */
-    private static void rectifyYCollision(WorldObject o, Object a, float pushback) {
-        float pbDir = (a instanceof WorldObject) ? // calculate the direction of the pushback
-                (((WorldObject) a).getY() > o.getY() ? 1f : -1f) :
-                (Transformation.getCenterOfCellComponent(((Pair<Integer>) a).y) > o.getY() ? 1f : -1f);
-        o.setY(o.getY() + pbDir * pushback); // push o back out of the collision
-    }
-
-    /**
-     * Calculates a collision reaction between two world objects given their velocities and physics properties. This
-     * will work for either x or y component
+     * Calculates a collision reaction between two objects given their velocities and physics properties. This will
+     * work for either x or y component
      *
      * @param va  the velocity of the first world object
      * @param vb  the velocity of the second world object
@@ -307,8 +295,8 @@ public class PhysicsEngine {
     }
 
     /**
-     * Calculates a collision reaction between a world object and a block given the world object's velocity and
-     * physics properties
+     * Calculates a collision reaction between an object and a block given the world object's velocity and physics
+     * properties
      *
      * @param v  the velocity of the world object
      * @param pp the physics properties of the world object
@@ -321,8 +309,8 @@ public class PhysicsEngine {
     }
 
     /**
-     * Calculate if there is a world object or block next the the given world object in the given direction. X-component
-     * and y-component checks may be combined (for example, can use this to look if there is an object to the "bottom
+     * Calculate if there is an object or block next the given world object in the given direction. X-component and
+     * y-component checks may be combined (for example, can use this to look if there is an object to the "bottom
      * left" of the given world object). This works for non-collidable objects as well, but will not count other
      * non-collidable objects as valid checks
      *
@@ -331,38 +319,19 @@ public class PhysicsEngine {
      *           right of the object. If x == 0, will not look in any x-component direction.
      * @param y  the y direction to look. If y < 0, will look beneath the object. If y > 0, will look above the object.
      *           If y == 0, will not look in any y-component direction.
-     * @return if there is a world object or block in the given direction of the given object
+     * @return if there is an object or block in the given direction of the given object
      */
     public static boolean nextTo(WorldObject wo, float x, float y) {
-        // calculate the necessary changes in position to perform the check
-        float dx = NEXT_TO_PRECISION * (x < 0 ? -1 : (x > 0 ? 1 : 0));
-        float dy = NEXT_TO_PRECISION * (y < 0 ? -1 : (y > 0 ? 1 : 0));
-        // make the necessary changes to perform the check
-        wo.setX(wo.getX() + dx);
-        wo.setY(wo.getY() + dy);
-        // check blocks first
-        if (checkBlocks(wo, null, true) != null) { // if block collision
-            // return to original position
-            wo.setX(wo.getX() - dx);
-            wo.setY(wo.getY() - dy);
-            return true; // there is something in that direction
-        } else {
-            List<WorldObject> collidables = wo.getCollidables(); // get possible collisions
-            for (WorldObject o : collidables) { // for each collidable object
-                if (o.getPhysicsProperties().collidable && o != wo) { // if the object has collision on and isn't wo
-                    if (AABBColliding(wo.getAABB(), o.getAABB()) != null) { // if they collide
-                        // return to original position
-                        wo.setX(wo.getX() - dx);
-                        wo.setY(wo.getY() - dy);
-                        return true; // there is something in that direction
-                    }
-                }
-            }
-        }
-        // return to original position
-        wo.setX(wo.getX() - dx);
-        wo.setY(wo.getY() - dy);
-        return false; // nothing in that direction
+        float dx = (x < 0f) ? -0.002f : (x > 0f) ? 0.002f : 0f;
+        float dy = (y < 0f) ? -0.002f : (y > 0f) ? 0.002f : 0f;
+        float ox = wo.getX();
+        float oy = wo.getY();
+        wo.setX(round(wo.getX() + dx));
+        wo.setY(round(wo.getY() + dy));
+        boolean nextTo = checkBlocks(wo.getAABB()) != null;
+        wo.setX(ox);
+        wo.setY(oy);
+        return nextTo;
     }
 
     /**
@@ -390,7 +359,7 @@ public class PhysicsEngine {
             inverted upon collision within a rigid object */
         public float kbResis = 0.0f; /* determines how much incoming momentum will be blocked during a collision with
             another non-rigid object */
-        public float fricResis = 0.98f; /* when objects collide, friction resistance determines how much of the
+        public float fricResis = 0.95f; /* when objects collide, friction resistance determines how much of the
             opposite component of velocity will remain. For example, during a y collision, the object's horizontal
             (x) velocity will be multiplied by its friction resistance, and vice-versa */
         public float gravity = 19.6f; /* this determines how much the object is affected by gravity */
@@ -428,4 +397,64 @@ public class PhysicsEngine {
         public PhysicsProperties() {
         }
     }
+
+    /**
+     * Axis-aligned bounding boxes that are used for collision detection. The goal is to have them generally fit the
+     * object they are trying to describe. They are defined by a center point and a half-width and half-height. They
+     * purpose of having this extra level instead of collision detection just using the object's center-point and
+     * width/height is to allow game objects to modify the width/height of their AABB, for example, if they know that
+     * their texture won't fit the whole model
+     */
+    public static class AABB {
+
+        /**
+         * Members
+         */
+        private float cx, cy; // center point
+        private float w2, h2; // half-width and half-height
+
+        /**
+         * Constructor
+         *
+         * @param cx the center-point x
+         * @param cy the center-point y
+         * @param w  the full width of the object
+         * @param h  the full height of the object
+         */
+        public AABB(float cx, float cy, float w, float h) {
+            this.cx = PhysicsEngine.round(cx);
+            this.cy = PhysicsEngine.round(cy);
+            this.w2 = PhysicsEngine.round(w / 2);
+            this.h2 = PhysicsEngine.round(h / 2);
+        }
+
+        /**
+         * @return the center-point x of the axis-aligned bounding box
+         */
+        public float getCX() {
+            return this.cx;
+        }
+
+        /**
+         * @return the center-point y of the axis-aligned bounding box
+         */
+        public float getCY() {
+            return this.cy;
+        }
+
+        /**
+         * @return the half-width of the axis-aligned bounding box
+         */
+        public float getW2() {
+            return this.w2;
+        }
+
+        /**
+         * @return the half-height of the axis-aligned bounding box
+         */
+        public float getH2() {
+            return this.h2;
+        }
+    }
+
 }

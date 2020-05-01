@@ -42,7 +42,7 @@ import graphics.Camera;
  * The conversions made to render are: model -> world (done in GameObject) -> (if rendering with a camera) camera-view
  * -> aspect
  */
-public class Transformation {
+public abstract class Transformation {
 
     /**
      * Converts the given window coordinates to normalized coordinates
