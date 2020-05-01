@@ -177,17 +177,15 @@ public class AreaLayoutLoader {
                             // if the decor should emit light
                             if (di.light != null) {
                                 m = new LightSourceMaterial(t, di.color, di.bm, di.light); // create material with light
-                                ((LightSourceMaterial)m).setOffset(di.lightXOffset, di.lightYOffset); // add offset
-                            }
-                            else m = new Material(t, di.color, di.bm); // otherwise create as a normal material
+                                ((LightSourceMaterial) m).setOffset(di.lightXOffset, di.lightYOffset); // add offset
+                            } else m = new Material(t, di.color, di.bm); // otherwise create as a normal material
                             // create new list for blocks with the corresponding material
                         } else { // if no texture
                             // if the decor should emit light
                             if (di.light != null) {
                                 m = new LightSourceMaterial(di.color, di.light); // create material with light
-                                ((LightSourceMaterial)m).setOffset(di.lightXOffset, di.lightYOffset); // add offset
-                            }
-                            else m = new Material(di.color); // other create as a normal material
+                                ((LightSourceMaterial) m).setOffset(di.lightXOffset, di.lightYOffset); // add offset
+                            } else m = new Material(di.color); // other create as a normal material
                         }
                         forThatDecorInfo.put(texPath, m); // put it in the map from textures -> material
                     }

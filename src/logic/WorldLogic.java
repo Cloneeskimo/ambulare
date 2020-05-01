@@ -44,9 +44,9 @@ public class WorldLogic extends GameLogic {
                         new MSAT.MSATState(1, 1f),
                         new MSAT.MSATState(5, 0.05f),
                         new MSAT.MSATState(5, 0.05f)
-                }), new LightSource(new float[] {1f, 1f, 1f, 1f}, 5f, 1.5f)));
-        player.setBoundingWidth(0.83251f);
-        player.setBoundingHeight(0.83251f);
+                }), new LightSource(new float[]{1f, 1f, 1f, 1f}, 5f, 1.5f)));
+        player.setBoundingWidth(0.9f);
+        player.setBoundingHeight(0.9f);
         player.setPos(Transformation.getCenterOfCell(new Pair<>(3, 5))); // move to grid cell 3, 5
         player.getPhysicsProperties().rigid = true; // male player rigid
         this.roc.addToWorld(player); // add player to world
@@ -150,7 +150,7 @@ public class WorldLogic extends GameLogic {
         super.update(interval);
         Pair pos = new Pair(player.getX(), player.getY()); // pair player position
         Transformation.getGridCell(pos);
-        if (((TextObject) this.roc.getStaticGameObject(2)).setText(pos.x +  ", " + pos.y + ")")) // change player pos text
+        if (((TextObject) this.roc.getStaticGameObject(2)).setText(pos.x + ", " + pos.y + ")")) // change player pos text
             this.roc.ensurePlacement(2); // update placement if changed
         int vx = 0;
         if (window.isKeyPressed(GLFW_KEY_D)) vx += 4;

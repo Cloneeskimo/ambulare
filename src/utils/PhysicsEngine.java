@@ -38,7 +38,8 @@ public class PhysicsEngine {
      * specifies by the physics engine's ROUNDED_FORMAT to avoid precision issues. It will also check for collisions
      * with blocks in the physics engine's block map and with other world objects as specified by the given world
      * object's collidables list. In the case of collision, this method will perform collision resolution and reactions
-     * @param o the world object to move
+     *
+     * @param o  the world object to move
      * @param dx the amount on the x axis to move the world object by
      * @param dy the amount on the y axis to move the world object by
      * @return whether or not any movement actually occurred
@@ -157,6 +158,7 @@ public class PhysicsEngine {
 
     /**
      * Rounds the given number to the proper format to be used by the physics engine
+     *
      * @param x the number to round
      * @return the rounded number
      */
@@ -166,6 +168,7 @@ public class PhysicsEngine {
 
     /**
      * Checks an axis-aligned bounding box for collision with blocks in the block map
+     *
      * @param aabb the axis-aligned bounding box to check for collision with blocks
      * @return the grid cell collided with if a collision occurs
      */

@@ -1,7 +1,7 @@
 area:
 {
     # specify the name of the area
-    name: Galen Forest
+    name: Noob Forest
 
     # provide a key mapping from characters in the layout to blocks
     block_key:
@@ -32,12 +32,6 @@ area:
             pin: below
             x_random_interval: 0.3f
             y_light_offset: 1f
-            light_source:
-            {
-                glow: 1f 3f 3f 1f
-                reach: 1f
-                intensity: 3f
-            }
         }
     }
 
