@@ -27,11 +27,11 @@ public class PhysicsEngine {
         calculating push-back vector during collision resolution becomes infinitely more difficult and prone to bugs.
         Thus, rounding all numbers in the form allows for much more stability. The physics engine handless this rounding
         automatically */
+    private static boolean[][] blockMap; // the block map to use for collision detection with blocks
     public static final float UNIT_AND_HALF = 0.0015f; /* the minimum unit (as specified by the rounding performed by
         the physics engine by ROUNDED_FORMAT) to be added to a push-back vector in order to resolve a collision */
     public static final float TERMINAL_VELOCITY = -50f; /* the minimum vertical velocity from gravity. Note that the
         the physics engine does not apply gravity. It is up to the object to apply it, hence public access */
-    private static boolean[][] blockMap; // the block map to use for collision detection with blocks
 
     /**
      * Attempts to moves the given world object by the given change in x and y. This method will round the values as
@@ -322,8 +322,8 @@ public class PhysicsEngine {
      * @return if there is an object or block in the given direction of the given object
      */
     public static boolean nextTo(WorldObject wo, float x, float y) {
-        float dx = (x < 0f) ? -0.002f : (x > 0f) ? 0.002f : 0f;
-        float dy = (y < 0f) ? -0.002f : (y > 0f) ? 0.002f : 0f;
+        float dx = (x < 0f) ? -0.005f : (x > 0f) ? 0.005f : 0f;
+        float dy = (y < 0f) ? -0.005f : (y > 0f) ? 0.005f : 0f;
         float ox = wo.getX();
         float oy = wo.getY();
         wo.setX(round(wo.getX() + dx));

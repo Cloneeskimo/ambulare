@@ -45,8 +45,8 @@ public class WorldLogic extends GameLogic {
                         new MSAT.MSATState(5, 0.05f),
                         new MSAT.MSATState(5, 0.05f)
                 }), new LightSource(new float[] {1f, 1f, 1f, 1f}, 5f, 1.5f)));
-        player.setBoundingWidth(0.95f);
-        player.setBoundingHeight(0.95f);
+        player.setBoundingWidth(0.83251f);
+        player.setBoundingHeight(0.83251f);
         player.setPos(Transformation.getCenterOfCell(new Pair<>(3, 5))); // move to grid cell 3, 5
         player.getPhysicsProperties().rigid = true; // male player rigid
         this.roc.addToWorld(player); // add player to world
