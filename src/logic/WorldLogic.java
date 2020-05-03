@@ -47,7 +47,7 @@ public class WorldLogic extends GameLogic {
                 }), new LightSource(new float[]{1f, 1f, 1f, 1f}, 5f, 1.5f)));
         player.setBoundingWidth(0.9f);
         player.setBoundingHeight(0.9f);
-        player.setPos(Transformation.getCenterOfCell(new Pair<>(3, 5))); // move to grid cell 3, 5
+        player.setPos(Transformation.getCenterOfCell(new Pair<>(1, 9))); // move to grid cell 3, 5
         player.getPhysicsProperties().rigid = true; // male player rigid
         this.roc.addToWorld(player); // add player to world
         this.roc.getGameWorld().getCam().follow(player); // make camera follow player
@@ -58,7 +58,7 @@ public class WorldLogic extends GameLogic {
         o.setScale(0.3f, 0.3f); // scale down a lot
         o.getPhysicsProperties().bounciness = 0.9f; // make very bouncy
         o.getPhysicsProperties().mass = 0.6f; // make it light
-        o.setPos(Transformation.getCenterOfCell(new Pair<>(2, 7))); // move to grid cell 2, 7
+        o.setPos(Transformation.getCenterOfCell(new Pair<>(2, 9))); // move to grid cell 2, 7
         this.roc.addToWorld(o); // add to ROC
 
         // create another random object
@@ -67,7 +67,7 @@ public class WorldLogic extends GameLogic {
         o.setScale(0.3f, 0.3f); // scale down a lot
         o.getPhysicsProperties().bounciness = 0.9f; // make very bouncy
         o.getPhysicsProperties().mass = 0.6f; // make it light
-        o.setPos(Transformation.getCenterOfCell(new Pair<>(5, 7))); // move to grid cell 5, 7
+        o.setPos(Transformation.getCenterOfCell(new Pair<>(0, 9))); // move to grid cell 5, 7
         this.roc.addToWorld(o); // add to ROC
 
         // create and add player position text
@@ -107,12 +107,12 @@ public class WorldLogic extends GameLogic {
         if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) { // if space is pressed
             if (PhysicsEngine.nextTo(player, 0f, -1f)) player.setVY(10f); // jump if there is something under
         } else if (key == GLFW_KEY_ENTER && action == GLFW_RELEASE) { // if enter is pressed
-            player.givePosAnim(new PositionalAnimation(3.5f, 5.5f, null, 1.0f)); // reset player
+            player.givePosAnim(new PositionalAnimation(1.5f, 9.5f, null, 1.0f)); // reset player
             // reset first random object
-            roc.getGameWorld().getWorldObject(1).givePosAnim(new PositionalAnimation(2.5f, 7.5f, null,
+            roc.getGameWorld().getWorldObject(1).givePosAnim(new PositionalAnimation(0.5f, 9.5f, null,
                     1.0f));
             // reset second random object
-            roc.getGameWorld().getWorldObject(2).givePosAnim(new PositionalAnimation(5.5f, 7.5f, null,
+            roc.getGameWorld().getWorldObject(2).givePosAnim(new PositionalAnimation(2.5f, 9.5f, null,
                     1.0f));
         }
     }

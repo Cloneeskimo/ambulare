@@ -12,7 +12,7 @@ import utils.PhysicsEngine;
 public class Entity extends WorldObject {
 
     /**
-     * Memberss
+     * Members
      */
     private boolean right;    // whether the entity is facing to the right
     private boolean airborne; // whether the entity is airborne

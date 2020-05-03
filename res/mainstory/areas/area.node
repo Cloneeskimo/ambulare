@@ -1,5 +1,12 @@
 area:
 {
+    # non-square collidables
+    # foreground/background
+    # liquids
+    # backgrounds
+    # slopes
+    # sun/moon
+
     # specify the name of the area
     name: Noob Forest
 
@@ -16,36 +23,87 @@ area:
     # provides a key mapping characters in the layout to decor
     decor_key:
     {
-        # weeds
+        # background weeds
         w:
         {
             texture_path: /textures/decor/foliage/weeds.png
             texture_path: /textures/decor/foliage/weeds2.png
             pin: below
-            x_random_interval: 0.3f
+            x_random_interval: 0.4f
         }
 
-        # dead tree
+        # background dead tree
         t:
         {
             texture_path: /textures/decor/foliage/dead_tree.png
             pin: below
-            x_random_interval: 0.3f
-            y_light_offset: 1f
+            x_random_interval: 0.4f
+            light_source:
+            {
+                reach: 2f
+            }
+        }
+
+        # foreground weeds
+        W:
+        {
+            texture_path: /textures/decor/foliage/weeds.png
+            texture_path: /textures/decor/foliage/weeds2.png
+            pin: below
+            x_random_interval: 0.4f
+            y_offset: -0.09f
+        }
+
+        # foreground dead tree
+        T:
+        {
+            texture_path: /textures/decor/foliage/dead_tree.png
+            pin: below
+            x_random_interval: 0.4f
+            y_offset: -0.09f
+            light_source:
+            {
+                reach: 2f
+            }
         }
     }
 
-    # specify the layout of the area
-    layout:
+    # specify the layout of the background
+    background_layout:
     {
-        :         ww            wt ww
-        :  w      gg            ggggg
-        : gg      dd            ddddd                   ww
-        : dd                                       tw  wdd
-        : dd wt w ww          ww        ww     w  dddwwddd
-        : ddggggggggg    ww t gg w      gg wt gg  dddggddd
-        : ddddddddddd    gggggddgg  gg gddggggddggdddddddd
-        :  ddddddddd     ddddddddd  dd dddddddddddddd
-        :                  ddd           ddddddddd
+        0:
+        1:
+        2:                            dddddddd
+        3:                            dddddddd
+        4:                            dddddddd
+        5:                            dddddddd
+        6:
+        7:
+    }
+
+    # specify the layout of the middleground
+    middleground_layout:
+    {
+        0: wwwwwwwwwwwwwwwtw        ggggwtwwtw
+        1: gggwtw       wggg        dddddddddd
+        2: dddggg       ddddg     www ddddddddwwwwwww     wwww
+        3: ddddddw wwwdddddddg   wwww ww w  www  wwtw     wtww
+        4: ddddddgggggddddddddg  ggggwwwwwwwwwwwwgggg     gggg
+        5:   dddddddddddddddddd  ddddggggggggggggdddd     dddd
+        6:       ddddddd           ddddddddddddddddd
+        7:                              dddddd
+    }
+
+    # specify the layout of the foreground
+    foreground_layout:
+    {
+        0:
+        1:
+        2:            WT
+        3:        T              T W
+        4:
+        5:
+        6:
+        7:
     }
 }

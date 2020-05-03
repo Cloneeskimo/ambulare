@@ -39,26 +39,78 @@ public class AreaLayoutLoader {
     }
 
     /**
-     * Loads blocks of an area's layout using the given block key node and layout node
+     * Loads blocks of an area's layout for all three layout layers - background, middleground, and foreground.
      *
-     * @param keyData        the block_key child node from the area node-file
-     * @param layoutData     the layout child node from the area node-file
-     * @param blockPositions the material to positions map to populate
-     * @param ats            the list of animated textures to populate
-     * @return the block map for the loaded layout
+     * @param blockKey     the block_key child node from the area node-file
+     * @param background   the background layout layer child node from the area node-file. May be null if no
+     *                     background layout layer was specified for the area
+     * @param middleground the middleground layout layer child node from the area node-file. May not be null as a
+     *                     middleground layout layer is required for all areas
+     * @param foreground   the foreground layout layer child node from the area node-file. May be null if no
+     *                     foreground layout layer was specified for the area
+     * @param blocks       the material to block maps to populate. Should be a length 3 array where blocks[0] is for
+     *                     the background blocks, blocks[1] is for the middleground blocks, and blocks[2] is for the
+     *                     foreground blocks
+     * @param ats          the list of animated textures to populate
+     * @return the block map for the middleground layer to be used for block collision
      */
-    public static boolean[][] loadBlocks(Node keyData, Node layoutData,
-                                         Map<Material, List<Pair<Integer>>> blockPositions, List<AnimatedTexture> ats) {
-        Map<Character, TileInfo> key = parseKeyData(keyData, false); // parse block key first
+    public static boolean[][] loadLayoutBlocks(Node blockKey, Node background, Node middleground, Node foreground,
+                                               Map<Material, List<Pair<Integer>>>[] blocks, List<AnimatedTexture> ats) {
+        // initialize variables and load key
+        Map<Character, TileInfo> key = parseKeyData(blockKey, false); // parse block key first
+        /* this maps tile info to a mapping of texture to a mapping of modularization piece to materials. This is to
+           ensure the least possible amount of material creation. This is confusing what it basically allows the code to
+           do is ask: For this tile info, this texture, and this modularization, what material should I use? */
+        Map<TileInfo, Map<String, Map<ModNameExt, Material>>> materialMap = new HashMap<>(); // create empty map for now
 
-        // create empty block map with appropriate size
-        List<Node> rows = layoutData.getChildren(); // get all rows
-        int w = 0; // keep track of the width the block map should be
-        // loop through each row and record the widest one
-        for (Node node : rows) if (node.getValue().length() > w) w = node.getValue().length();
-        boolean[][] blockMap = new boolean[w][rows.size()]; // create the correctly sized block map
+        /* calculate block map width and height. This will be calculated as the largest width and height of a row/column
+           across all provided layers */
+        int bmw = 0, bmh = 0; // initialize width and height to zero
+        if (background != null) { // if a background was specified
+            List<Node> rows = background.getChildren(); // get the rows of the background
+            if (rows.size() > bmh) bmh = rows.size(); // if there are more rows, record new height
+            // loop through each row and see if a wider row is found
+            for (Node node : rows) if (node.getValue().length() > bmw) bmw = node.getValue().length();
+        }
+        List<Node> rows = middleground.getChildren(); // get the rows of the middle ground
+        if (rows.size() > bmh) bmh = rows.size(); // if there are more rows, record new height
+        // loop through each row and see if a wider row is found
+        for (Node node : rows) if (node.getValue().length() > bmw) bmw = node.getValue().length();
+        if (foreground != null) { // if a foreground was specified
+            rows = foreground.getChildren(); // get the rows of the foreground
+            if (rows.size() > bmh) bmh = rows.size(); // if there are more rows, record new height
+            // loop through each row and see if a wider row is found
+            for (Node node : rows) if (node.getValue().length() > bmw) bmw = node.getValue().length();
+        }
+
+        // load layouts for each layer
+        loadLayoutLayerBlocks(materialMap, blocks[0], background, key, ats, bmw, bmh); // load background
+        // load middle ground and save the block map for collision
+        boolean[][] blockMap = loadLayoutLayerBlocks(materialMap, blocks[1], middleground, key, ats, bmw, bmh);
+        loadLayoutLayerBlocks(materialMap, blocks[2], foreground, key, ats, bmw, bmh); // load foreground
+        return blockMap; // return the middleground block map to use for collision
+    }
+
+    /**
+     * Loads blocks of an area's layout for only a single layer
+     *
+     * @param materialMap the mapping of tile info, texture, and modularization to materials to use
+     * @param blocks      the block list to populate
+     * @param layout      the layout to load
+     * @param key         the block key
+     * @param ats         the list of animated textures to populate
+     * @param bmw         the width of the block map
+     * @param bmh         the height of the block map
+     * @return the created and populated block map
+     */
+    private static boolean[][] loadLayoutLayerBlocks(Map<TileInfo, Map<String, Map<ModNameExt, Material>>> materialMap,
+                                                     Map<Material, List<Pair<Integer>>> blocks, Node layout,
+                                                     Map<Character, TileInfo> key, List<AnimatedTexture> ats, int bmw,
+                                                     int bmh) {
 
         // populate block map based on where blocks are
+        List<Node> rows = layout.getChildren(); // get the rows of the layout
+        boolean[][] blockMap = new boolean[bmw][bmh]; // create an appropriately sized block map
         for (int y = 0; y < rows.size(); y++) { // for each row
             String row = rows.get(rows.size() - 1 - y).getValue(); // get the row
             for (int x = 0; x < row.length(); x++) { // for each character in the row
@@ -67,11 +119,7 @@ public class AreaLayoutLoader {
             }
         }
 
-        // create materials and add the corresponding block positions to the block positions map
-        /* this maps tile info to a mapping of texture to a mapping of modularization piece to materials. This is to
-           ensure the least possible amount of material creation. This is confusing what it basically allows the code to
-           do is ask: For this tile info, this texture, and this modularization, what material should I use? */
-        Map<TileInfo, Map<String, Map<ModNameExt, Material>>> materialMap = new HashMap<>(); // create empty map for now
+        // load blocks
         for (int y = 0; y < rows.size(); y++) { // go through each row
             String row = rows.get(rows.size() - 1 - y).getValue(); // get the row
             for (int x = 0; x < row.length(); x++) { // loop through each character in the row
@@ -123,46 +171,75 @@ public class AreaLayoutLoader {
                                     m = new Material(t, bi.color, bi.bm); // create material with the correct texture
                                     forThatTexture.put(mods[i], m); // put it in the map for this modularization
                                     // create new list for blocks with the corresponding material
-                                    blockPositions.put(m, new ArrayList<>());
+                                    blocks.put(m, new ArrayList<>());
                                 }
                             } else { // if not textured
                                 m = new Material(bi.color); // create material with just color
                                 forThatTexture.put(mods[i], m); // put it in the map
                                 // create new list for blocks with the corresponding material
-                                blockPositions.put(m, new ArrayList<>());
+                                blocks.put(m, new ArrayList<>());
                             }
                         }
                         if (m != null) { // if a material now exists for that mod
-                            blockPositions.get(m).add(new Pair<>(x, y)); // add the block pos to list for that material
+                            blocks.computeIfAbsent(m, k -> new ArrayList<>());
+                            blocks.get(m).add(new Pair<>(x, y)); // add the block pos to list for that material
                             materialChosen = true; // flag that a material has been chosen to move onto next block
                         }
                     }
                 }
             }
         }
-        return blockMap; // return the block map
+        return blockMap;
     }
 
     /**
-     * Loads decor using the given decor key node and layout node. This should be done after blocks are loaded because
-     * it requires a block map
+     * Loads decor of an area's layout for all three layout layers - background, middleground, and foreground. Note that
+     * all middleground decor will be placed in the background game object list
      *
-     * @param keyData    the decor_key child node from the area node-file
-     * @param layoutData the layout child node from thee area node-file
-     * @param ats        the list of animated textures to populate
-     * @param blockMap   the block map to use for pinning decors
-     * @return the list of game objects corresponding to all of the decor
+     * @param decorKey     the decor_key child node from the area node-file
+     * @param background   the background layout layer child node from the area node-file. May be null if no
+     *                     background layout layer was specified for the area
+     * @param middleground the middleground layout layer child node from the area node-file. May not be null as a
+     *                     middleground layout layer is required for all areas
+     * @param foreground   the foreground layout layer child node from the area node-file. May be null if no
+     *                     foreground layout layer was specified for the area
+     * @param decor        the two lists of game objects to populate with decor where decor[0] should be background
+     *                     decor and decor[1] should be foreground decor
+     * @param ats          the list of animated textures to populate
+     * @param blockMap     the block map to use for pinning decors - should be the middleground block map
      */
-    public static List<GameObject> loadDecor(Node keyData, Node layoutData, List<AnimatedTexture> ats,
-                                             boolean[][] blockMap) {
-        Map<Character, TileInfo> key = parseKeyData(keyData, true); // parse key
-        List<GameObject> decor = new ArrayList<>(); // create decor list
-        List<Node> rows = layoutData.getChildren(); // get the rows of the layout
+    public static void loadLayoutDecor(Node decorKey, Node background, Node middleground, Node foreground,
+                                       List<GameObject>[] decor, List<AnimatedTexture> ats, boolean[][] blockMap) {
+        Map<Character, TileInfo> key = parseKeyData(decorKey, true); // parse key
         /* similar to block loading, a mapping from decor info and texture to material is used to minimize the amount of
            materials needed to represent the decor. This essentially allows the algorithm to ask, 'does a material
            already exists for this decor info and this texture? If so, use it. If not, create it and then put it in the
            map to use next time we encounter this decor info and texture' */
         Map<DecorInfo, Map<String, Material>> materialMap = new HashMap<>(); // initialize map as empty at first
+        // if there is a background layer, load decor from it
+        if (background != null) loadLayoutLayerDecor(materialMap, decor[0], background, key, ats, blockMap);
+        // load middleground decor and place it in background
+        loadLayoutLayerDecor(materialMap, decor[0], middleground, key, ats, blockMap);
+        // if there is a foreground layer, load decor from it
+        if (foreground != null) loadLayoutLayerDecor(materialMap, decor[1], foreground, key, ats, blockMap);
+    }
+
+    /**
+     * Loads decor of an area's layout for only a single layer
+     *
+     * @param materialMap the mapping of tile info, texture, and modularization to materials to use
+     * @param decor       the decor list to populate
+     * @param layout      the layout to load
+     * @param key         the block key
+     * @param ats         the list of animated textures to populate
+     * @param blockMap    the block map to use for pinning decors - should be the middleground block map
+     */
+    public static void loadLayoutLayerDecor(Map<DecorInfo, Map<String, Material>> materialMap,
+                                                        List<GameObject> decor, Node layout,
+                                                        Map<Character, TileInfo> key, List<AnimatedTexture> ats,
+                                                        boolean[][] blockMap) {
+        List<Node> rows = layout.getChildren(); // get the rows of the layout
+
         for (int y = 0; y < rows.size(); y++) { // go through each row
             String row = rows.get(rows.size() - 1 - y).getValue(); // get the row
             for (int x = 0; x < row.length(); x++) { // loop through each character in the row
@@ -243,30 +320,6 @@ public class AreaLayoutLoader {
                 }
             }
         }
-        return decor; // return compiled list of decor
-    }
-
-    /**
-     * Calculates the last free position (containing no block) in the given direction from the given starting block
-     *
-     * @param blockMap the block map to use for checking
-     * @param x        the starting x
-     * @param y        the starting y
-     * @param dx       the change in x for the direction
-     * @param dy       the change in y for the direction
-     * @return a pair of integers containing the last free position (containing no block) in the given direction. This
-     * will not take into account whether the starting position itself is free
-     */
-    private static Pair<Integer> lastFreeBlockInDirection(boolean[][] blockMap, int x, int y, int dx, int dy) {
-        while (!blockMap[x + dx][y + dy]) { // while there is no block in the given direction
-            // keep going in that direction
-            x += dx;
-            y += dy;
-            // if the next move is out of bounds, break from the loop and declare this as the last free block
-            if (x + dx < 0 || x + dx >= blockMap.length) break;
-            if (y + dy < 0 || y + dy >= blockMap[0].length) break;
-        }
-        return new Pair<>(x, y); // return last free block
     }
 
     /**
@@ -344,6 +397,29 @@ public class AreaLayoutLoader {
         if (right) return new ModNameExt[]{ModNameExt.rowleftcap, ModNameExt.row, ModNameExt.NONE};
         // if none of the above kinds of modularization fit, just return no modularization
         return new ModNameExt[]{ModNameExt.NONE};
+    }
+
+    /**
+     * Calculates the last free position (containing no block) in the given direction from the given starting block
+     *
+     * @param blockMap the block map to use for checking
+     * @param x        the starting x
+     * @param y        the starting y
+     * @param dx       the change in x for the direction
+     * @param dy       the change in y for the direction
+     * @return a pair of integers containing the last free position (containing no block) in the given direction. This
+     * will not take into account whether the starting position itself is free
+     */
+    private static Pair<Integer> lastFreeBlockInDirection(boolean[][] blockMap, int x, int y, int dx, int dy) {
+        while (!blockMap[x + dx][y + dy]) { // while there is no block in the given direction
+            // keep going in that direction
+            x += dx;
+            y += dy;
+            // if the next move is out of bounds, break from the loop and declare this as the last free block
+            if (x + dx < 0 || x + dx >= blockMap.length) break;
+            if (y + dy < 0 || y + dy >= blockMap[0].length) break;
+        }
+        return new Pair<>(x, y); // return last free block
     }
 
     /**
