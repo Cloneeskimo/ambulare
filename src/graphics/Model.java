@@ -248,7 +248,7 @@ public class Model {
     /**
      * Updates the texture coordinate VBO the model should use when rendering
      *
-     * @param id the id of the new VBO to use
+     * @param id      the id of the new VBO to use
      * @param cleanup whether to cleanup the previous vbo
      */
     public void useTexCoordVBO(int id, boolean cleanup) {
@@ -261,7 +261,14 @@ public class Model {
         glBindVertexArray(0); // unbind vao
     }
 
-    // todo
+    /**
+     * Updates the texture coordinates the model should use by creating a new VBO and cleaning up the previous one. If
+     * similar texture coordinates are going to be alternated between, the VBOs should be saved and switched between
+     * using useTexCoordVBO() instead of this method as this method will take more time and should only be used when
+     * completely unique texture coordinates are being generateds
+     *
+     * @param texCoords the new texture coordinates to use
+     */
     public void useTexCoords(float[] texCoords) {
         FloatBuffer fb = MemoryUtil.memAllocFloat(texCoords.length); // allocate buffer space for tex coord data
         fb.put(texCoords).flip(); // put texture coordinate data into buffer

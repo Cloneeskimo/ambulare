@@ -13,6 +13,14 @@ area:
     # specify to not apply lights to foreground objects
     light_foreground: false
 
+    # specify the backdrop
+    backdrop:
+    {
+        texture_path: /textures/backdrop.jpg
+        blend_mode: multiplicative
+        color: 1f 0f 1.2f 1f
+    }
+
     # provide a key mapping from characters in the layout to blocks
     block_key:
     {

@@ -100,12 +100,13 @@ public class Camera {
 
     /**
      * Get the camera's zoom as a normalized linear function of a given zoom scroll factor
+     *
      * @return the camera's zoom in the format described above
      */
     public float getLinearZoom(float factor) {
-        float minz = (float)(Math.log(MIN_ZOOM) / Math.log(factor));
-        float z = (float)(Math.log(this.zoom) / Math.log(factor)) - minz;
-        float mz = (float)(Math.log(MAX_ZOOM) / Math.log(factor)) - minz;
+        float minz = (float) (Math.log(MIN_ZOOM) / Math.log(factor));
+        float z = (float) (Math.log(this.zoom) / Math.log(factor)) - minz;
+        float mz = (float) (Math.log(MAX_ZOOM) / Math.log(factor)) - minz;
         return z / mz;
     }
 

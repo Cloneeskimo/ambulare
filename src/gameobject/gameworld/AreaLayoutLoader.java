@@ -235,9 +235,9 @@ public class AreaLayoutLoader {
      * @param blockMap    the block map to use for pinning decors - should be the middleground block map
      */
     public static void loadLayoutLayerDecor(Map<DecorInfo, Map<String, Material>> materialMap,
-                                                        List<GameObject> decor, Node layout,
-                                                        Map<Character, TileInfo> key, List<AnimatedTexture> ats,
-                                                        boolean[][] blockMap) {
+                                            List<GameObject> decor, Node layout,
+                                            Map<Character, TileInfo> key, List<AnimatedTexture> ats,
+                                            boolean[][] blockMap) {
         List<Node> rows = layout.getChildren(); // get the rows of the layout
 
         for (int y = 0; y < rows.size(); y++) { // go through each row
@@ -541,25 +541,25 @@ public class AreaLayoutLoader {
                 // resource relative texture path flag
             else if (n.equals("resource_relative")) this.texResPath = Boolean.parseBoolean(c.getValue());
             else if (n.equals("blend_mode")) { // blend mode
-                try { // try to convert to a material's blend mode
-                    this.bm = Material.BlendMode.valueOf(c.getValue().toUpperCase());
+                try {
+                    this.bm = Material.BlendMode.valueOf(c.getValue().toUpperCase()); // try to convert to blend mode
                 } catch (Exception e) { // if conversion was unsuccessful
-                    Utils.log(Utils.getImproperFormatErrorLine("blend mode", "TileInfo",
+                    Utils.log(Utils.getImproperFormatErrorLine("blend_mode", "TileInfo",
                             "must be either: none, multiplicative, or averaged", true),
                             "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
                             false); // log as much
                 }
             } else if (n.equals("animation_frames")) { // animation frames
-                try { // try to convert to an integer
-                    this.animFrames = Integer.parseInt(c.getValue());
+                try {
+                    this.animFrames = Integer.parseInt(c.getValue()); // try to convert to an integer
                 } catch (Exception e) { // if conversion was unsuccessful
-                    Utils.log(Utils.getImproperFormatErrorLine("animation frame count",
+                    Utils.log(Utils.getImproperFormatErrorLine("animation_frame_count",
                             "TileInfo", "must be a proper integer greater than 0",
                             true), "gameobject.gameworld.AreaLayoutLoader",
                             "parseChild(Node)", false); // log as much
                 }
                 if (this.animFrames < 1) { // if the amount of frames is invalid
-                    Utils.log(Utils.getImproperFormatErrorLine("animation frame count",
+                    Utils.log(Utils.getImproperFormatErrorLine("animation_frame_count",
                             "TileInfo", "must be a proper integer greater than 0",
                             true), "gameobject.gameworld.AreaLayoutLoader",
                             "parseChild(Node)", false); // log as much
@@ -567,17 +567,17 @@ public class AreaLayoutLoader {
                 }
                 this.animated = this.animFrames > 1; // update animated flag based on amount of frames
             } else if (n.equals("animation_time")) { // animation time
-                try { // try to convert to a float
-                    this.frameTime = Float.parseFloat(c.getValue());
+                try {
+                    this.frameTime = Float.parseFloat(c.getValue()); // try to convert to a float
                 } catch (Exception e) { // if conversion was unsuccessful
-                    Utils.log(Utils.getImproperFormatErrorLine("animation frame time",
+                    Utils.log(Utils.getImproperFormatErrorLine("animation_frame_time",
                             "TileInfo",
                             "must be a proper floating pointer number greater than 0", true),
                             "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
                             false); // log as much
                 }
                 if (this.frameTime <= 0f) { // if the frame time is invalid
-                    Utils.log(Utils.getImproperFormatErrorLine("animation frame time",
+                    Utils.log(Utils.getImproperFormatErrorLine("animation_frame_time",
                             "TileInfo",
                             "must be a proper floating pointer number greater than 0", true),
                             "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
@@ -681,8 +681,8 @@ public class AreaLayoutLoader {
                                 true), "gameobject.gameworld.AreaLayoutLoader", "parseChild(c)",
                                 false); // if none of the above, log and ignore
                 } else if (n.equals("x_offset")) { // horizontal offset
-                    try { // try to convert to a float
-                        this.xOffset = Float.parseFloat(c.getValue());
+                    try {
+                        this.xOffset = Float.parseFloat(c.getValue()); // try to convert to a float
                     } catch (Exception e) { // if conversion was unsuccessful
                         Utils.log(Utils.getImproperFormatErrorLine("x_offset", "DecorInfo",
                                 "must be a proper floating pointer number", true),
@@ -690,8 +690,8 @@ public class AreaLayoutLoader {
                                 false); // log as much
                     }
                 } else if (n.equals("y_offset")) { // vertical offset
-                    try { // try to convert to a float
-                        this.yOffset = Float.parseFloat(c.getValue());
+                    try {
+                        this.yOffset = Float.parseFloat(c.getValue()); // try to convert to a float
                     } catch (Exception e) { // if conversion was unsuccessful
                         Utils.log(Utils.getImproperFormatErrorLine("y_offset", "DecorInfo",
                                 "must be a proper floating pointer number", true),
@@ -699,8 +699,8 @@ public class AreaLayoutLoader {
                                 false); // log as much
                     }
                 } else if (n.equals("x_random_interval")) { // random horizontal offset
-                    try { // try to convert to a float
-                        this.xRandInterval = Math.abs(Float.parseFloat(c.getValue()));
+                    try {
+                        this.xRandInterval = Math.abs(Float.parseFloat(c.getValue())); // try to convert to a float
                     } catch (Exception e) { // if conversion was unsuccessful
                         Utils.log(Utils.getImproperFormatErrorLine("x_random_interval", "DecorInfo",
                                 "must be a proper floating pointer number", true),
@@ -708,8 +708,8 @@ public class AreaLayoutLoader {
                                 false); // log as much
                     }
                 } else if (n.equals("y_random_interval")) { // random vertical offset
-                    try { // try to convert to a float
-                        this.yRandInterval = Math.abs(Float.parseFloat(c.getValue()));
+                    try {
+                        this.yRandInterval = Math.abs(Float.parseFloat(c.getValue())); // try to convert to a float
                     } catch (Exception e) { // if conversion was unsuccessful
                         Utils.log(Utils.getImproperFormatErrorLine("y_random_interval", "DecorInfo",
                                 "must be a proper floating pointer number", true),
@@ -717,8 +717,8 @@ public class AreaLayoutLoader {
                                 false); // log as much
                     }
                 } else if (n.equals("x_light_offset")) { // light x offset
-                    try { // try to convert to a float
-                        this.lightXOffset = Float.parseFloat(c.getValue());
+                    try {
+                        this.lightXOffset = Float.parseFloat(c.getValue()); // try to convert to a float
                     } catch (Exception e) { // if conversion was unsuccessful
                         Utils.log(Utils.getImproperFormatErrorLine("x_light_offset", "DecorInfo",
                                 "must be a proper floating pointer number", true),
@@ -726,8 +726,8 @@ public class AreaLayoutLoader {
                                 false); // log as much
                     }
                 } else if (n.equals("y_light_offset")) { // light y offset
-                    try { // try to convert to a float
-                        this.lightYOffset = Float.parseFloat(c.getValue());
+                    try {
+                        this.lightYOffset = Float.parseFloat(c.getValue()); // try to convert to a float
                     } catch (Exception e) { // if conversion was unsuccessful
                         Utils.log(Utils.getImproperFormatErrorLine("y_light_offset", "DecorInfo",
                                 "must be a proper floating pointer number", true),
