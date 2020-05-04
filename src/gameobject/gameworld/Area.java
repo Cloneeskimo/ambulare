@@ -198,10 +198,10 @@ public class Area {
      * @param interval the amount of time to account for
      */
     public void update(float interval) {
-        this.backdrop.update(interval); // update backdrop
         for (AnimatedTexture at : this.ats) at.update(interval); // update animated textures
         for (GameObject o : this.decor[0]) o.update(interval); // update background decor
         for (GameObject o : this.decor[1]) o.update(interval); // update foreground decor
+        this.backdrop.update(interval); // update backdrop
     }
 
     /**
@@ -211,11 +211,7 @@ public class Area {
      * @param os the lists of world objects to render in the area
      */
     public void render(ShaderProgram sp, Camera cam, List<WorldObject> os) {
-        sp.setUniform("camZoom", 1f); // set to 1 to render backdrop
-        this.backdrop.setPos(cam.getX(), cam.getY()); // set the backdrop position to the camera's position
         this.backdrop.render(sp); // render the backdrop
-        sp.setUniform("camZoom", cam.getZoom()); // use the correct zoom then
-        sp.setUniform("useLights", 1); // use lights for background/middleground objects
         renderBlocks(sp, this.blocks[0]); // render the background blocks
         for (GameObject o : this.decor[0]) o.render(sp); // render the background decor
         renderBlocks(sp, this.blocks[1]); // render the middleground blocks
@@ -472,7 +468,13 @@ public class Area {
          */
         @Override
         public void render(ShaderProgram sp) {
-            if (this.cam != null) super.render(sp); // render if a camera has been given
+            if (this.cam != null) { // only render if a camera has been given
+                sp.setUniform("useLights", 0); // disable light usage for backdrop
+                sp.setUniform("camZoom", 1f); // set camera zoom to 1 to render backdrop
+                super.render(sp); // render
+                sp.setUniform("camZoom", cam.getZoom()); // return the zoom to the correct camera zoom
+                sp.setUniform("useLights", 1); // turn light usage back on
+            }
         }
 
         /**

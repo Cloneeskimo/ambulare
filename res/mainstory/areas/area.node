@@ -11,14 +11,16 @@ area:
     name: Noob Forest
 
     # specify to not apply lights to foreground objects
-    light_foreground: false
+    light_foreground: true
 
     # specify the backdrop
     backdrop:
     {
         texture_path: /textures/backdrop.jpg
         blend_mode: multiplicative
-        color: 1f 0f 1.2f 1f
+        color: 1f 0.5f 1.1f 1f
+        view_scale: 0.5f
+        zoom_factor: 1.0f
     }
 
     # provide a key mapping from characters in the layout to blocks
@@ -100,7 +102,7 @@ area:
         2: dddggg       ddddg     www ddddddddwwwwwww     wwww
         3: ddddddw wwwdddddddg   wwww ww w  www  wwtw     wtww
         4: ddddddgggggddddddddg  ggggwwwwwwwwwwwwgggg     gggg
-        5:   dddddddddddddddddd  ddddggggggggggggdddd     dddd
+        5:   dddddddddddddddddd  ddddgddddddddgggdddd     dddd
         6:       ddddddd           ddddddddddddddddd
         7:                              dddddd
     }
@@ -112,9 +114,5 @@ area:
         1:
         2:            WT
         3:        T              T W
-        4:
-        5:
-        6:
-        7:
     }
 }

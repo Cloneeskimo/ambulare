@@ -239,9 +239,10 @@ public class AreaLayoutLoader {
                                             Map<Character, TileInfo> key, List<AnimatedTexture> ats,
                                             boolean[][] blockMap) {
         List<Node> rows = layout.getChildren(); // get the rows of the layout
-
-        for (int y = 0; y < rows.size(); y++) { // go through each row
-            String row = rows.get(rows.size() - 1 - y).getValue(); // get the row
+        int diff = blockMap[0].length - rows.size(); // find diff in rows of the current layer and the overall layout
+        for (int i = 0; i < rows.size(); i++) { // go through each row
+            String row = rows.get(rows.size() - 1 - i).getValue(); // get the row
+            int y = i + diff; // the y for this row is i + the difference in rows
             for (int x = 0; x < row.length(); x++) { // loop through each character in the row
                 DecorInfo di = (DecorInfo) key.get(row.charAt(x)); // get the decor info for that character
                 if (di != null) { // if there is decor there
