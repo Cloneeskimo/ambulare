@@ -19,11 +19,6 @@ import static org.lwjgl.opengl.GL11.glClearColor;
 public class GameWorld {
 
     /**
-     * Static Data
-     */
-    private static final int MAX_LIGHTS = 5; // maximum amount of lights in the game world
-
-    /**
      * Members
      */
     private List<WorldObject> objects; // the world objects in the game world
@@ -42,12 +37,13 @@ public class GameWorld {
         this.dnc = new DayNightCycle(0f, 20f, new float[]{
                 0.53f, 0.81f, 0.92f, 0.0f}, new float[]{0.1f, 0.1f, 0.1f, 0.0f}); // initialize D/N cycle settings
         this.initSP(); // initialize shader program
-        this.cam = new Camera();
-        this.area = startingArea;
+        this.cam = new Camera(); // create the camera
+        this.area = startingArea; // save the starting area as a member
+        this.area.useCam(this.cam); // give the camera to the area
         PhysicsEngine.giveBlockMap(this.area.getBlockMap()); // give the area's block map to the physics engine
         // register GLFW window scroll callback for camera zoom
         glfwSetScrollCallback(windowHandle, (w, x, y) -> { // when the user scrolls
-            this.cam.zoom(y > 0 ? 1.15f : 0.85f); // zoom on camera
+            this.cam.zoom(y > 0 ? 1.15f : (1f / 1.15f)); // zoom on camera
         });
     }
 
@@ -69,6 +65,7 @@ public class GameWorld {
         sp.registerUniform("camY"); // register camera y uniform
         sp.registerUniform("camZoom"); // register camera zoom uniform
         sp.registerUniform("sunPresence"); // register sun presence uniform
+        sp.registerUniform("useLights"); // register sun presence uniform
         sp.registerLightArrayUniform(); // register light array uniform
     }
 
@@ -96,7 +93,7 @@ public class GameWorld {
         this.sp.setUniform("camY", this.cam.getY()); // set camera y uniform
         this.sp.setUniform("camZoom", this.cam.getZoom()); // set camera zoom uniform
         this.sp.setUniform("sunPresence", this.dnc.getSunPresence()); // set sun presence uniform
-        this.area.render(this.sp, this.objects); // render the areas
+        this.area.render(this.sp, this.cam, this.objects); // render the areas
         this.sp.unbind(); // unbind shader program
     }
 
@@ -203,14 +200,7 @@ public class GameWorld {
             this.sunAngle += sunSpeed * interval; // update the sun's angle
             if (this.sunAngle >= 360f) this.sunAngle = 0f; // reset angle if a full rotation has occurred
             float newSunPresence = calcSunPresence(this.sunAngle); // calculate the new presence based on the new angle
-            if (newSunPresence != this.sunPresence) { // if the presence has changed
-                this.sunPresence = newSunPresence; // save the new sun presence
-                // update background color
-                glClearColor(this.dayColor[0] * sunPresence + this.nightColor[0] * (1 - sunPresence),
-                        this.dayColor[1] * sunPresence + this.nightColor[1] * (1 - sunPresence),
-                        this.dayColor[2] * sunPresence + this.nightColor[2] * (1 - sunPresence),
-                        this.dayColor[3] * sunPresence + this.nightColor[3] * (1 - sunPresence));
-            }
+            if (newSunPresence != this.sunPresence) this.sunPresence = newSunPresence; // save sun presence if new
         }
 
         /**

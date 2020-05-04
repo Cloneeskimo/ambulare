@@ -10,6 +10,9 @@ area:
     # specify the name of the area
     name: Noob Forest
 
+    # specify to not apply lights to foreground objects
+    light_foreground: false
+
     # provide a key mapping from characters in the layout to blocks
     block_key:
     {

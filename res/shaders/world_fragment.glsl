@@ -18,10 +18,13 @@ struct Light {
 };
 
 // uniforms
-uniform sampler2D texSampler; // texture sampler
-uniform vec4 color; // color
-uniform int isTextured; // texture flag
-uniform int blend; // blend flag
+uniform sampler2D texSampler; // texture sampler - bound to the material's texture
+uniform vec4 color;           // color - bound to the material's color
+uniform int isTextured;       // flag representing whether the material is textured or not
+uniform int blend;            /* defines how to blend a material's color and texture if there are both. 0 - just use
+                                 the texture; 1 - multiply color and texture; 2 - average color and texture */
+uniform int useLights;        /* flag for applying lights - this becomes false when rendering forefront objects as they
+                                 for which lights should apply */
 
 // lighting uniforms
 uniform float sunPresence; // how present the sun currently is
@@ -74,5 +77,5 @@ vec4 applyLights(vec4 color) {
 void main() {
     vec4 color = getBaseColor(); // get base color based on material
     color = applyDayNight(color); // apply day/night cycle coloring
-    fragColor = applyLights(color); // apply lighting
+    fragColor = (useLights == 1) ? applyLights(color) : color; // apply lighting if lighting flag is true
 }

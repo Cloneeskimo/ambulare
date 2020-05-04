@@ -249,13 +249,26 @@ public class Model {
      * Updates the texture coordinate VBO the model should use when rendering
      *
      * @param id the id of the new VBO to use
+     * @param cleanup whether to cleanup the previous vbo
      */
-    public void useTexCoordVBO(int id) {
+    public void useTexCoordVBO(int id, boolean cleanup) {
+        if (cleanup) glDeleteBuffers(this.ids[2]); // delete old VBO if cleanup enabled
+        this.ids[2] = id; // save new VBO ID
         glBindVertexArray(this.ids[0]); // bind the vertex array object
         glBindBuffer(GL_ARRAY_BUFFER, id); // bind texture coordinate vertex buffer object
         glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0); // put VBO into VAO
         glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind VBO
         glBindVertexArray(0); // unbind vao
+    }
+
+    // todo
+    public void useTexCoords(float[] texCoords) {
+        FloatBuffer fb = MemoryUtil.memAllocFloat(texCoords.length); // allocate buffer space for tex coord data
+        fb.put(texCoords).flip(); // put texture coordinate data into buffer
+        int id = glGenBuffers(); // generate texture coordinate vertex buffer object
+        glBindBuffer(GL_ARRAY_BUFFER, id); // bind texture coordinate vertex buffer object
+        glBufferData(GL_ARRAY_BUFFER, fb, GL_STATIC_DRAW); // put tex coord data into tex coord VBO
+        this.useTexCoordVBO(id, true); // use the new VBO
     }
 
     /**

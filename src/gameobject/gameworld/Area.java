@@ -1,11 +1,9 @@
 package gameobject.gameworld;
 
 import gameobject.GameObject;
+import gameobject.TextObject;
 import graphics.*;
-import utils.Node;
-import utils.Pair;
-import utils.Transformation;
-import utils.Utils;
+import utils.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -71,9 +69,9 @@ public class Area {
         for (Material m : blockPositions.keySet()) { // for each material
             Texture t = m.getTexture(); // get texture for material
             // if the texture is animated, tell the model which texture coordinates (frame) to use
-            if (t instanceof AnimatedTexture) bm.useTexCoordVBO(((AnimatedTexture) t).getTexCoordVBO());
+            if (t instanceof AnimatedTexture) bm.useTexCoordVBO(((AnimatedTexture) t).getTexCoordVBO(), false);
                 // if the texture isn't animated, just usse the entire texture
-            else bm.useTexCoordVBO(AnimatedTexture.getTexCoordVBO(0, 1));
+            else bm.useTexCoordVBO(AnimatedTexture.getTexCoordVBO(0, 1), false);
             m.setUniforms(sp); // set the appropriate material uniforms
             bm.renderBlocks(sp, blockPositions.get(m)); // render all the blocks with that material at once
         }
@@ -91,7 +89,9 @@ public class Area {
                                                                  background decor and decor[1] is foreground decor */
     private final List<AnimatedTexture> ats;                  // a list of animated textures to update
     private final boolean[][] blockMap;                       // block map of middleground maps for collision detection
+    private BackDrop backdrop;                                // the scrolling backdrop rendered behind the world
     private String name = "Unnamed";                          // the name of the area
+    private boolean lightForeground = false;                  // whether to apply lights to objects is the foreground
 
     /**
      * Constructs the area by compiling the information from a given node. Most of the loading process is actually done
@@ -124,6 +124,8 @@ public class Area {
      * middleground is rendered. Foreground objects do not cause collisions
      * <p>
      * - name [optional][default: Unnamed]: the name of the area
+     * <p>
+     * - light_foreground [optional][default: false]: whether to apply lights to the objects in the foreground
      * <p>
      * Note that, if any of the info above is improperly formatted, a message saying as much will be logged. As
      * such, when designing areas to be loaded into the game, the logs should be checked often to make sure the
@@ -170,6 +172,8 @@ public class Area {
             String n = c.getName(); // get name of child
             if (n.equals("name")) { // if the child is for the area's name
                 this.name = c.getValue(); // save name
+            } else if (n.equals("light_foreground")) { // light foreground
+                this.lightForeground = Boolean.parseBoolean(c.getValue()); // save value
             } else { // if the child is unrecognized
                 if (!n.equals("layout") && !(n.equals("block_key")) && !(n.equals("decor_key")) &&
                         !(n.equals("background_layout")) && !(n.equals("middleground_layout")) && !(n.equals(
@@ -178,6 +182,10 @@ public class Area {
                             "gameobject.gameworld.Area", "Area(Node)", false); // log and ignore
             }
         }
+
+        // initialize backdrop
+        this.backdrop = new BackDrop("/textures/backdrop.jpg", true, this.blockMap.length,
+                this.blockMap[0].length);
     }
 
     /**
@@ -186,6 +194,7 @@ public class Area {
      * @param interval the amount of time to account for
      */
     public void update(float interval) {
+        this.backdrop.update(interval); // update backdrop
         for (AnimatedTexture at : this.ats) at.update(interval); // update animated textures
         for (GameObject o : this.decor[0]) o.update(interval); // update background decor
         for (GameObject o : this.decor[1]) o.update(interval); // update foreground decor
@@ -197,13 +206,31 @@ public class Area {
      * @param sp the shader program to use for rendering
      * @param os the lists of world objects to render in the area
      */
-    public void render(ShaderProgram sp, List<WorldObject> os) {
+    public void render(ShaderProgram sp, Camera cam, List<WorldObject> os) {
+        sp.setUniform("camZoom", 1f); // set to 1 to render backdrop
+        this.backdrop.setPos(cam.getX(), cam.getY()); // set the backdrop position to the camera's position
+        this.backdrop.render(sp); // render the backdrop
+        sp.setUniform("camZoom", cam.getZoom()); // use the correct zoom then
+        sp.setUniform("useLights", 1); // use lights for background/middleground objects
         renderBlocks(sp, this.blocks[0]); // render the background blocks
         for (GameObject o : this.decor[0]) o.render(sp); // render the background decor
         renderBlocks(sp, this.blocks[1]); // render the middleground blocks
         for (WorldObject wo : os) wo.render(sp); // render world objects (middleground) from the game world
+        // disable light usage for foreground objects if the setting is set to false
+        if (!this.lightForeground) sp.setUniform("useLights", 0);
         renderBlocks(sp, this.blocks[2]); // render the foreground blocks
         for (GameObject o : this.decor[1]) o.render(sp); // render the foreground decor
+    }
+
+    public void useCam(Camera cam) {
+        this.backdrop.useCam(cam);
+    }
+
+    /**
+     * Resizes the backdrop to fit the screen
+     */
+    public void resized() {
+        this.backdrop.resized();
     }
 
     /**
@@ -264,6 +291,92 @@ public class Area {
             glDisableVertexAttribArray(0); // disable model coordinate vbo
             glDisableVertexAttribArray(1); // disable texture coordinate vbo
             glBindVertexArray(0); // disable vao
+        }
+    }
+
+    // todo
+    private static class BackDrop extends GameObject {
+
+        private Camera cam;
+        private int areaWidth, areaHeight;
+        private float texAr;
+
+        public BackDrop(String texPath, boolean resRelative, int areaWidth, int areaHeight) {
+            super(Model.getStdGridRect(1, 1), new Material(new Texture(texPath, resRelative)));
+            this.resized();
+            this.areaWidth = areaWidth;
+            this.areaHeight = areaHeight;
+            this.texAr = (float)this.getMaterial().getTexture().getWidth() /
+                         (float)this.getMaterial().getTexture().getHeight();
+        }
+
+        public void resized() {
+            this.setScale(2f * (Global.ar > 1f ? Global.ar : 1), 2f / (Global.ar < 1f ? Global.ar : 1));
+        }
+
+        @Override
+        public void render(ShaderProgram sp) {
+            if (this.cam != null) super.render(sp);
+        }
+
+        public void useCam(Camera cam) {
+            this.cam = cam;
+            this.setPos(cam.getX(), cam.getY());
+        }
+
+        @Override
+        public void update(float interval) {
+            if (this.cam != null) {
+                this.setPos(cam.getX(), cam.getY());
+                this.model.useTexCoords(getAppropriateTexCoords(this.texAr, this.getX() / (float)this.areaWidth,
+                        1f - this.getY() / (float)this.areaHeight, this.cam, 1f, 0f));
+            }
+            super.update(interval);
+        }
+
+        private static float[] getAppropriateTexCoords(float texAr, float xProp, float yProp, Camera cam,
+                                                       float scale, float zoomFactor) {
+
+            xProp = Math.max(0f, Math.min(1f, xProp));
+            yProp = Math.max(0f, Math.min(1f, yProp));
+            float viewWidth = 1f, viewHeight = 1f;
+
+            if (Global.ar > texAr) { // screen is wider than backdrop in proportion to height
+                viewHeight = texAr / Global.ar; // ratio of ratios
+            } else { // backdrop is wider than screen in proportion to height
+                viewWidth = Global.ar / texAr; // ratio of ratios
+            }
+
+            float maxScale = (1f / viewWidth);
+            maxScale = Math.min(maxScale, 1f / viewHeight);
+
+            float lz = 1f - (cam.getLinearZoom(1.15f) - 0.5f);
+            scale = Math.min(maxScale, scale + (lz * zoomFactor));
+
+            // apply scale
+            viewWidth *= scale;
+            viewHeight *= scale;
+            float lx = xProp * (1 - viewWidth); // calculate left x tex coordinate
+            float ly = yProp * (1 - viewHeight); // calculate lower y tex coordinate
+            return new float[] { // compile info into finalized texture coordinate float array
+                    lx, ly + viewHeight,
+                    lx, ly,
+                    lx + viewWidth, ly,
+                    lx + viewWidth, ly + viewHeight
+            };
+
+
+//            if (Global.ar > 1f) interval *= Global.ar;
+//
+//            float lx = (xProp * (1 - interval));
+//            float ux = lx + xInterval;
+//            float uy = ly + yInterval;
+//            return new float[]{
+//                    lx, 1f,
+//                    lx, 0f,
+//                    ux, 0f,
+//                    ux, 1f
+//            };
         }
     }
 }

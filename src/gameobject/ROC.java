@@ -96,6 +96,7 @@ public class ROC {
         if (this.fadeBox != null) { // if there is a fade box, update it to fit the new window size
             this.fadeBox.setScale(2f * (Global.ar > 1f ? Global.ar : 1), 2f / (Global.ar < 1f ? Global.ar : 1));
         }
+        if (this.gameWorld != null) this.gameWorld.getArea().resized(); // tell the area of the resize
     }
 
     /**

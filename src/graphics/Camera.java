@@ -10,12 +10,12 @@ public class Camera {
     /**
      * Members
      */
-    private final static float MIN_ZOOM = 0.02f;     // minimum zoom
-    private final static float MAX_ZOOM = 1.2f;      // maximum zoom
-    private final static float DEFAULT_ZOOM = 0.2f;  // default zoom
     private float x, y, vx, vy;                      // position and velocity
     private float zoom;                              // zoom
     private GameObject following;                    // a game object to follow, if assigned
+    public final static float DEFAULT_ZOOM = 0.2f;   // default zoom
+    public final static float MIN_ZOOM = 0.02f;      // minimum zoom
+    public final static float MAX_ZOOM = 1.2f;       // maximum zoom
 
     /**
      * Constructs the camera with a specified zoom
@@ -96,6 +96,17 @@ public class Camera {
     public void setPos(float x, float y) {
         this.x = x;
         this.y = y;
+    }
+
+    /**
+     * Get the camera's zoom as a normalized linear function of a given zoom scroll factor
+     * @return the camera's zoom in the format described above
+     */
+    public float getLinearZoom(float factor) {
+        float minz = (float)(Math.log(MIN_ZOOM) / Math.log(factor));
+        float z = (float)(Math.log(this.zoom) / Math.log(factor)) - minz;
+        float mz = (float)(Math.log(MAX_ZOOM) / Math.log(factor)) - minz;
+        return z / mz;
     }
 
     /**

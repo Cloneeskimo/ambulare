@@ -91,7 +91,7 @@ public class GameObject {
         this.material.setUniforms(sp); // set material uniforms
         Texture t = this.material.getTexture(); // get material's texture
         // if the texture is animated, tell the model with texture coordinates to use
-        if (t instanceof AnimatedTexture) this.model.useTexCoordVBO(((AnimatedTexture) t).getTexCoordVBO());
+        if (t instanceof AnimatedTexture) this.model.useTexCoordVBO(((AnimatedTexture) t).getTexCoordVBO(), false);
         this.model.render(); // render model
     }
 
