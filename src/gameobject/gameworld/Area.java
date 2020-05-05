@@ -1,9 +1,8 @@
 package gameobject.gameworld;
 
 import gameobject.GameObject;
-import gameobject.TextObject;
+import gameobject.ui.ListObject;
 import graphics.*;
-import org.lwjgl.system.CallbackI;
 import utils.*;
 
 import java.util.ArrayList;

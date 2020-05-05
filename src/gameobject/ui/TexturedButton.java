@@ -1,19 +1,21 @@
-package gameobject;
+package gameobject.ui;
 
+import gameobject.GameObject;
 import graphics.MSAT;
 import graphics.Material;
 import graphics.Model;
+import utils.MouseInputEngine;
 
 /**
  * This extends GameObject to implement mouse interactivity by using a multi-state animated texture with separate states
  * for no mouse interaction, mouse hovering, and mouse pressing
  */
-public class TexturedButton extends GameObject implements MIHSB.MouseInteractable {
+public class TexturedButton extends GameObject implements MouseInputEngine.MouseInteractive {
 
     /**
      * Members
      */
-    private final int MIID; // the mouse interactivity id given in the constructor
+    private final MouseInputEngine.MouseCallback[] mcs; // array for mouse callbacks
 
     /**
      * Constructs the textured button with animation within texture states state
@@ -25,17 +27,16 @@ public class TexturedButton extends GameObject implements MIHSB.MouseInteractabl
      * @param hoverFrames   how many frames in the texture correspond to the hover state
      * @param pressedFrames how many frames in the texture correspond to the pressed state
      * @param frameTime     how much time (in seconds) to show a frame
-     * @param MIID          the mouse interactivity ID of the button
      */
     public TexturedButton(Model model, String texResPath, int defaultFrames, int hoverFrames, int pressedFrames,
-                          float frameTime, int MIID) {
+                          float frameTime) {
         super(model, null);
         // create material using a multi-state animated texture
         this.material = new Material(new MSAT(texResPath, true, new MSAT.MSATState[]{
                 new MSAT.MSATState(defaultFrames, frameTime),
                 new MSAT.MSATState(hoverFrames, frameTime),
                 new MSAT.MSATState(pressedFrames, frameTime)}));
-        this.MIID = MIID;
+        mcs = new MouseInputEngine.MouseCallback[4]; // create array for callbacks
     }
 
     /**
@@ -46,56 +47,42 @@ public class TexturedButton extends GameObject implements MIHSB.MouseInteractabl
      * @param model      the model to use for textured button
      * @param texResPath the resource-relative path to the texture. The texture should have its frames in the
      *                   following order: default frame, then the hover frame, then the pressed frame
-     * @param MIID       the mouse interactivity ID of the button
      */
-    public TexturedButton(Model model, String texResPath, int MIID) {
-        this(model, texResPath, 1, 1, 1, 0, MIID);
+    public TexturedButton(Model model, String texResPath) {
+        this(model, texResPath, 1, 1, 1, 0);
     }
 
     /**
-     * Responds to mouse hovering by updating the state of the MSAT
-     *
-     * @param x the x position of the mouse in either world or camera-view space, depending on whether the
-     *          implementing object reacts to a camera
-     * @param y the y position of the mouse in either world or camera-view space, depending on whether the
-     *          implementing object reacts to a camera
+     * Saves the given mouse callback to be called when the given kind of input occurs
+     * @param type the mouse input type to give a callback for
+     * @param mc the callback
      */
     @Override
-    public void onHover(float x, float y) {
-        ((MSAT) this.material.getTexture()).setState(1);
+    public void giveCallback(MouseInputEngine.MouseInputType type, MouseInputEngine.MouseCallback mc) {
+        MouseInputEngine.MouseInteractive.saveCallback(type, mc, this.mcs); // save callback
     }
 
     /**
-     * Responds to mouse hovering ending by updating the state of the MSAT
+     * Responds to mouse interaction by invoking any corresponding callbacks and updating the texture state
+     * @param type the type of mouse input that occurred
+     * @param x the x position of the mouse in world coordinate or camera-view coordinates, depending on the mouse
+     *          input engine's camera usage flag for this particular implementing object
+     * @param y the y position of the mouse in world coordinate or camera-view coordinates, depending on the mouse
      */
     @Override
-    public void onDoneHovering() {
-        ((MSAT) this.material.getTexture()).setState(0);
-    }
-
-    /**
-     * Responds to a mouse press by updating the state of the MSAT
-     */
-    @Override
-    public void onPress() {
-        ((MSAT) this.material.getTexture()).setState(2);
-    }
-
-    /**
-     * Responds to a mouse release by updating the state of the MSAT
-     */
-    @Override
-    public void onRelease() {
-        ((MSAT) this.material.getTexture()).setState(1);
-    }
-
-    /**
-     * The mouse interaction ID of a text button is the ID given to it when constructing
-     *
-     * @return the ID given when constructing
-     */
-    @Override
-    public int getID() {
-        return this.MIID;
+    public void mouseInteraction(MouseInputEngine.MouseInputType type, float x, float y) {
+        switch (type) { // switch on type of interaction
+            case HOVER: // on hover
+            case RELEASE: // or release
+                ((MSAT) this.material.getTexture()).setState(1); // use hovered state of texture
+                break;
+            case DONE_HOVERING: // on done hovering
+                ((MSAT) this.material.getTexture()).setState(0); // use default state of texture
+                break;
+            case PRESS: // on press
+                ((MSAT) this.material.getTexture()).setState(2); // use press state of texture
+                break;
+        }
+        MouseInputEngine.MouseInteractive.invokeCallback(type, mcs, x, y); // invoke callback
     }
 }

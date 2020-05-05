@@ -1,8 +1,8 @@
 package logic;
 
 import gameobject.ROC;
-import gameobject.TextButton;
-import gameobject.TextObject;
+import gameobject.ui.TextButton;
+import gameobject.ui.TextObject;
 import gameobject.gameworld.Area;
 import gameobject.gameworld.Entity;
 import gameobject.gameworld.WorldObject;
@@ -21,7 +21,6 @@ public class WorldLogic extends GameLogic {
      */
     Window window;                      // reference to the window for exit button
     Entity player;                      // reference to player
-    boolean exitButtonPressed = false;  // whether exit has been pressed
 
     /**
      * Initializes any members
@@ -75,11 +74,13 @@ public class WorldLogic extends GameLogic {
                 new ROC.PositionSettings(-1f, -1f, true, 0.02f));
         this.roc.getStaticGameObject(2).setScale(0.6f, 0.6f); // scale text down
 
-        // create and add text button
-        this.roc.addStaticObject(new TextButton(Global.FONT, "Exit", 1),
-                new ROC.PositionSettings(1f, -1f, true,
-                        0.02f)); // create text button
-        this.roc.getStaticGameObject(3).setScale(0.6f, 0.6f); // scale button down
+        // create and add exit button
+        TextButton exit = new TextButton(Global.FONT, "Exit"); // create exit button
+        exit.setScale(0.6f, 0.6f);
+        exit.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { window.close(); });
+
+        // add exit button to ROC
+        this.roc.addStaticObject(exit, new ROC.PositionSettings(1f, -1f, true, 0.02f));
         this.roc.ensureAllPlacements(); // ensure ROC static object placements
 
         // create and add area name
@@ -130,23 +131,12 @@ public class WorldLogic extends GameLogic {
     }
 
     /**
-     * Responds to button clicks by printing out the MIID of the button
-     *
-     * @param MIID the ID of the object that was clicked
-     */
-    @Override
-    public void clicked(int MIID) {
-        if (MIID == 1) exitButtonPressed = true;
-    }
-
-    /**
      * Updates the world logic
      *
      * @param interval the amount of time to account for
      */
     @Override
     public void update(float interval) {
-        if (exitButtonPressed) window.close(); // if exit was pressed, close window
         super.update(interval);
         Pair pos = new Pair(player.getX(), player.getY()); // pair player position
         Transformation.getGridCell(pos);

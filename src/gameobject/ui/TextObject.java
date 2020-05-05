@@ -1,5 +1,6 @@
-package gameobject;
+package gameobject.ui;
 
+import gameobject.GameObject;
 import graphics.Font;
 import graphics.Material;
 import graphics.Model;

@@ -4,10 +4,7 @@ import gameobject.gameworld.Area;
 import gameobject.gameworld.GameWorld;
 import gameobject.gameworld.WorldObject;
 import graphics.*;
-import utils.Global;
-import utils.Pair;
-import utils.Transformation;
-import utils.Utils;
+import utils.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +17,7 @@ import java.util.List;
  * (2) WorldObjects: objects with physics that are directly given to a game world to manage
  * Note that, by default, ROCs do not instantiate their game world to save on resources for settings where a game world
  * is not necessary. useGameWorld() must be called for the ROC to instantiate its game world
- * ROCs also provide extensive support for mouse interaction through having an MIHSB
+ * ROCs also provide extensive support for mouse interaction through having a mouse input engine
  */
 public class ROC {
 
@@ -34,7 +31,7 @@ public class ROC {
     private List<AnimatedTexture> ats;        // list of animated textures to update
     private GameWorld gameWorld;              // the game world to render underneath the static objects
     private GameObject fadeBox;               // used for fading the entire screen
-    private MIHSB mihsb;                      // mouse interaction hover state bundle to abstract away mouse input
+    private MouseInputEngine mip;             // mouse input engine to abstract away mouse input
     private ShaderProgram sp;                 // the shader programs used to render
     private float fadeTime;                   // amount of time the fade box fade should take
     private float fadeTimeLeft;               // amount of time left for the fade box fade
@@ -45,7 +42,7 @@ public class ROC {
     public ROC() {
         this.staticObjects = new ArrayList<>();
         this.ats = new ArrayList<>();
-        this.mihsb = new MIHSB();
+        this.mip = new MouseInputEngine();
         this.initSP(); // create and initialize shader programs
     }
 
@@ -57,7 +54,7 @@ public class ROC {
      */
     public void useGameWorld(long windowHandle, Area startingArea) {
         this.gameWorld = new GameWorld(windowHandle, startingArea); // create game world with the starting area
-        this.mihsb.useCam(this.gameWorld.getCam()); // tell the MIHSB to use the game world's cam for calculations
+        this.mip.useCam(this.gameWorld.getCam()); // tell the mouse input engine to use game world cam for calculations
     }
 
     /**
@@ -77,15 +74,14 @@ public class ROC {
     }
 
     /**
-     * Delegates mouse input the MIHSB
+     * Delegates mouse input the mouse input engine
      *
      * @param x      the normalized and de-aspected x position of the mouse if hover event, 0 otherwise
      * @param y      the normalized and de-aspected y position of the mouse if hover event, 0 otherwise
-     * @param action the nature of the mouse input (GLFW_PRESS, GLFW_RELEASE, or GLFW_HOVERED)
-     * @return an array containing the mouse interactions IDs of all mouse interaction objects that were clicked
+     * @param action the nature of the mouse input (GLFW_PRESS, GLFW_RELEASE, or GLFW_HOVERED)s
      */
-    public int[] mouseInput(float x, float y, int action) {
-        return this.mihsb.mouseInput(x, y, action); // delegate to MIHSB
+    public void mouseInput(float x, float y, int action) {
+        this.mip.mouseInput(x, y, action); // delegate to mouse input engine
     }
 
     /**
@@ -204,10 +200,10 @@ public class ROC {
     /**
      * Adds the given game object to the collection as a world object. This should be called as opposed to getting the
      * world first and then adding directly to the world, in case the object being added is able to be interacted with
-     * by a mouse. If not added through the ROC, it also won't be added to the MIHSB and mouse interaction will not
-     * occur properly. In addition, this will automatically add the object's material to the ROC's material list if
-     * the material is not already in the list. If this is not done, any animated object's will not work because
-     * their materials are not being updated
+     * by a mouse. If not added through the ROC, it also won't be added to the mouse input engine and mouse interaction
+     * will not occur properly. In addition, this will automatically add the object's texture to the ROC's animated
+     * texture list if is animated and is not already in the list. If this is not done, any animated object's may not
+     * work because their textures are not being updated
      *
      * @param wo the world object to add
      */
@@ -224,8 +220,8 @@ public class ROC {
             if (!this.ats.contains(at)) this.ats.add(at); // add it to animated textures list if not there already
         }
         this.gameWorld.addObject(wo); // otherwise just add to the game world
-        // if object is interactable with a mouse, add it to the MIHSB with the camera usage flag true (world object)
-        if (wo instanceof MIHSB.MouseInteractable) this.mihsb.add((MIHSB.MouseInteractable) wo, true);
+        if (wo instanceof MouseInputEngine.MouseInteractive) // if object is able to be interacted with by a mouse
+            this.mip.add((MouseInputEngine.MouseInteractive) wo, true); // add to MIP with cam flag set to true
     }
 
     /**
@@ -236,8 +232,8 @@ public class ROC {
      */
     public void addStaticObject(GameObject o, PositionSettings settings) {
         StaticObject so = new StaticObject(o, settings); // wrap object and settings into single object
-        // if object is interactable with a mouse, add it to the MIHSB with the camera usage flag false (static object)
-        if (o instanceof MIHSB.MouseInteractable) this.mihsb.add((MIHSB.MouseInteractable) o, false);
+        if (o instanceof MouseInputEngine.MouseInteractive) // if object is able to be interacted with by a mouse
+            this.mip.add((MouseInputEngine.MouseInteractive) o, false); // add to MIP with cam flag set to false
         so.ensurePosition(Global.ar); // position the object according to its settings
         this.staticObjects.add(so); // add object to static objects list
         Texture t = o.getMaterial().getTexture(); // get the texture of the object's material

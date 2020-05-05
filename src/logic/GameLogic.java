@@ -1,7 +1,7 @@
 package logic;
 
 import gameobject.ROC;
-import gameobject.TextObject;
+import gameobject.ui.TextObject;
 import graphics.Window;
 import utils.Global;
 
@@ -81,18 +81,7 @@ public abstract class GameLogic {
      * @param action the nature of the mouse input (GLFW_PRESS, GLFW_RELEASE, or GLFW_HOVERED)
      */
     public void mouseInput(float x, float y, int action) {
-        // notify roc of input and gather any IDs of clicked objects
-        int[] clickedIDs = this.roc.mouseInput(x, y, action);
-        for (int id : clickedIDs) this.clicked(id); // call a separate method to handle each ID click
-    }
-
-    /**
-     * This is called whenever a mouse interactable object in the ROC is clicked
-     * Extending classes should override this to react to mouse interactable clicks
-     *
-     * @param MIID the ID of the object that was clicked
-     */
-    public void clicked(int MIID) {
+        this.roc.mouseInput(x, y, action); // notify ROC of input
     }
 
     /**

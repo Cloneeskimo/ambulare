@@ -2,9 +2,10 @@ package logic;
 
 import gameobject.GameObject;
 import gameobject.ROC;
-import gameobject.TextButton;
+import gameobject.ui.TextButton;
 import graphics.*;
 import utils.Global;
+import utils.MouseInputEngine;
 import utils.PhysicsEngine;
 
 import static org.lwjgl.glfw.GLFW.GLFW_PRESS;
@@ -13,12 +14,6 @@ import static org.lwjgl.glfw.GLFW.GLFW_PRESS;
  * Dictates the logic the game will follow when the user is at the main menu
  */
 public class MainMenuLogic extends GameLogic {
-
-    /**
-     * Static data
-     */
-    private static final int PLAY_MIID = 0; // mouse interaction ID for play button
-    private static final int EXIT_MIID = 1; // mouse interaction ID for exit button
 
     /**
      * Members
@@ -117,11 +112,13 @@ public class MainMenuLogic extends GameLogic {
                 float[] hoverC = new float[]{0.8f, 0.8f, 0.8f, 1f}; // hover color for the buttons -> light gray
                 float[] pressC = new float[]{1f, 1f, 0f, 1f}; // pressed color for the buttons -> yellow
                 // create play button
-                TextButton play = new TextButton(Global.FONT, "Play", defaultC, hoverC, pressC, PLAY_MIID);
+                TextButton play = new TextButton(Global.FONT, "Play", defaultC, hoverC, pressC);
                 play.setScale(1.4f, 1.4f); // make it a little larger
+                play.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { this.phase = 7; });
                 // create exit button
-                TextButton exit = new TextButton(Global.FONT, "Exit", defaultC, hoverC, pressC, EXIT_MIID);
+                TextButton exit = new TextButton(Global.FONT, "Exit", defaultC, hoverC, pressC);
                 exit.setScale(1.4f, 1.4f); // make it a littler larger
+                exit.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { window.close(); });
                 // add play button below title and exit button below play button
                 this.roc.addStaticObject(play, new ROC.PositionSettings(null, title, 0f, -2f, 0f));
                 this.roc.addStaticObject(exit, new ROC.PositionSettings(null, play, 0f, -2f, 0f));
@@ -191,23 +188,6 @@ public class MainMenuLogic extends GameLogic {
                     time = 0f; // and reset timer
                     break;
             }
-        }
-    }
-
-    /**
-     * Responds to a mouse click on an object able to be interacted with by a mouse
-     *
-     * @param MIID the ID of the object that was clicked
-     */
-    @Override
-    public void clicked(int MIID) {
-        switch (MIID) { // switch on the mouse interaction ID
-            case PLAY_MIID: // if play was clicked
-                this.phase = 7; // go to phase 7
-                break;
-            case EXIT_MIID: // if exit was clicked
-                this.window.close(); // close the window
-                break;
         }
     }
 
