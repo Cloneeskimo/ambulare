@@ -37,40 +37,36 @@ import static org.lwjgl.opengl.GL30.glGetIntegeri_v;
  * with all blocks in the middleground
  * <p>
  * - Decor: decor can be any size, can emit light, and has additional properties that allow it to be more customized.
- * Decor does not cause collisions. See DecorInfo for all of the properties decor can have. Decor is represented as a
+ * Decor does not cause collisions. See AreaLayoutLoader.DecorInfo for a list of properties. Decor is represented as a
  * simple list of game objects to update and render every game loop. Decor can either exist in the background or the
- * foreground. Any decor put in the middleground layout will be assumed to be background decor
+ * foreground. Any decor put in the middleground layer in the area node-file will be assumed to be background decor
  * <p>
  * The idea behind areas is to hold only a portion of the game's world and to be interconnected. The GameWorld class
  * only renders and updates one area at a time, the idea being that many areas can exist and be interconnected but only
  * the one that the player is in should be rendered and updated. Some game world mechanics that are independent of area
- * (such as the day/night cycle) are stored in the GameWorld class instead. Areas are loaded through the uses of a
+ * (such as the day/night cycle) are stored in the GameWorld class instead. Areas are loaded through the use of a
  * node-file. See utils.Node for information on node files and see Area's constructor for how area node-files should be
  * laid out
  */
 public class Area {
 
     /**
-     * Static data
-     */
-    public static final BlockModel bm = new BlockModel(); /* all blocks use same 1x1 square model. See BlockModel for
-        more information on how it extends a regular model */
-
-    /**
      * Renders the set of blocks corresponding to the given set of block positions very efficiently using the given
      * shader program
      *
+     * @param bm             the block model to render
      * @param sp             the shader program to render with
      * @param blockPositions the list of block positions grouped together by material. The reason it is set up as a map
      *                       from material to pair lists is because by rendering all blocks of a certain material at
      *                       once, repetitive calls can be avoided
      */
-    public static void renderBlocks(ShaderProgram sp, Map<Material, List<Pair<Integer>>> blockPositions) {
+    public static void renderBlocks(BlockModel bm, ShaderProgram sp,
+                                    Map<Material, List<Pair<Integer>>> blockPositions) {
         for (Material m : blockPositions.keySet()) { // for each material
             Texture t = m.getTexture(); // get texture for material
             // if the texture is animated, tell the model which texture coordinates (frame) to use
             if (t instanceof AnimatedTexture) bm.useTexCoordVBO(((AnimatedTexture) t).getTexCoordVBO(), false);
-                // if the texture isn't animated, just usse the entire texture
+            // if the texture isn't animated, just use the entire texture
             else bm.useTexCoordVBO(AnimatedTexture.getTexCoordVBO(0, 1), false);
             m.setUniforms(sp); // set the appropriate material uniforms
             bm.renderBlocks(sp, blockPositions.get(m)); // render all the blocks with that material at once
@@ -85,34 +81,37 @@ public class Area {
         quantities of blocks. See the renderBlocks() method for more info on efficient block rendering. There are three
         different maps in this array where blocks[0] represents the background blocks, blocks[1] represents the
         middleground blocks, and blocks[2] represents the foreground blocks */
-    private final List<GameObject>[] decor;                   /* twos list of decor in the area where decor[0] is
+    private final List<GameObject>[] decor;                   /* two lists of decor in the area where decor[0] is
                                                                  background decor and decor[1] is foreground decor */
     private final List<AnimatedTexture> ats;                  // a list of animated textures to update
-    private final boolean[][] blockMap;                       // block map of middleground maps for collision detection
+    private final boolean[][] blockMap;                       // block map of the middleground for collision detection
     private BackDrop backdrop;                                // the scrolling backdrop rendered behind the world
+    private final BlockModel bm = new BlockModel();           /* all blocks use same 1x1 square model. See BlockModel
+                                                                 for more info on how it extends a regular model */
     private String name = "Unnamed";                          // the name of the area
-    private boolean lightForeground = false;                  // whether to apply lights to objects is the foreground
+    private boolean lightForeground = false;                  // whether to apply lights to objects in the foreground
 
     /**
-     * Constructs the area by compiling the information from a given node. Most of the loading process is actually done
-     * in the area layout loader to avoid cluttering the area class with a bunch of large static methods. An area node
-     * can have the following children:
+     * Constructs the area by compiling information from a given node. Most of the loading process is actually done in
+     * the area layout loader to avoid cluttering the area class with a bunch of large static methods. An area node can
+     * have the following children:
      * <p>
      * - block_key [required]: this key maps characters in the layout to tile info that describes the corresponding
      * block. Each child of the block_key child should have its name be a single character that appears in the layout
-     * (if there are more than one character, only the first will be used) and the rest of the child should be formatted
+     * (if there is more than one character, only the first will be used) and the rest of the child should be formatted
      * as a tile info node. See AreaLayoutLoader.TileInfo's constructor for more information.
      * <p>
      * - middleground_layout [required]: the middleground layout should contain a child for each row, where the value of
      * the row is the set of characters describing that row for which corresponding tiles will be searched for in the
      * keys to build the middleground. Rows will be read and loaded top-down and left-to-right so that they appear in
-     * the same order as they do in the node-file. If a character is encountered that is not in any key, it will be
-     * ignored. The space character will also be ignored and interpreted as empty space. If decor is found in the
-     * middleground layout, it will be placed in the background
+     * the same order as they do in the node-file. Extra empty rows at the bottom are not necessary, however empty rows
+     * at the top are necessary to line up with the background and the foreground. If a character is encountered that is
+     * not in any key, it will be ignored. The space character will also be ignored and interpreted as empty space. If
+     * decor is found in the middleground layout, it will be placed in the background
      * <p>
      * - decor_key [optional][default: no decor]: this kep maps characters in the layout to decor info that describes
      * the corresponding decor. Each child of the decor_key child should have its name be a single character that
-     * appears in the layout (if there are more than one character, only the first will be used) and the rest of the
+     * appears in the layout (if there is more than one character, only the first will be used) and the rest of the
      * child should be formatted as a decor info node. See AreaLayoutLoader.DecorInfo's constructor for more information
      * <p>
      * - background_layout [optional][default: no background]: the background layout should contain children formatted
@@ -146,13 +145,13 @@ public class Area {
         Node middleground = info.getChild("middleground_layout"); // get middleground layout child
         if (middleground == null) Utils.handleException(new Exception(Utils.getImproperFormatErrorLine(
                 "middleground_layout", "area", "a middleground layout is required",
-                false)), "gameobject.gameworld.Area", "Area(Node)", true); // if middleground layouts, crash
+                false)), "gameobject.gameworld.Area", "Area(Node)", true); // if no middleground layout, crash
         Node foreground = info.getChild("foreground_layout"); // get foreground layout child
         if (foreground == null) Utils.log(Utils.getImproperFormatErrorLine("foreground_layout", "area",
                 "no foreground provided: assuming no foreground", true),
                 "gameobject.gameworld.Area", "Area(Node)", false); // if none, log and ignore
 
-        // load blocks of layouts
+        // load blocks
         Node blockKey = info.getChild("block_key"); // get block key child
         if (blockKey == null) Utils.handleException(new Exception(Utils.getImproperFormatErrorLine("block_key",
                 "area", "a block key is required", false)), "gameobject.gameworld.Area",
@@ -170,25 +169,29 @@ public class Area {
         if (decorKey != null) AreaLayoutLoader.loadLayoutDecor(decorKey, background, middleground, foreground,
                 this.decor, this.ats, this.blockMap); // if there is a key for decor, load decor
 
-        // load other area properties
-        for (Node c : info.getChildren()) { // go through each child and parse the values
-            String n = c.getName(); // get name of child
-            if (n.equals("name")) { // if the child is for the area's name
-                this.name = c.getValue(); // save name
-            } else if (n.equals("light_foreground")) { // light foreground
-                this.lightForeground = Boolean.parseBoolean(c.getValue()); // save value
-            } else if (n.equals("backdrop")) { // backdrop
-                this.backdrop = new BackDrop(c, this.blockMap.length, this.blockMap[0].length); // create with node
-            } else { // if the child is unrecognized
-                if (!n.equals("layout") && !(n.equals("block_key")) && !(n.equals("decor_key")) &&
-                        !(n.equals("background_layout")) && !(n.equals("middleground_layout")) && !(n.equals(
-                        "foreground_layout")))
-                    Utils.log("Unrecognized child given for area info:\n" + c + "Ignoring.",
-                            "gameobject.gameworld.Area", "Area(Node)", false); // log and ignore
+        // parse other area properties
+        try { // wrap entire parsing in a try/catch to catch and log any problems
+            for (Node c : info.getChildren()) { // go through each child and parse the values
+                String n = c.getName(); // get name of child
+                if (n.equals("name")) { // if the child is for the area's name
+                    this.name = c.getValue(); // save name
+                } else if (n.equals("light_foreground")) { // light foreground
+                    this.lightForeground = Boolean.parseBoolean(c.getValue()); // save value
+                } else if (n.equals("backdrop")) { // backdrop
+                    this.backdrop = new BackDrop(c, this.blockMap.length, this.blockMap[0].length); // create with node
+                } else { // if the child is unrecognized
+                    if (!(n.equals("block_key")) && !(n.equals("decor_key")) && !(n.equals("background_layout")) &&
+                            !(n.equals("middleground_layout")) && !(n.equals("foreground_layout")))
+                        Utils.log("Unrecognized child given for area info:\n" + c + "Ignoring.",
+                                "gameobject.gameworld.Area", "Area(Node)", false); // log and ignore
+                }
             }
+            if (this.backdrop == null) this.backdrop = new BackDrop(new Node(), this.blockMap.length,
+                    this.blockMap[0].length); // if no backdrop was loaded, create and use default one
+        } catch (Exception e) { // if any strange exceptions occur
+            Utils.handleException(new Exception(Utils.getImproperFormatErrorLine("Area", "Area",
+                    e.getMessage(), false)), "gameobject.gameworld.Area", "Area(Node)", true); // log and crash
         }
-        if (this.backdrop == null) this.backdrop = new BackDrop(new Node(), this.blockMap.length,
-                this.blockMap[0].length); // if no backdrop was laoded, create the default one
     }
 
     /**
@@ -209,20 +212,21 @@ public class Area {
      * @param sp the shader program to use for rendering
      * @param os the lists of world objects to render in the area
      */
-    public void render(ShaderProgram sp, Camera cam, List<WorldObject> os) {
+    public void render(ShaderProgram sp, List<WorldObject> os) {
         this.backdrop.render(sp); // render the backdrop
-        renderBlocks(sp, this.blocks[0]); // render the background blocks
+        renderBlocks(this.bm, sp, this.blocks[0]); // render the background blocks
         for (GameObject o : this.decor[0]) o.render(sp); // render the background decor
-        renderBlocks(sp, this.blocks[1]); // render the middleground blocks
+        renderBlocks(this.bm, sp, this.blocks[1]); // render the middleground blocks
         for (WorldObject wo : os) wo.render(sp); // render world objects (middleground) from the game world
         // disable light usage for foreground objects if the setting is set to false
         if (!this.lightForeground) sp.setUniform("useLights", 0);
-        renderBlocks(sp, this.blocks[2]); // render the foreground blocks
+        renderBlocks(this.bm, sp, this.blocks[2]); // render the foreground blocks
         for (GameObject o : this.decor[1]) o.render(sp); // render the foreground decor
     }
 
     /**
-     * Tells the Area which camera is being used. This is necessary for the backdrop to scroll properly
+     * Tells the Area which camera is being used. This is necessary for the backdrop to scroll properly if it is
+     * textured
      *
      * @param cam the camera being used
      */
@@ -231,7 +235,7 @@ public class Area {
     }
 
     /**
-     * Resizes the backdrop to fit the screen
+     * Handles a window resize by telling the backdrop it needs to resize to fit the new window size
      */
     public void resized() {
         this.backdrop.resized();
@@ -258,13 +262,13 @@ public class Area {
         for (AnimatedTexture at : this.ats) at.cleanup(); // cleanup animated textures
         for (GameObject o : this.decor[0]) o.cleanup(); // cleanup background decor
         for (GameObject o : this.decor[1]) o.cleanup(); // cleanup foreground decor
+        this.bm.cleanup(); // cleanup the block model
     }
 
     /**
-     * Extends model by providing optimizations for rendering many blocks at once. Specifically, it will simply
-     * bind the single static block model and enable the correct vertex attribute arrays and then render a bunch of
-     * blocks at once, only updating the position in between each rather than enabling and then disabling for each
-     * single block
+     * Extends a normal model by providing optimizations for rendering many blocks at once. Specifically, it will simply
+     * render a bunch of blocks at once using the same model, only updating the position in between each rather than
+     * enabling and then disabling VAOs and VBOs for each individual block
      */
     private static class BlockModel extends Model {
 
@@ -308,7 +312,7 @@ public class Area {
         /**
          * Members
          */
-        private Camera cam;                 // the camera to use to calculate scrolling
+        private Camera cam;                 // the camera to follow and use for scrolling calculations
         private int areaWidth, areaHeight;  // the width and height of the area to consider for scrolling
         private float texAr;                // the aspect ratio of the texture if the backdrop is textured
         private float viewScale = 1f;       /* how much of the width/height of the texture to show depending on aspect
@@ -317,29 +321,29 @@ public class Area {
                                                info on zoom factor */
 
         /**
-         * Constructs the backdrop by compiling the information from a given node. If the value of the root node starts
-         * with the statements 'from' or 'resfrom', the next statement will be assumed to be a different path at which
-         * to find the tile info. This is useful for reusing the same tile info in multiple settings. 'from' assumes the
+         * Constructs the backdrop by compiling information from a given node. If the value of the root node starts with
+         * the statements 'from' or 'resfrom', the next statement will be assumed to be a different path at which to
+         * find the tile info. This is useful for reusing the same backdrop in multiple settings. 'from' assumes the
          * following path is relative to the Ambulare data folder (in the user's home folder) while 'resfrom' assumes
-         * the following path is relative to the Ambulares's resource path. Note that these kinds of statements cannot
-         * be chained together. A backdrop node can have the following children:
+         * the following path is relative to Ambulares's resource path. Note that these kinds of statements cannot be
+         * chained together. A backdrop node can have the following children:
          * <p>
          * - color [optional][default: 1f 1f 1f 1f]: specifies what color to assign to the backdrop
          * <p>
-         * - texture_path [optional][default: no texture]: specifies what path to look for the backdrop texture in
+         * - texture_path [optional][default: no texture]: specifies the path to look for the backdrop texture in
          * <p>
          * - resource_relative [optional][default: true]: specifies whether the given texture path is relative to
          * Ambulare's resource path. If this is false, the given path must be relative to Ambulare's data folder (in
          * the user's home folder)
          * <p>
          * - blend_mode [optional][default: none]: specifies how to blend color and texture. The options are: (1) none -
-         * no blending will occur. The tile will appear as its texture if it has one, or its color if there is no
-         * texture. (2) multiplicative - the components of the tile color and the components of the texture will be
-         * multiplied to create a final color. (3) averaged - the components of the tile color and the components of
+         * no blending will occur. The backdrop will appear as its texture if it has one, or its color if there is no
+         * texture. (2) multiplicative - the components of the backdrop color and the components of the texture will be
+         * multiplied to create a final color. (3) averaged - the components of the backdrop color and the components of
          * the texture will be averaged to create a final color
          * <p>
          * - view_scale [optional][default: 1f]: If the backdrop has a texture, this specifies how much of the
-         * width/height of the backdrop to show at once. This will apply to both width and height. but it directly
+         * width/height of the backdrop to show at once. This will apply to both width and height, but it directly
          * determines how much of either width or height will be shown. For example, a scale of 1f which will show the
          * entire width or height of the texture at all times depending on the ratio of the texture's aspect ratio to
          * the window's aspect ratio. If the texture is proportionally wider than the window and scale is set to 1f, the
@@ -362,7 +366,7 @@ public class Area {
          *                   space is [0f, areaHeight]
          */
         public BackDrop(Node info, int areaWidth, int areaHeight) {
-            super(Model.getStdGridRect(1, 1), null); // start with no material yet
+            super(Model.getStdGridRect(1, 1), null); // start with no material and a default square model
 
             // load from elsewhere if from or resfrom statement used
             String value = info.getValue(); // get value
@@ -377,71 +381,81 @@ public class Area {
                     info = Node.resToNode(info.getValue().substring(8));
                 if (info == null) // if the new info is null, then throw an exception stating the path is invalid
                     Utils.handleException(new Exception(Utils.getImproperFormatErrorLine("(res)from statement",
-                            "BackDrop", "invalid path in (res)from statement: " + value, false)),
-                            "gameobject.gameworld.Area", "BackDrop(Node, int, int)", true);
+                            "BackDrop", "invalid path in (res)from statement: " + value,
+                            false)), "gameobject.gameworld.Area.BackDrop", "BackDrop(Node, int, int)", true);
             }
 
             // relevant variables to hold loaded information
-            float[] color = new float[]{1f, 1f, 1f, 1f};
-            String texPath = null;
-            boolean texResPath = true;
-            Material.BlendMode bm = Material.BlendMode.NONE;
+            float[] color = new float[]{1f, 1f, 1f, 1f}; // holds the material color
+            String texPath = null; // holds the path to the material texture
+            boolean texResPath = true; // holds whether a given texture path is resource-relative
+            Material.BlendMode bm = Material.BlendMode.NONE; // holds the material's blend mode
 
             // parse node
-            for (Node c : info.getChildren()) { // go through each child
-                String n = c.getName(); // get the name of the child
-                if (n.equals("color")) { // color
-                    color = Utils.strToColor(c.getValue()); // try to convert to a float array of color components
-                    if (color == null) // if conversion was unsuccessful
-                        Utils.log(Utils.getImproperFormatErrorLine("color", "BackDrop",
-                                "must be four valid floating point numbers separated by spaces",
-                                true), "gameobject.gameworld.Area", "BackDrop(Node, int, int)",
-                                false); // log as much
-                    else color = color; // otherwise save the color
-                } else if (n.equals("texture_path")) texPath = c.getValue(); // texture path
-                    // resource relative texture path flag
-                else if (n.equals("resource_relative")) texResPath = Boolean.parseBoolean(c.getValue());
-                else if (n.equals("blend_mode")) { // blend mode
-                    try { // try to convert to a material's blend mode
-                        bm = Material.BlendMode.valueOf(c.getValue().toUpperCase());
-                    } catch (Exception e) { // if conversion was unsuccessful, log as much
-                        Utils.log(Utils.getImproperFormatErrorLine("blend_mode", "BackDrop",
-                                "must be either: none, multiplicative, or averaged", true),
-                                "gameobject.gameworld.Area", "Area(Node, int, int)", false);
-                    }
-                } else if (n.equals("view_scale")) { // view scale
-                    try {
-                        this.viewScale = Float.parseFloat(c.getValue()); // try to convert to a float
-                    } catch (Exception e) { // if conversion was unsuccessful, log as much
-                        Utils.log(Utils.getImproperFormatErrorLine("view_scale", "BackDrop",
-                                "must be a proper floating pointer number", true),
-                                "gameobject.gameworld.Area", "BackDrop(Node, int, int)", false);
-                    }
-                    if (this.viewScale <= 0f || this.viewScale >= 1f) { // if not in correct range, log as much
-                        Utils.log(Utils.getImproperFormatErrorLine("view_scale", "BackDrop",
-                                "must be within the range (0f, 1f]", true),
-                                "gameobject.gameworld.Area", "BackDrop(Node, int, int)", false);
-                        this.viewScale = 1f; // and return to default
-                    }
-                } else if (n.equals("zoom_factor")) { // zoom factor
-                    try {
-                        this.zoomFactor = Float.parseFloat(c.getValue()); // try to convert to a float
-                    } catch (Exception e) { // if conversion was unsuccessful
-                        Utils.log(Utils.getImproperFormatErrorLine("zoom_factor", "BackDrop",
-                                "must be a proper floating pointer number greater than or equal to 0f",
-                                true), "gameobject.gameworld.Area", "BackDrop(Node, int, int)",
-                                false); // log as much
-                    }
-                    if (this.zoomFactor < 0f) { // if zoom factor is negative
-                        Utils.log(Utils.getImproperFormatErrorLine("zoom_factor", "BackDrop",
-                                "must be a proper floating pointer number greater than or equal to 0f",
-                                true), "gameobject.gameworld.Area", "BackDrop(Node, int, int)",
-                                false); // log as much
-                        this.zoomFactor = 1f; // and return to default
-                    }
-                } else // if unrecognized child is found
-                    Utils.log("Unrecognized child given for backdrop:\n" + c + "Ignoring.",
-                            "gameobject.gameworld.Area", "BackDrop(Node, int, int)", false); // log it
+            try { // wrap entire parsing in a try-catch to make sure all issues are caught and logged
+                for (Node c : info.getChildren()) { // go through each child
+                    String n = c.getName(); // get the name of the child
+                    if (n.equals("color")) { // color
+                        color = Utils.strToColor(c.getValue()); // try to convert to a float array of color components
+                        if (color == null) // if conversion was unsuccessful
+                            Utils.log(Utils.getImproperFormatErrorLine("color", "BackDrop",
+                                    "must be four valid floating point numbers separated by spaces",
+                                    true), "gameobject.gameworld.Area.BackDrop",
+                                    "BackDrop(Node, int, int)",false); // log as much
+                        else color = color; // otherwise save the color
+                    } else if (n.equals("texture_path")) texPath = c.getValue(); // texture path
+                        // resource relative texture path flag
+                    else if (n.equals("resource_relative")) texResPath = Boolean.parseBoolean(c.getValue());
+                    else if (n.equals("blend_mode")) { // blend mode
+                        try { // try to convert to a material's blend mode
+                            bm = Material.BlendMode.valueOf(c.getValue().toUpperCase());
+                        } catch (Exception e) { // if conversion was unsuccessful, log as much
+                            Utils.log(Utils.getImproperFormatErrorLine("blend_mode", "BackDrop",
+                                    "must be either: none, multiplicative, or averaged", true),
+                                    "gameobject.gameworld.Area.BackDrop", "Area(Node, int, int)",
+                                    false);
+                        }
+                    } else if (n.equals("view_scale")) { // view scale
+                        try {
+                            this.viewScale = Float.parseFloat(c.getValue()); // try to convert to a float
+                        } catch (Exception e) { // if conversion was unsuccessful, log as much
+                            Utils.log(Utils.getImproperFormatErrorLine("view_scale", "BackDrop",
+                                    "must be a proper floating pointer number", true),
+                                    "gameobject.gameworld.Area.BackDrop", "BackDrop(Node, int, int)",
+                                    false);
+                        }
+                        if (this.viewScale <= 0f || this.viewScale >= 1f) { // if not in correct range, log as much
+                            Utils.log(Utils.getImproperFormatErrorLine("view_scale", "BackDrop",
+                                    "must be within the range (0f, 1f]", true),
+                                    "gameobject.gameworld.Area.BackDrop", "BackDrop(Node, int, int)",
+                                    false);
+                            this.viewScale = 1f; // and return to default
+                        }
+                    } else if (n.equals("zoom_factor")) { // zoom factor
+                        try {
+                            this.zoomFactor = Float.parseFloat(c.getValue()); // try to convert to a float
+                        } catch (Exception e) { // if conversion was unsuccessful
+                            Utils.log(Utils.getImproperFormatErrorLine("zoom_factor", "BackDrop",
+                                    "must be a proper floating pointer number greater than or equal to 0f",
+                                    true), "gameobject.gameworld.Area.BackDrop",
+                                    "BackDrop(Node, int, int)", false); // log as much
+                        }
+                        if (this.zoomFactor < 0f) { // if zoom factor is negative
+                            Utils.log(Utils.getImproperFormatErrorLine("zoom_factor", "BackDrop",
+                                    "must be a proper floating pointer number greater than or equal to 0f",
+                                    true), "gameobject.gameworld.Area.BackDrop",
+                                    "BackDrop(Node, int, int)",false); // log as much
+                            this.zoomFactor = 1f; // and return to default
+                        }
+                    } else // if unrecognized child is found
+                        Utils.log("Unrecognized child given for backdrop:\n" + c + "Ignoring.",
+                                "gameobject.gameworld.Area.BackDrop", "BackDrop(Node, int, int)",
+                                false); // log it
+                }
+            } catch (Exception e) { // if any strange exceptions occur
+                Utils.handleException(new Exception(Utils.getImproperFormatErrorLine("BackDrop",
+                        "BackDrop", e.getMessage(), false)), "gameobject.gameworld.Area.BackDrop",
+                        "BackDrop(Node, int, int)", true); // log and crash
             }
 
             // create the correct material for the backdrop
@@ -461,7 +475,7 @@ public class Area {
         }
 
         /**
-         * Backdrops will only render if they have been given a camera to follow
+         * Renders the backdrop if it has been given a camera to follow
          *
          * @param sp the shader program to use to render the game object
          */
@@ -473,11 +487,13 @@ public class Area {
                 super.render(sp); // render
                 sp.setUniform("camZoom", cam.getZoom()); // return the zoom to the correct camera zoom
                 sp.setUniform("useLights", 1); // turn light usage back on
-            }
+            } else // if a render attempt was made without a camera being given first
+                Utils.log("Attempted to render a backdrop without providing a camera to follow",
+                        "gameobject.gameworld.Area.BackDrop", "render(ShaderProgram)", false); // log
         }
 
         /**
-         * Tells the backdrop which camera to follow. This must be called before a backdrop will even render
+         * Tells the backdrop which camera to follow. This must be called before a backdrop will render
          *
          * @param cam the camera the backdrop should follow
          */
@@ -502,16 +518,17 @@ public class Area {
         }
 
         /**
-         * Updates the texture coordinates of the backdrop's model depending to simulate scrolling
+         * Updates the texture coordinates of the backdrop's model depending on the followed camera's position to
+         * simulate scrolling
          */
         private void updateTexCoords() {
 
             // calculate how far the camera is in proportion to the area width and height
             float xProp = Math.max(0f, Math.min(1f, this.getX() / (float) this.areaWidth));
             float yProp = Math.max(0f, Math.min(1f, 1f - this.getY() / (float) this.areaHeight));
-            float viewWidth = 1f, viewHeight = 1f;
 
             // calculate the width and height of the view depending on the ratio of aspect ratios
+            float viewWidth = 1f, viewHeight = 1f;
             if (Global.ar > texAr) { // screen is wider than backdrop in proportion to height
                 viewHeight = texAr / Global.ar; // apply ratio of ratios on view height
             } else { // backdrop is wider than screen in proportion to height
@@ -524,7 +541,7 @@ public class Area {
 
             // apply zoom factor
             float lz = (1f - cam.getLinearZoom(1.15f)) - 0.5f; // get the linear zoom of the camera
-            float vs = Math.min(maxScale, this.viewScale + (lz * zoomFactor)); // calc a scaling based on zoom factor
+            float vs = Math.abs(Math.min(maxScale, this.viewScale + (lz * zoomFactor))); // get scaling from zoom factor
             viewWidth *= vs; // apply zoom factor to view width
             viewHeight *= vs; // apply zoom factor to view height
 

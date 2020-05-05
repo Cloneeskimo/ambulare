@@ -93,7 +93,7 @@ public class GameWorld {
         this.sp.setUniform("camY", this.cam.getY()); // set camera y uniform
         this.sp.setUniform("camZoom", this.cam.getZoom()); // set camera zoom uniform
         this.sp.setUniform("sunPresence", this.dnc.getSunPresence()); // set sun presence uniform
-        this.area.render(this.sp, this.cam, this.objects); // render the areas
+        this.area.render(this.sp, this.objects); // render the areas
         this.sp.unbind(); // unbind shader program
     }
 

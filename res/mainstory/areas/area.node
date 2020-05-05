@@ -19,8 +19,6 @@ area:
         texture_path: /textures/backdrop.jpg
         blend_mode: multiplicative
         color: 1f 0.5f 1.1f 1f
-        view_scale: 0.5f
-        zoom_factor: 1.0f
     }
 
     # provide a key mapping from characters in the layout to blocks
