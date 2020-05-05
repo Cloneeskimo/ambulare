@@ -1,26 +1,46 @@
 package gameobject.gameworld;
 
+import gameobject.ui.TextObject;
 import graphics.MSAT;
 import graphics.Material;
 import graphics.Model;
+import graphics.ShaderProgram;
+import utils.Global;
+import utils.MouseInputEngine;
 import utils.PhysicsEngine;
+
+/*
+ * Entity.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/27/2020
+ */
 
 /**
  * Extends world objects by directly interacting with a multi-state animated texture in order to allow different
- * animations for different actions an entity might do
+ * animations for different actions an entity might do. It is not imperative that an entity have an MSAT, however.
+ * Entities also have a name and a nameplate display their name above them
  */
-public class Entity extends WorldObject {
+public class Entity extends WorldObject implements MouseInputEngine.MouseInteractive {
+
+    /**
+     * Static Data
+     */
+    public static final float NAMEPLATE_PADDING = 0.1f; // padding between an entity and its nameplate
 
     /**
      * Members
      */
-    private boolean right;    // whether the entity is facing to the right
-    private boolean airborne; // whether the entity is airborne
-    private boolean moving;   // whether the entity is moving
+    private String name;          // name of the entity
+    private TextObject nameplate; // nameplate to display above entity
+    private boolean right;        // whether the entity is facing to the right
+    private boolean airborne;     // whether the entity is airborne
+    private boolean moving;       // whether the entity is moving
 
     /**
      * Constructor
      *
+     * @param name     the name of the entity
      * @param model    the model to use
      * @param material the material to use. This model's texture should be an MSAT with six states representing the
      *                 following: (0) entity non-airborne and facing to the left, (1) entity non-airborne and facing to
@@ -28,8 +48,20 @@ public class Entity extends WorldObject {
      *                 right, (4) entity non-airborne and moving to the left, (5) entity non-airborne and moving to the
      *                 right
      */
-    public Entity(Model model, Material material) {
-        super(model, material);
+    public Entity(String name, Model model, Material material) {
+        super(model, material); // call world object constructor
+        this.name = name; // save name as member
+        this.nameplate = new TextObject(Global.FONT, this.name); // create nameplate
+        this.nameplate.setScale(2.5f, 2.5f); // make nameplate larger
+        this.positionNameplate(); // position the nameplate above the entity
+    }
+
+    /**
+     * Correctly positions the nameplate of the entity
+     */
+    private void positionNameplate() {
+        this.nameplate.setPos(this.getX(),this.getY() + this.getHeight() / 2 + this.nameplate.getHeight() / 2 +
+                NAMEPLATE_PADDING); // put above entity
     }
 
     /**
@@ -80,6 +112,54 @@ public class Entity extends WorldObject {
         if (airborne != this.airborne) { // if airborne value is different
             this.airborne = airborne; // update flag
             this.updateTextureState(); // and update state in MSAT
+        }
+    }
+
+    /**
+     * Reacts to the entity moving by repositioning the nameplate above the entity
+     */
+    @Override
+    protected void onMove() {
+        this.positionNameplate(); // reposition the nameplate
+    }
+
+    /**
+     * Renders the entity and the nameplate of the entity
+     *
+     * @param sp the shader program to use to render the game object
+     */
+    @Override
+    public void render(ShaderProgram sp) {
+        super.render(sp); // render the entity
+        this.nameplate.render(sp); // render the nameplate
+    }
+
+    /**
+     * Entities do not accept callbacks for now
+     * @param type the mouse input type to give a callback for
+     * @param mc the callback
+     */
+    @Override
+    public void giveCallback(MouseInputEngine.MouseInputType type, MouseInputEngine.MouseCallback mc) { }
+
+    /**
+     * Responds to mouse input by changing the nameplate color and scale when the entity is hovered
+     * @param type the type of mouse input that occurred
+     * @param x the x position of the mouse in world coordinate or camera-view coordinates, depending on the mouse
+     *          input engine's camera usage flag for this particular implementing object
+     * @param y the y position of the mouse in world coordinate or camera-view coordinates, depending on the mouse
+     */
+    @Override
+    public void mouseInteraction(MouseInputEngine.MouseInputType type, float x, float y) {
+        if (type == MouseInputEngine.MouseInputType.HOVER) { // if entity is being hovered
+            this.nameplate.getMaterial().setColor(new float[] { 1f, 1f, 0f, 1f }); // make nameplate yellow
+            this.nameplate.setScale(3f, 3f); // scale up slightly
+            this.positionNameplate(); // reposition nameplate
+        }
+        else if (type == MouseInputEngine.MouseInputType.DONE_HOVERING) { // if entity is done being hovered
+            this.nameplate.getMaterial().setColor(new float[] { 1f, 1f, 1f, 1f }); // make nameplate white again
+            this.nameplate.setScale(2.5f, 2.5f); // scale back to normal
+            this.positionNameplate(); // reposition nameplate
         }
     }
 }

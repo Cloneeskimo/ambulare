@@ -12,11 +12,23 @@ import java.util.List;
 import static org.lwjgl.glfw.GLFW.glfwSetScrollCallback;
 import static org.lwjgl.opengl.GL11.glClearColor;
 
+/*
+ * GameWorld.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/22/2020
+ */
+
 /**
- * Game worlds hold, update, and render world objects and blocks. For block collision to work, the game world's
- * createBlockMap method must be called.
+ * Game worlds hold, update, and render world objects and an area. Game worlds have a day/night cycle and a camera to
+ * use for rendering
  */
 public class GameWorld {
+
+    /**
+     * Static Members
+     */
+    public static final float ZOOM_SENSITIVITY = 1.1f; // how sensitive the camera zoom is to scrolling
 
     /**
      * Members
@@ -31,19 +43,19 @@ public class GameWorld {
      * Constructor
      *
      * @param windowHandle the handle of the GLFW window
+     * @param startingArea the the starting of the game world
      */
     public GameWorld(long windowHandle, Area startingArea) {
-        this.objects = new ArrayList<>();
-        this.dnc = new DayNightCycle(0f, 20f, new float[]{
-                0.53f, 0.81f, 0.92f, 0.0f}, new float[]{0.1f, 0.1f, 0.1f, 0.0f}); // initialize D/N cycle settings
+        this.objects = new ArrayList<>(); // create empty objects list
+        this.dnc = new DayNightCycle(0f, 20f); // initialize day/night cycle
         this.initSP(); // initialize shader program
         this.cam = new Camera(); // create the camera
         this.area = startingArea; // save the starting area as a member
-        this.area.useCam(this.cam); // give the camera to the area
+        this.area.useCam(this.cam); // give the camera to the area to use for rendering
         PhysicsEngine.giveBlockMap(this.area.getBlockMap()); // give the area's block map to the physics engine
         // register GLFW window scroll callback for camera zoom
         glfwSetScrollCallback(windowHandle, (w, x, y) -> { // when the user scrolls
-            this.cam.zoom(y > 0 ? 1.15f : (1f / 1.15f)); // zoom on camera
+            this.cam.zoom(y > 0 ? ZOOM_SENSITIVITY : (1f / ZOOM_SENSITIVITY)); // zoom on camera
         });
     }
 
@@ -51,7 +63,7 @@ public class GameWorld {
      * Initializes the game world's shader program
      */
     private void initSP() {
-        // create the shader program and then register the uniforms
+        // create the shader program with the appropriate source files
         this.sp = new ShaderProgram("/shaders/world_vertex.glsl", "/shaders/world_fragment.glsl");
         sp.registerUniform("ar"); // register aspect ratio uniform
         sp.registerUniform("arAction"); // register aspect ratio action uniform
@@ -70,7 +82,7 @@ public class GameWorld {
     }
 
     /**
-     * Updates the world objects and camera in the game world
+     * Updates the day/night cycle, world objects, camera, and area in use in the game world
      *
      * @param interval the amount of time (in seconds) to account for
      */
@@ -82,7 +94,7 @@ public class GameWorld {
     }
 
     /**
-     * Renders all the world objects
+     * Sets up world rendering and then gives the world objects to the area to render at the appropriate time
      */
     public void render() {
         this.sp.bind(); // bind shader program
@@ -93,7 +105,7 @@ public class GameWorld {
         this.sp.setUniform("camY", this.cam.getY()); // set camera y uniform
         this.sp.setUniform("camZoom", this.cam.getZoom()); // set camera zoom uniform
         this.sp.setUniform("sunPresence", this.dnc.getSunPresence()); // set sun presence uniform
-        this.area.render(this.sp, this.objects); // render the areas
+        this.area.render(this.sp, this.objects); // render the area with the current world objects
         this.sp.unbind(); // unbind shader program
     }
 
@@ -114,10 +126,10 @@ public class GameWorld {
      * @return the object at index i
      */
     public WorldObject getWorldObject(int i) {
-        if (i < 0 || i >= this.objects.size())
+        if (i < 0 || i >= this.objects.size()) // if the given index is invalid
             Utils.handleException(new Exception("Unable to get world object at index: " + i + "; out of bounds"),
-                    "gameobject.gameworld.GameWorld", "getObject(i)", true);
-        return this.objects.get(i);
+                    "gameobject.gameworld.GameWorld", "getObject(i)", true); // crash
+        return this.objects.get(i); // otherwise return the corresponding world object
     }
 
     /**
@@ -144,7 +156,7 @@ public class GameWorld {
     }
 
     /**
-     * Represents and performs a day/night cycle in the game world
+     * Represents and keeps track of a day/night cycle in the game world
      */
     private static class DayNightCycle {
 
@@ -167,28 +179,21 @@ public class GameWorld {
         /**
          * Members
          */
-        private float sunAngle;      // the current angle of the sun in degrees [0-360) in the day/night cycle
-        private float sunSpeed;      // how fast the sun advances in the day/night cycle
-        private float sunPresence;   /* a measurement from [0-1] measuring how present the sun is. 1.0 means that it is
-                                        day time and 0.0 means that it is night time. In between values represent sunset
-                                        and sunrise*/
-        private float[] dayColor;    // the color the background is set to during day
-        private float[] nightColor;  // the color the background is set to during night
+        private final float sunSpeed; // how fast the sun advances in the day/night cycle
+        private float sunAngle;       // the current angle of the sun in degrees [0-360) in the day/night cycle
+        private float sunPresence;    /* a measurement from [0-1] measuring how present the sun is. 1.0 means that it is
+                                         day time and 0.0 means that it is night time. In between values represent
+                                         sunset and sunrise */
 
         /**
          * Constructor
          *
          * @param startingSunAngle     the angle the sun should start at in degrees [0-360)
-         * @param sunSpeed             the speed at which the sun sshould progress
-         * @param dayBackgroundColor   the color to set the background to during day
-         * @param nightBackgroundColor the color to set the background to during night
+         * @param sunSpeed             the speed at which the sun should progress
          */
-        public DayNightCycle(float startingSunAngle, float sunSpeed, float[] dayBackgroundColor,
-                             float[] nightBackgroundColor) {
-            this.sunAngle = startingSunAngle;
-            this.sunSpeed = sunSpeed;
-            this.nightColor = nightBackgroundColor;
-            this.dayColor = dayBackgroundColor;
+        public DayNightCycle(float startingSunAngle, float sunSpeed) {
+            this.sunAngle = startingSunAngle; // set sun angle to the given starting angle
+            this.sunSpeed = sunSpeed; // save sun speed as member
         }
 
         /**
@@ -198,8 +203,8 @@ public class GameWorld {
          */
         private void update(float interval) {
             this.sunAngle += sunSpeed * interval; // update the sun's angle
-            if (this.sunAngle >= 360f) this.sunAngle = 0f; // reset angle if a full rotation has occurred
-            float newSunPresence = calcSunPresence(this.sunAngle); // calculate the new presence based on the new angle
+            if (this.sunAngle >= 360f) this.sunAngle = 0f; // reset angle to 0 degrees if a full rotation has occurred
+            float newSunPresence = calcSunPresence(this.sunAngle); // calculate the sun presence based on the new angle
             if (newSunPresence != this.sunPresence) this.sunPresence = newSunPresence; // save sun presence if new
         }
 

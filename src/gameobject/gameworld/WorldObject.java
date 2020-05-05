@@ -8,6 +8,13 @@ import utils.PhysicsEngine;
 import java.util.ArrayList;
 import java.util.List;
 
+/*
+ * WorldObject.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/22/2020
+ */
+
 /**
  * Extends game objects to be more apt for world-type simulation. Namely, they have velocities and physics properties.
  * They use the physics engine to check for collisions and they have a set of unique physics properties to define
@@ -32,9 +39,9 @@ public class WorldObject extends GameObject {
      * @param material the material to use
      */
     public WorldObject(Model model, Material material) {
-        super(model, material);
-        this.collidables = new ArrayList<>();
-        this.pp = new PhysicsEngine.PhysicsProperties();
+        super(model, material); // call game object's constructor
+        this.collidables = new ArrayList<>(); // initialize collidables to an empty list
+        this.pp = new PhysicsEngine.PhysicsProperties(); // initialize physics properties to the defaults
     }
 
     /**
@@ -44,7 +51,7 @@ public class WorldObject extends GameObject {
      */
     @Override
     public void update(float interval) {
-        super.update(interval);
+        super.update(interval); // update regular game object properties
         if (!this.posAnimating()) { // if not in the middle of a positional animation
             // apply gravity
             this.vy = Math.max(this.vy - (this.pp.gravity * interval), PhysicsEngine.TERMINAL_VELOCITY);
@@ -71,12 +78,11 @@ public class WorldObject extends GameObject {
         this.setRotRad(this.posAnim.getR());
         this.onMove(); // call onMove() to signify the object has moved
         if (this.posAnim.finished()) { // if animation is over
-            this.setRotRad(this.posAnim.getFinalR()); // make sure at the correct ending rotation
-            // set final position and rotation
+            // make sure the object is at the correct ending position and rotation
             this.setX(this.posAnim.getFinalX());
             this.setY(this.posAnim.getFinalY());
             this.setRotRad(this.posAnim.getFinalR());
-            this.getPhysicsProperties().collidable = true; // make collidable again
+            this.getPhysicsProperties().collidable = true; // make the object collidable again
             this.posAnim = null; // delete the animation
             this.onMove(); // call onMove() to signify the object has moved
             // reset velocities
@@ -86,7 +92,7 @@ public class WorldObject extends GameObject {
     }
 
     /**
-     * React to movements by using the physics engine to check for and react to collisions
+     * Perform movements by using the physics engine to check for and react to collisions
      *
      * @param dx the x offset
      * @param dy the y offset
@@ -100,7 +106,7 @@ public class WorldObject extends GameObject {
     /**
      * Stops the world object by setting its velocities to zero and deleting its positional animation if the flag is set
      *
-     * @param stopPosAnim whether or not to stop any positional animation that may be happening
+     * @param stopPosAnim whether or not to stop and delete any positional animation that may be happening
      */
     public void stop(boolean stopPosAnim) {
         this.vx = this.vy = 0; // reset velocities
@@ -135,21 +141,21 @@ public class WorldObject extends GameObject {
     }
 
     /**
-     * Updates the world object's horizontal (x) velocity by adding the given incremental change
+     * Updates the world object's horizontal (x) velocity using the given acceleration
      *
-     * @param dvx the incremental change
+     * @param ax the acceleration to use to change the horizontal (x) velocity
      */
-    public void incrementVX(float dvx) {
-        this.vx += dvx;
+    public void accelerateVX(float ax) {
+        this.vx += ax;
     }
 
     /**
-     * Updates the world object's vertical (y) velocity by adding the given incremental change
+     * Updates the world object's vertical (y) velocity using the given acceleration
      *
-     * @param dvy the incremental change
+     * @param ay the acceleration to use to change the vertical (y) velocity
      */
-    public void incrementVY(float dvy) {
-        this.vy += dvy;
+    public void accelerateVY(float ay) {
+        this.vy += ay;
     }
 
     /**
@@ -171,7 +177,7 @@ public class WorldObject extends GameObject {
     }
 
     /**
-     * @return the collidables to consider for collision for the world object
+     * @return the object's list of objects to consider for collision
      */
     public List<WorldObject> getCollidables() {
         return this.collidables;
@@ -192,14 +198,14 @@ public class WorldObject extends GameObject {
     }
 
     /**
-     * @return the axis-aligned bounding box corresponding to the world object. By default, this will return an AABB
-     * with the full width and height of the object itself. Changing the world object's bounding width and bounding
-     * height will make the AABB bigger/smaller. This may be useful if, for example, the object's texture doesn't fit
-     * the entire model
+     * @return the axis-aligned bounding box representing the world object. By default, this will return an AABB with
+     * the full width and height of the object itself. Changing the world object's bounding width and bounding height
+     * will make the AABB bigger/smaller. This may be useful if, for example, the object's texture doesn't fit the
+     * entire model
      */
     public PhysicsEngine.AABB getAABB() {
         return new PhysicsEngine.AABB(this.getX(), this.getY(), this.getWidth() * this.bw,
-                this.getHeight() * this.bh);
+                this.getHeight() * this.bh); // create and return corresponding axis-aligned bounding box
     }
 
     /**

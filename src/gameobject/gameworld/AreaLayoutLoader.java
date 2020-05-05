@@ -21,8 +21,8 @@ import java.util.Map;
 
 /**
  * This utility class is used for loading various layout-related things for areas. See the area class for more info on
- * what exactly areas hold and how to format area node-files. There is a lot to area layout loading, hence the
- * offloading to static methods in this class instead of clogging the area class with the code
+ * what exactly areas hold and how to format area node-files. There is a lot to area layout loading, so most of the
+ * process is offloaded to static methods in this class instead of clogging the area class
  */
 public class AreaLayoutLoader {
 
@@ -30,7 +30,7 @@ public class AreaLayoutLoader {
      * Modularization is a word that doesn't really exist but I think it sounds cool so it's what I use for the process
      * by which edges and corners are detected and the textures of the corresponding objects are updated accordingly.
      * This enum defines the different types of modularization and thus the different textures that modularizable
-     * objects can provide. Most of them are self-explanatory. Here, insets are defined as blocks that are covered
+     * objects can provide. Most of them are self-explanatory. Here, insets are defined as blocks that are surrounded
      * in all eight directions (including diagonals) except for a single diagonal direction
      */
     private enum ModNameExt {
@@ -61,7 +61,7 @@ public class AreaLayoutLoader {
         /* this maps tile info to a mapping of texture to a mapping of modularization piece to materials. This is to
            ensure the least possible amount of material creation. This is confusing what it basically allows the code to
            do is ask: For this tile info, this texture, and this modularization, what material should I use? */
-        Map<TileInfo, Map<String, Map<ModNameExt, Material>>> materialMap = new HashMap<>(); // create empty map for now
+        Map<TileInfo, Map<String, Map<ModNameExt, Material>>> materialMap = new HashMap<>();
 
         /* calculate block map width and height. This will be calculated as the largest width and height of a row/column
            across all provided layers */
@@ -72,7 +72,7 @@ public class AreaLayoutLoader {
             // loop through each row and see if a wider row is found
             for (Node node : rows) if (node.getValue().length() > bmw) bmw = node.getValue().length();
         }
-        List<Node> rows = middleground.getChildren(); // get the rows of the middle ground
+        List<Node> rows = middleground.getChildren(); // get the rows of the middleground
         if (rows.size() > bmh) bmh = rows.size(); // if there are more rows, record new height
         // loop through each row and see if a wider row is found
         for (Node node : rows) if (node.getValue().length() > bmw) bmw = node.getValue().length();
@@ -85,7 +85,7 @@ public class AreaLayoutLoader {
 
         // load layouts for each layer
         loadLayoutLayerBlocks(materialMap, blocks[0], background, key, ats, bmw, bmh); // load background
-        // load middle ground and save the block map for collision
+        // load middleground and save the block map for collision
         boolean[][] blockMap = loadLayoutLayerBlocks(materialMap, blocks[1], middleground, key, ats, bmw, bmh);
         loadLayoutLayerBlocks(materialMap, blocks[2], foreground, key, ats, bmw, bmh); // load foreground
         return blockMap; // return the middleground block map to use for collision
@@ -502,7 +502,7 @@ public class AreaLayoutLoader {
                 if (info == null) // if the new info is null, then throw an exception stating the path is invalid
                     Utils.handleException(new Exception(Utils.getImproperFormatErrorLine("(res)from statement",
                             "TileInfo", "invalid path in (res)from statement: " + value, false)),
-                            "gameobject.gameworld.AreaLayoutLoader", "TileInfo(Node)", true);
+                            "gameobject.gameworld.AreaLayoutLoader.TileInfo", "TileInfo(Node)", true);
             }
 
             // parse node
@@ -511,14 +511,14 @@ public class AreaLayoutLoader {
                 for (Node c : info.getChildren()) { // go through each child
                     if (!parseChild(c)) { // parse it
                         Utils.log("Unrecognized child given for tile info:\n" + c + "Ignoring.",
-                                "gameobject.gameworld.AreaLayoutLoader", "TileInfo(Node)",
+                                "gameobject.gameworld.AreaLayoutLoader.TileInfo", "TileInfo(Node)",
                                 false); // and log it if is not recognized
                     }
                 }
-            } catch (Exception e) { // if any other exceptions occur, handle them
+            } catch (Exception e) { // if any other exceptions occur
                 Utils.handleException(new Exception(Utils.getImproperFormatErrorLine("TileInfo",
-                        "TileInfo", e.getMessage(), false)), "gameobject.gameworld.AreaLayoutLoader",
-                        "TileInfo(Node)", true); // unrecognized exceptions cause crashes
+                        "TileInfo", e.getMessage(), false)),
+                        "gameobject.gameworld.AreaLayoutLoader.TileInfo", "TileInfo(Node)", true); // crash
             }
         }
 
@@ -535,7 +535,7 @@ public class AreaLayoutLoader {
                 if (color == null) // if conversion was unsuccessful
                     Utils.log(Utils.getImproperFormatErrorLine("color", "TileInfo",
                             "must be four valid floating point numbers separated by spaces",
-                            true), "gameobject.gameworld.AreaLayoutLoader",
+                            true), "gameobject.gameworld.AreaLayoutLoader.TileInfo",
                             "parseChild(Node)", false); // log as much
                 else this.color = color; // otherwise save the color
             } else if (n.equals("texture_path")) this.texPaths.add(c.getValue()); // texture path
@@ -547,7 +547,7 @@ public class AreaLayoutLoader {
                 } catch (Exception e) { // if conversion was unsuccessful
                     Utils.log(Utils.getImproperFormatErrorLine("blend_mode", "TileInfo",
                             "must be either: none, multiplicative, or averaged", true),
-                            "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
+                            "gameobject.gameworld.AreaLayoutLoader.TileInfo", "parseChild(Node)",
                             false); // log as much
                 }
             } else if (n.equals("animation_frames")) { // animation frames
@@ -556,13 +556,13 @@ public class AreaLayoutLoader {
                 } catch (Exception e) { // if conversion was unsuccessful
                     Utils.log(Utils.getImproperFormatErrorLine("animation_frame_count",
                             "TileInfo", "must be a proper integer greater than 0",
-                            true), "gameobject.gameworld.AreaLayoutLoader",
+                            true), "gameobject.gameworld.AreaLayoutLoader.TileInfo",
                             "parseChild(Node)", false); // log as much
                 }
                 if (this.animFrames < 1) { // if the amount of frames is invalid
                     Utils.log(Utils.getImproperFormatErrorLine("animation_frame_count",
                             "TileInfo", "must be a proper integer greater than 0",
-                            true), "gameobject.gameworld.AreaLayoutLoader",
+                            true), "gameobject.gameworld.AreaLayoutLoader.TileInfo",
                             "parseChild(Node)", false); // log as much
                     this.animFrames = 1; // and return to default amount of frames
                 }
@@ -574,14 +574,14 @@ public class AreaLayoutLoader {
                     Utils.log(Utils.getImproperFormatErrorLine("animation_frame_time",
                             "TileInfo",
                             "must be a proper floating pointer number greater than 0", true),
-                            "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
+                            "gameobject.gameworld.AreaLayoutLoader.TileInfo", "parseChild(Node)",
                             false); // log as much
                 }
                 if (this.frameTime <= 0f) { // if the frame time is invalid
                     Utils.log(Utils.getImproperFormatErrorLine("animation_frame_time",
                             "TileInfo",
                             "must be a proper floating pointer number greater than 0", true),
-                            "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
+                            "gameobject.gameworld.AreaLayoutLoader.TileInfo", "parseChild(Node)",
                             false); // log as much
                     this.frameTime = 1f; // and return to default frame time
                 }
@@ -679,15 +679,15 @@ public class AreaLayoutLoader {
                     else if (v.equals("BELOW")) this.pin = 4; // below
                     else Utils.log(Utils.getImproperFormatErrorLine("pin", "DecorInfo",
                                 "pin must be one of the following: none, left, above, right, or below",
-                                true), "gameobject.gameworld.AreaLayoutLoader", "parseChild(c)",
-                                false); // if none of the above, log and ignore
+                                true), "gameobject.gameworld.AreaLayoutLoader.DecorInfo",
+                                "parseChild(c)",false); // if none of the above, log and ignore
                 } else if (n.equals("x_offset")) { // horizontal offset
                     try {
                         this.xOffset = Float.parseFloat(c.getValue()); // try to convert to a float
                     } catch (Exception e) { // if conversion was unsuccessful
                         Utils.log(Utils.getImproperFormatErrorLine("x_offset", "DecorInfo",
                                 "must be a proper floating pointer number", true),
-                                "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
+                                "gameobject.gameworld.AreaLayoutLoader.DecorInfo", "parseChild(Node)",
                                 false); // log as much
                     }
                 } else if (n.equals("y_offset")) { // vertical offset
@@ -696,7 +696,7 @@ public class AreaLayoutLoader {
                     } catch (Exception e) { // if conversion was unsuccessful
                         Utils.log(Utils.getImproperFormatErrorLine("y_offset", "DecorInfo",
                                 "must be a proper floating pointer number", true),
-                                "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
+                                "gameobject.gameworld.AreaLayoutLoader.DecorInfo", "parseChild(Node)",
                                 false); // log as much
                     }
                 } else if (n.equals("x_random_interval")) { // random horizontal offset
@@ -705,7 +705,7 @@ public class AreaLayoutLoader {
                     } catch (Exception e) { // if conversion was unsuccessful
                         Utils.log(Utils.getImproperFormatErrorLine("x_random_interval", "DecorInfo",
                                 "must be a proper floating pointer number", true),
-                                "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
+                                "gameobject.gameworld.AreaLayoutLoader.DecorInfo", "parseChild(Node)",
                                 false); // log as much
                     }
                 } else if (n.equals("y_random_interval")) { // random vertical offset
@@ -714,7 +714,7 @@ public class AreaLayoutLoader {
                     } catch (Exception e) { // if conversion was unsuccessful
                         Utils.log(Utils.getImproperFormatErrorLine("y_random_interval", "DecorInfo",
                                 "must be a proper floating pointer number", true),
-                                "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
+                                "gameobject.gameworld.AreaLayoutLoader.DecorInfo", "parseChild(Node)",
                                 false); // log as much
                     }
                 } else if (n.equals("x_light_offset")) { // light x offset
@@ -723,7 +723,7 @@ public class AreaLayoutLoader {
                     } catch (Exception e) { // if conversion was unsuccessful
                         Utils.log(Utils.getImproperFormatErrorLine("x_light_offset", "DecorInfo",
                                 "must be a proper floating pointer number", true),
-                                "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
+                                "gameobject.gameworld.AreaLayoutLoader.DecorInfo", "parseChild(Node)",
                                 false); // log as much
                     }
                 } else if (n.equals("y_light_offset")) { // light y offset
@@ -732,7 +732,7 @@ public class AreaLayoutLoader {
                     } catch (Exception e) { // if conversion was unsuccessful
                         Utils.log(Utils.getImproperFormatErrorLine("y_light_offset", "DecorInfo",
                                 "must be a proper floating pointer number", true),
-                                "gameobject.gameworld.AreaLayoutLoader", "parseChild(Node)",
+                                "gameobject.gameworld.AreaLayoutLoader.DecorInfo", "parseChild(Node)",
                                 false); // log as much
                     }
                 } else if (n.equals("light_source")) this.light = new LightSource(c); // light source

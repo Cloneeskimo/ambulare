@@ -35,7 +35,7 @@ public class WorldLogic extends GameLogic {
         this.roc.useGameWorld(window.getHandle(), new Area(Node.resToNode("/mainstory/areas/area.node")));
 
         // create and add player
-        player = new Entity(Model.getStdGridRect(1, 2),
+        player = new Entity("Player", Model.getStdGridRect(1, 2),
                 new LightSourceMaterial(new MSAT("/textures/entity/player.png", true, new MSAT.MSATState[]{
                         new MSAT.MSATState(1, 1f),
                         new MSAT.MSATState(1, 1f),
@@ -52,7 +52,7 @@ public class WorldLogic extends GameLogic {
         this.roc.getGameWorld().getCam().follow(player); // make camera follow player
 
         // create a random object
-        WorldObject o = new WorldObject(Model.getStdGridRect(1, 1), new Material(
+        Entity o = new Entity("Ball", Model.getStdGridRect(1, 1), new Material(
                 new float[]{1.0f, 0.0f, 0.0f, 1.0f})); // as a pink square
         o.setScale(0.3f, 0.3f); // scale down a lot
         o.getPhysicsProperties().bounciness = 0.9f; // make very bouncy
@@ -61,7 +61,7 @@ public class WorldLogic extends GameLogic {
         this.roc.addToWorld(o); // add to ROC
 
         // create another random object
-        o = new WorldObject(Model.getStdGridRect(1, 1), new Material(
+        o = new Entity("Ball", Model.getStdGridRect(1, 1), new Material(
                 new float[]{1.0f, 0.0f, 0.0f, 1.0f})); // as a pink square
         o.setScale(0.3f, 0.3f); // scale down a lot
         o.getPhysicsProperties().bounciness = 0.9f; // make very bouncy
