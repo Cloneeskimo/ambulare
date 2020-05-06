@@ -12,6 +12,13 @@ import static org.lwjgl.opengl.GL11.glBindTexture;
 import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
 import static org.lwjgl.opengl.GL13C.glActiveTexture;
 
+/*
+ * Material.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/16/20
+ */
+
 /**
  * Defines how an object should render by allowing various combinations of texture and color
  */
@@ -20,9 +27,9 @@ public class Material {
     /**
      * Members
      */
-    private float[] color;        // the color of this material if it has one
-    private BlendMode blendMode; // how this Material blends its texture and color when it has both
-    protected Texture texture;    // the texture of this material if it has one
+    private final BlendMode blendMode; // how this Material blends its texture and color when it has both
+    private float[] color;             // the color of this material if it has one
+    protected Texture texture;         // the texture of this material if it has one
 
     /**
      * Constructs the material based on the given texture, color, and blend flag

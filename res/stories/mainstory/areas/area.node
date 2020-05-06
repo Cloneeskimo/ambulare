@@ -1,19 +1,17 @@
 area:
 {
+    # TODO:
     # non-square collidables
-    # foreground/background
-    # liquids
-    # backgrounds
     # slopes
     # sun/moon
 
     # specify the name of the area
     name: Noob Forest
 
-    # specify to not apply lights to foreground objects
+    # specify that lights should be applied to foreground objects
     light_foreground: true
 
-    # specify the backdrop
+    # specify the backdrop details
     backdrop:
     {
         texture_path: /textures/backdrop.jpg
@@ -24,11 +22,8 @@ area:
     # provide a key mapping from characters in the layout to blocks
     block_key:
     {
-        # dirt
-        d: resfrom /mainstory/blocks/dirt.node
-
-        # grass
-        g: resfrom /mainstory/blocks/grass.node
+        d: resfrom /stories/mainstory/blocks/dirt.node
+        g: resfrom /stories/mainstory/blocks/grass.node
     }
 
     # provides a key mapping characters in the layout to decor

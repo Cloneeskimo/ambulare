@@ -7,23 +7,34 @@ import gameobject.gameworld.Area;
 import gameobject.gameworld.Entity;
 import gameobject.gameworld.WorldObject;
 import graphics.*;
+import story.Story;
 import utils.*;
 
 import static org.lwjgl.glfw.GLFW.*;
 
+/*
+ * WorldLogic.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/19/20
+ */
+
 /**
- * Dictates the logic the game will follow when the user is out in the world
+ * Dictates the logic the game will follow when the user is out in the world. When switching to this logic, transfer
+ * data must be provided with the following children: (1) "name": a name to give to the player, (2) "story": the story
+ * converted into a node (the result of Story.toNode())
  */
 public class WorldLogic extends GameLogic {
 
     /**
      * Members
      */
-    Window window;                      // reference to the window for exit button
-    Entity player;                      // reference to player
+    Window window; // reference to the window for exit button
+    Entity player; // reference to player
+    Story story;   // the current story in use
 
     /**
-     * Initializes any members
+     * Initializes the world logic by loading the area given by the transfer data
      *
      * @param window the window
      */
@@ -31,11 +42,32 @@ public class WorldLogic extends GameLogic {
     protected void initOthers(Window window) {
         super.initOthers(window); // call super so that FPS displaying objects are added to HUD
         this.window = window; // save reference to window
-        // create game world with starting area
-        this.roc.useGameWorld(window.getHandle(), new Area(Node.resToNode("/mainstory/areas/area.node")));
+        if (this.transferData == null) { // if no transfer data was given
+            Utils.handleException(new Exception("world logic initiated without transfer data. Transfer data is needed" +
+                    "to create an area for the game world"), "logic.WorldLogic", "initOthers(Window)", true); // crash
+        }
+        this.initStoryAndArea(); // initialize the story and the area
+        this.initWorldObjects(); // initialize world objects
+        this.initHUDObjects(); // initialize hud objects
+        this.roc.fadeIn(new float[]{0f, 0f, 0f, 1f}, 1f); // fade in the ROC
+    }
 
-        // create and add player
-        player = new Entity("Player", Model.getStdGridRect(1, 2),
+    /**
+     * Initializes the current story and starting area
+     */
+    private void initStoryAndArea() {
+        this.story = new Story(transferData.getChild("story")); // create story from transfer data node
+        Node startingArea = story.isResRelative() ? (Node.resToNode(story.getAbsStartingAreaPath()))
+                : Node.fileToNode(story.getAbsStartingAreaPath(), false); // get starting area node
+        this.roc.useGameWorld(window.getHandle(), new Area(startingArea)); // create game world using starting area
+    }
+
+    /**
+     * Initializes the world logic's world objects
+     */
+    private void initWorldObjects() {
+        // create player entity
+        player = new Entity(this.transferData.getChild("name").getValue(), Model.getStdGridRect(1, 2),
                 new LightSourceMaterial(new MSAT("/textures/entity/player.png", true, new MSAT.MSATState[]{
                         new MSAT.MSATState(1, 1f),
                         new MSAT.MSATState(1, 1f),
@@ -44,10 +76,11 @@ public class WorldLogic extends GameLogic {
                         new MSAT.MSATState(5, 0.05f),
                         new MSAT.MSATState(5, 0.05f)
                 }), new LightSource(new float[]{1f, 1f, 1f, 1f}, 5f, 1.5f)));
+        // lower player bounding width slightly to fit better and appear more aesthetically
         player.setBoundingWidth(0.9f);
         player.setBoundingHeight(0.9f);
-        player.setPos(Transformation.getCenterOfCell(new Pair<>(1, 9))); // move to grid cell 3, 5
-        player.getPhysicsProperties().rigid = true; // male player rigid
+        player.setPos(Transformation.getCenterOfCell(this.story.getStartingPos())); // move to story's starting position
+        player.getPhysicsProperties().rigid = true; // make player rigid
         this.roc.addToWorld(player); // add player to world
         this.roc.getGameWorld().getCam().follow(player); // make camera follow player
 
@@ -68,20 +101,30 @@ public class WorldLogic extends GameLogic {
         o.getPhysicsProperties().mass = 0.6f; // make it light
         o.setPos(Transformation.getCenterOfCell(new Pair<>(0, 9))); // move to grid cell 5, 7
         this.roc.addToWorld(o); // add to ROC
+    }
+
+    /**
+     * Initializes the world logic's hud objects
+     */
+    private void initHUDObjects() {
 
         // create and add player position text
         this.roc.addStaticObject(new TextObject(Global.FONT, "(0, 0)"), // player pos text
                 new ROC.PositionSettings(-1f, -1f, true, 0.02f));
         this.roc.getStaticGameObject(2).setScale(0.6f, 0.6f); // scale text down
 
-        // create and add exit button
-        TextButton exit = new TextButton(Global.FONT, "Exit"); // create exit button
-        exit.setScale(0.6f, 0.6f);
-        exit.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { window.close(); });
-
-        // add exit button to ROC
-        this.roc.addStaticObject(exit, new ROC.PositionSettings(1f, -1f, true, 0.02f));
-        this.roc.ensureAllPlacements(); // ensure ROC static object placements
+        // create and add return button
+        TextButton returnButton = new TextButton(Global.FONT, "Return"); // create return button
+        returnButton.setScale(0.6f, 0.6f); // scale return button down by about half
+        returnButton.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { // when pressed
+            if (GameLogic.logicChange == null) { // if no logic change is currently underway
+                GameLogic.logicChange = new LogicChange(new MainMenuLogic(), 0.5f); // change to main menu
+                GameLogic.logicChange.useTransferData(new Node()); // give transfer data to signify not startup
+                this.roc.fadeOut(new float[]{0f, 0f, 0f, 0f}, 0.5f); // fade out ROC
+            }
+        });
+        this.roc.addStaticObject(returnButton, new ROC.PositionSettings(1f, -1f, true,
+                0.02f)); // add return buttonb to ROC
 
         // create and add area name
         this.roc.addStaticObject(new TextObject(Global.FONT, this.roc.getGameWorld().getArea().getName()),
@@ -93,8 +136,8 @@ public class WorldLogic extends GameLogic {
                 new ROC.PositionSettings(0f, -1f, true, 0.1f)); // create reset info
         this.roc.getStaticGameObject(5).setScale(0.7f, 0.7f); // scale area name
 
-        // fade in
-        this.roc.fadeIn(new float[]{0.0f, 0.0f, 0.0f, 1.0f}, 3f);
+        // ensure all hud items are placed correctly
+        this.roc.ensureAllPlacements();
     }
 
     /**
@@ -137,20 +180,18 @@ public class WorldLogic extends GameLogic {
      */
     @Override
     public void update(float interval) {
-        super.update(interval);
-        Pair pos = new Pair(player.getX(), player.getY()); // pair player position
-        Transformation.getGridCell(pos);
-        if (((TextObject) this.roc.getStaticGameObject(2)).setText(pos.x + ", " + pos.y + ")")) // change player pos text
+        super.update(interval); // update game logic members
+        // update player position text on hud
+        if (((TextObject) this.roc.getStaticGameObject(2)).setText(player.getX() + ", " + player.getY() + ")"))
             this.roc.ensurePlacement(2); // update placement if changed
-        int vx = 0;
-        if (window.isKeyPressed(GLFW_KEY_D)) vx += 4;
-        if (window.isKeyPressed(GLFW_KEY_A)) vx -= 4;
-        player.setVX(vx);
-        if (vx == 0) {
-            player.setIsMoving(false);
-        } else {
-            player.setIsMoving(true);
-            player.setFacing(vx > 0);
+        int vx = 0; // calculate player horizontal velocity starting at zero
+        if (window.isKeyPressed(GLFW_KEY_D)) vx += 4; // if D is pressed, move player to the right
+        if (window.isKeyPressed(GLFW_KEY_A)) vx -= 4; // if A is pressed, move player to the left
+        player.setVX(vx); // update player's horizontal velocity
+        if (vx == 0) player.setIsMoving(false); // if the horizontal velocity is zero, update player's moving flag
+        else { // otherwise
+            player.setIsMoving(true); // flag that the player is moving
+            player.setFacing(vx > 0); // make player face the correct direction
         }
     }
 }

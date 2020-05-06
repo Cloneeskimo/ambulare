@@ -5,6 +5,13 @@ import utils.*;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
 
+/*
+ * GameEngine.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/14/20
+ */
+
 /**
  * Abstracts away many of the lower level game functions and operates the program based on whichever logic is
  * currently active. Specifically, the engine takes care of time keeping, the game loop, and window management
@@ -18,6 +25,7 @@ public class GameEngine {
     private final Window window;                 // the window being used
     private final Timer timer;                   // timer used for timekeeping and accurate FPS reporting and looping
     private GameLogic logic;                     // the logic the engine should follow
+    private float logicTransitionTime;           // a timer for logic transitions
 
     /**
      * Constructor
@@ -178,7 +186,13 @@ public class GameEngine {
      * @param interval the amount of time to account for
      */
     private void update(float interval) {
-        if (GameLogic.logicChange != null) performLogicChange(); // perform logic change if one is needed
+        if (GameLogic.logicChange != null) { // if a logic change is pending
+            this.logicTransitionTime += interval; // keep track of time for transition
+            if (this.logicTransitionTime >= GameLogic.logicChange.getTransitionTime()) { // if the transition is over
+                performLogicChange(); // perform the logic change
+                this.logicTransitionTime = 0f; // reset logic transition timer
+            }
+        }
         this.logic.update(interval); // allow the logic to update
     }
 
@@ -189,6 +203,7 @@ public class GameEngine {
     private void performLogicChange() {
         this.logic.cleanup(); // cleanup old logic
         this.logic = GameLogic.logicChange.getNewLogic(); // grab new logic
+        this.logic.giveTransferData(GameLogic.logicChange.getTransferData()); // give new logic the transfer data
         this.logic.init(this.window); // initialize new logic
         GameLogic.logicChange = null; // delete logic change data
     }

@@ -1,5 +1,12 @@
 package graphics;
 
+/*
+ * LightSourceMaterial.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/29/20
+ */
+
 /**
  * Extends material by allowing the material to be a source of light. This requires that the material is update with
  * a position before uniforms are set for the lights to be placed at the correct positions

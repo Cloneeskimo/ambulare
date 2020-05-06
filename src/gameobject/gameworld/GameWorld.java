@@ -188,8 +188,8 @@ public class GameWorld {
         /**
          * Constructor
          *
-         * @param startingSunAngle     the angle the sun should start at in degrees [0-360)
-         * @param sunSpeed             the speed at which the sun should progress
+         * @param startingSunAngle the angle the sun should start at in degrees [0-360)
+         * @param sunSpeed         the speed at which the sun should progress
          */
         public DayNightCycle(float startingSunAngle, float sunSpeed) {
             this.sunAngle = startingSunAngle; // set sun angle to the given starting angle

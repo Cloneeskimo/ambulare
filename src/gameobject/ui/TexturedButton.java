@@ -6,16 +6,23 @@ import graphics.Material;
 import graphics.Model;
 import utils.MouseInputEngine;
 
+/*
+ * TexturedButton.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/21/20
+ */
+
 /**
- * This extends GameObject to implement mouse interactivity by using a multi-state animated texture with separate states
- * for no mouse interaction, mouse hovering, and mouse pressing
+ * This extends GameObject to implement mouse interaction by using a multi-state animated texture with separate states
+ * for no mouse interaction, mouse hovering, and mouse pressing - practically simulating a button
  */
 public class TexturedButton extends GameObject implements MouseInputEngine.MouseInteractive {
 
     /**
      * Members
      */
-    private final MouseInputEngine.MouseCallback[] mcs; // array for mouse callbacks
+    private final MouseInputEngine.MouseCallback[] mcs; // array of callbacks as outlined by mouse interaction interface
 
     /**
      * Constructs the textured button with animation within texture states state
@@ -54,8 +61,9 @@ public class TexturedButton extends GameObject implements MouseInputEngine.Mouse
 
     /**
      * Saves the given mouse callback to be called when the given kind of input occurs
+     *
      * @param type the mouse input type to give a callback for
-     * @param mc the callback
+     * @param mc   the callback
      */
     @Override
     public void giveCallback(MouseInputEngine.MouseInputType type, MouseInputEngine.MouseCallback mc) {
@@ -64,10 +72,11 @@ public class TexturedButton extends GameObject implements MouseInputEngine.Mouse
 
     /**
      * Responds to mouse interaction by invoking any corresponding callbacks and updating the texture state
+     *
      * @param type the type of mouse input that occurred
-     * @param x the x position of the mouse in world coordinate or camera-view coordinates, depending on the mouse
-     *          input engine's camera usage flag for this particular implementing object
-     * @param y the y position of the mouse in world coordinate or camera-view coordinates, depending on the mouse
+     * @param x    the x position of the mouse in world coordinate or camera-view coordinates, depending on the mouse
+     *             input engine's camera usage flag for this particular implementing object
+     * @param y    the y position of the mouse in world coordinate or camera-view coordinates, depending on the mouse
      */
     @Override
     public void mouseInteraction(MouseInputEngine.MouseInputType type, float x, float y) {

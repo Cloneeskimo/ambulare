@@ -10,8 +10,15 @@ import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
+/*
+ * Window.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/14/20
+ */
+
 /**
- * Encapsulates a GLFW window into a single object
+ * Encapsulates a GLFW window in a single object
  */
 public class Window {
 
@@ -19,9 +26,9 @@ public class Window {
      * Data
      */
     private final String title;           // window title
+    private long handle;                  // the window handle - how GLFW knows this window by
     private int w, h;                     // window width and height
     private int fbw, fbh;                 // frame buffer width and height
-    private long handle;                  // the window handle - how GLFW knows this window by
     private boolean resized = false;      // whether or not the window has been resized (false by default)
     private boolean vSync;                // whether or not to use v-sync
 
@@ -195,19 +202,5 @@ public class Window {
      */
     public boolean isKeyPressed(int key) {
         return glfwGetKey(this.handle, key) == GLFW_PRESS;
-    }
-
-    /**
-     * Note that, like with keyboard input, mouse input can be react to on an event-to-event basis by using mouseInput()
-     * which is a method that the engine and sets of game logic have
-     *
-     * @return the mouse position as window coordinates
-     */
-    public Pair getMousePos() {
-        // create arrays to hold mouse position
-        double[] x = new double[1];
-        double[] y = new double[1];
-        glfwGetCursorPos(this.handle, x, y); // put position in each array
-        return new Pair((float) x[0], (float) y[0]); // put into a pair and return
     }
 }

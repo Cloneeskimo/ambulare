@@ -66,7 +66,7 @@ public class Area {
             Texture t = m.getTexture(); // get texture for material
             // if the texture is animated, tell the model which texture coordinates (frame) to use
             if (t instanceof AnimatedTexture) bm.useTexCoordVBO(((AnimatedTexture) t).getTexCoordVBO(), false);
-            // if the texture isn't animated, just use the entire texture
+                // if the texture isn't animated, just use the entire texture
             else bm.useTexCoordVBO(AnimatedTexture.getTexCoordVBO(0, 1), false);
             m.setUniforms(sp); // set the appropriate material uniforms
             bm.renderBlocks(sp, blockPositions.get(m)); // render all the blocks with that material at once
@@ -401,7 +401,7 @@ public class Area {
                             Utils.log(Utils.getImproperFormatErrorLine("color", "BackDrop",
                                     "must be four valid floating point numbers separated by spaces",
                                     true), "gameobject.gameworld.Area.BackDrop",
-                                    "BackDrop(Node, int, int)",false); // log as much
+                                    "BackDrop(Node, int, int)", false); // log as much
                         else color = color; // otherwise save the color
                     } else if (n.equals("texture_path")) texPath = c.getValue(); // texture path
                         // resource relative texture path flag
@@ -444,7 +444,7 @@ public class Area {
                             Utils.log(Utils.getImproperFormatErrorLine("zoom_factor", "BackDrop",
                                     "must be a proper floating pointer number greater than or equal to 0f",
                                     true), "gameobject.gameworld.Area.BackDrop",
-                                    "BackDrop(Node, int, int)",false); // log as much
+                                    "BackDrop(Node, int, int)", false); // log as much
                             this.zoomFactor = 1f; // and return to default
                         }
                     } else // if unrecognized child is found

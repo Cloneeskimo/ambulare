@@ -1,5 +1,12 @@
 package utils;
 
+/*
+ * FittingBox.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/24/20
+ */
+
 /**
  * A fitting box is defined by four corners, a center point, and a rotation value. These can be used to fit objects
  * more precisely than an axis-aligned bounding box. They are not used for collision detection, but they can and should

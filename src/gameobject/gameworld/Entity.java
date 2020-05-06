@@ -60,7 +60,7 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
      * Correctly positions the nameplate of the entity
      */
     private void positionNameplate() {
-        this.nameplate.setPos(this.getX(),this.getY() + this.getHeight() / 2 + this.nameplate.getHeight() / 2 +
+        this.nameplate.setPos(this.getX(), this.getY() + this.getHeight() / 2 + this.nameplate.getHeight() / 2 +
                 NAMEPLATE_PADDING); // put above entity
     }
 
@@ -136,28 +136,30 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
 
     /**
      * Entities do not accept callbacks for now
+     *
      * @param type the mouse input type to give a callback for
-     * @param mc the callback
+     * @param mc   the callback
      */
     @Override
-    public void giveCallback(MouseInputEngine.MouseInputType type, MouseInputEngine.MouseCallback mc) { }
+    public void giveCallback(MouseInputEngine.MouseInputType type, MouseInputEngine.MouseCallback mc) {
+    }
 
     /**
      * Responds to mouse input by changing the nameplate color and scale when the entity is hovered
+     *
      * @param type the type of mouse input that occurred
-     * @param x the x position of the mouse in world coordinate or camera-view coordinates, depending on the mouse
-     *          input engine's camera usage flag for this particular implementing object
-     * @param y the y position of the mouse in world coordinate or camera-view coordinates, depending on the mouse
+     * @param x    the x position of the mouse in world coordinate or camera-view coordinates, depending on the mouse
+     *             input engine's camera usage flag for this particular implementing object
+     * @param y    the y position of the mouse in world coordinate or camera-view coordinates, depending on the mouse
      */
     @Override
     public void mouseInteraction(MouseInputEngine.MouseInputType type, float x, float y) {
         if (type == MouseInputEngine.MouseInputType.HOVER) { // if entity is being hovered
-            this.nameplate.getMaterial().setColor(new float[] { 1f, 1f, 0f, 1f }); // make nameplate yellow
+            this.nameplate.getMaterial().setColor(new float[]{1f, 1f, 0f, 1f}); // make nameplate yellow
             this.nameplate.setScale(3f, 3f); // scale up slightly
             this.positionNameplate(); // reposition nameplate
-        }
-        else if (type == MouseInputEngine.MouseInputType.DONE_HOVERING) { // if entity is done being hovered
-            this.nameplate.getMaterial().setColor(new float[] { 1f, 1f, 1f, 1f }); // make nameplate white again
+        } else if (type == MouseInputEngine.MouseInputType.DONE_HOVERING) { // if entity is done being hovered
+            this.nameplate.getMaterial().setColor(new float[]{1f, 1f, 1f, 1f}); // make nameplate white again
             this.nameplate.setScale(2.5f, 2.5f); // scale back to normal
             this.positionNameplate(); // reposition nameplate
         }

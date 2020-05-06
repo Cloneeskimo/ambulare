@@ -2,6 +2,13 @@ package graphics;
 
 import gameobject.GameObject;
 
+/*
+ * ROC.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/16/20
+ */
+
 /**
  * Stimulates a camera by maintaining a position, velocity, and zoom for the view
  */

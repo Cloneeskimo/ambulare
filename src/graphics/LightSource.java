@@ -3,6 +3,13 @@ package graphics;
 import utils.Node;
 import utils.Utils;
 
+/*
+ * LightSource.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/29/20
+ */
+
 /**
  * Defines properties of a light source independent of position
  */

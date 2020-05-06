@@ -1,5 +1,12 @@
 package utils;
 
+/*
+ * Pair.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/21/20
+ */
+
 /**
  * Contains a pair of objects
  */
@@ -28,8 +35,6 @@ public class Pair<T> {
         this(null, null);
     }
 
-    ;
-
     /**
      * Constructs the pair using values from another pair
      *
@@ -52,7 +57,7 @@ public class Pair<T> {
      *
      * @param p the other pair to check
      */
-    public boolean equals(Pair p) {
+    public boolean equals(Pair<T> p) {
         return (p.x == this.x && p.y == this.y);
     }
 }

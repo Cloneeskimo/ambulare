@@ -1,9 +1,10 @@
 import logic.MainMenuLogic;
 
-/**
+/*
+ * Ambulare.java
  * Ambulare
- * The side-scrolling fantasy RPG
- * created by Jacob Oaks
+ * Jacob Oaks
+ * 4/18/20
  */
 
 /**

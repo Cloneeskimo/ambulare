@@ -13,6 +13,13 @@ import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL30.glGenerateMipmap;
 import static org.lwjgl.stb.STBImage.*;
 
+/*
+ * Texture.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/16/20
+ */
+
 /**
  * Represents a Texture
  */

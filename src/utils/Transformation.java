@@ -2,6 +2,13 @@ package utils;
 
 import graphics.Camera;
 
+/*
+ * Transformation.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/17/20
+ */
+
 /**
  * This class provides methods to transform between various coordinate systems such as those listed and described below:
  * All coordinates listed below, except for window and grid, are normalized such that, if vertices were rendered at that
@@ -127,7 +134,7 @@ public abstract class Transformation {
      */
     public static Pair<Float> getCenterOfCell(Pair<Integer> pos) {
         // get the centers of each component
-        return new Pair<>(getCenterOfCellComponent((int) pos.x), getCenterOfCellComponent((int) pos.y));
+        return new Pair<>(getCenterOfCellComponent(pos.x), getCenterOfCellComponent(pos.y));
     }
 
     /**

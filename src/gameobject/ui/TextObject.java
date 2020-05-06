@@ -6,8 +6,15 @@ import graphics.Material;
 import graphics.Model;
 import graphics.ShaderProgram;
 
+/*
+ * TextObject.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/19/20
+ */
+
 /**
- * A game object designed to easily and accessibly display text
+ * A game object designed to easily and efficiently display text
  */
 public class TextObject extends GameObject {
 
@@ -21,22 +28,22 @@ public class TextObject extends GameObject {
     /**
      * Members
      */
-    private String text; // the current text
-    private Font font;   // the font used
+    private String text;     // the current text
+    private final Font font; // the font used to display the text
 
     /**
      * Constructs the text object with the given color
      *
      * @param font  the font to use when rendering the text
-     * @param text  the text to display
+     * @param text  the starting text to display
      * @param color the color the text should be
      */
     public TextObject(Font font, String text, float[] color) {
-        // call super, using a material that has the font sheet as a texture, and blend with the given color
+        // call super using a material that has the font sheet as a texture, and blend with the given color
         super(0f, 0f, new Model(new float[]{}, new float[]{}, new int[]{}),
                 new Material(font.getSheet(), color, Material.BlendMode.MULTIPLICATIVE));
-        this.font = font;
-        this.setText(text);
+        this.font = font; // save font as member
+        this.setText(text); // set the text to the given starting text
     }
 
     /**
@@ -46,7 +53,8 @@ public class TextObject extends GameObject {
      * @param text the text to display
      */
     public TextObject(Font font, String text) {
-        this(font, text, DEFAULT_COLOR);
+        // call other constructor with the default text color
+        this(font, text, new float[]{DEFAULT_COLOR[0], DEFAULT_COLOR[1], DEFAULT_COLOR[2], DEFAULT_COLOR[3]});
     }
 
     /**
@@ -61,7 +69,7 @@ public class TextObject extends GameObject {
         float[] modelCoords = new float[text.length() * 8]; // model coordinate array
         float[] texCoords = new float[text.length() * 8]; // texture coordinate array
         int[] idx = new int[text.length() * 6]; // indices array
-        float charWidth = font.getCharWidth(); // get character width
+        float charWidth = font.getCharWidth(); // get character width from the font
 
         // preprocess to find widths and total width
         float[] widths = new float[text.length()]; // width for each character
@@ -75,7 +83,7 @@ public class TextObject extends GameObject {
 
         // go through each character
         float x = -width / 2; // start on the left of the item and work our way to the right
-        for (int i = 0; i < text.length(); i++) {
+        for (int i = 0; i < text.length(); i++) { // for each character in the text
             int s = i * 8; // starting index for all assignments
 
             // get character and texture coordinates
@@ -137,7 +145,7 @@ public class TextObject extends GameObject {
     public void removeLastChars(int n) {
         if (n < 1) return; // ignore negative or zero values
         if (n >= this.text.length()) this.setText(""); // remove all text if n >= text length
-        this.setText(this.text.substring(0, this.text.length() - n)); // remove n characters
+        else this.setText(this.text.substring(0, this.text.length() - n)); // remove n characters
     }
 
     /**
@@ -147,12 +155,13 @@ public class TextObject extends GameObject {
      */
     @Override
     public void render(ShaderProgram sp) {
-        if (!this.text.equals("")) { // if the text is not empty
-            if (!this.visible) return; // do not render if invisible
-            sp.setUniform("x", this.getX()); // set x
-            sp.setUniform("y", this.getY()); // set y
-            this.material.setUniforms(sp); // set material uniforms
-            this.model.render(); // render model
-        }
+        if (!this.text.equals("")) super.render(sp); // only render if there is actually text
+    }
+
+    /**
+     * @return the text object's text
+     */
+    public String getText() {
+        return this.text;
     }
 }

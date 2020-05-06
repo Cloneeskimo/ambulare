@@ -12,6 +12,13 @@ import java.util.List;
 
 import static org.lwjgl.glfw.GLFW.*;
 
+/*
+ * MouseInputEngine.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/21/20
+ */
+
 /**
  * A mouse input engine handles mouse interactivity in an organized, efficient, and customizable manner. Mouse input
  * engines are given a collection of objects which implement the MouseInteractive interface and expect to be told
@@ -23,7 +30,7 @@ public class MouseInputEngine {
     /**
      * This enum lists all types of mouse input detected for mouse interactive objects
      */
-    public enum MouseInputType { HOVER, DONE_HOVERING, PRESS, RELEASE }
+    public enum MouseInputType {HOVER, DONE_HOVERING, PRESS, RELEASE}
 
     /**
      * Members
@@ -71,7 +78,7 @@ public class MouseInputEngine {
                 if (mis.get(i).getFittingBox().contains(pos)) { // if the fitting box contains the mouse
                     // if the mouse wandered in while pressed, notify the object
                     if (this.pressed) mis.get(i).mouseInteraction(MouseInputType.PRESS, pos.x, pos.y);
-                    // otherwise, notify the object of the hover
+                        // otherwise, notify the object of the hover
                     else mis.get(i).mouseInteraction(MouseInputType.HOVER, pos.x, pos.y);
                     this.hoverStates.set(i, true); // save new hover state as true
                 } else { // otherwise
@@ -110,6 +117,7 @@ public class MouseInputEngine {
     /**
      * Gives the mouse input engine a camera to use to convert mouse input to camera-view coordinates. This is used to
      * check fitting boxes of objects that are rendered to the window using the given camera
+     *
      * @param cam the camera described above
      */
     public void useCam(Camera cam) {
@@ -128,8 +136,9 @@ public class MouseInputEngine {
          * Assuming a length-4 array of mouse callbacks is being kept in the correct order, saveMouseCallback() can be
          * called with the implementing object's array of mouse callbacks as a parameter and the callback will
          * automatically be saved correctly (see saveCallback())
+         *
          * @param type the mouse input type to give a callback for
-         * @param mc the callback
+         * @param mc   the callback
          */
         void giveCallback(MouseInputType type, MouseCallback mc);
 
@@ -138,11 +147,12 @@ public class MouseInputEngine {
          * object occurs. Assuming a length-4 array of mouse callbacks is being kept in the correct order,
          * invokeCallback() can be called with the implementing object's array of mouse callbacks as a parameter and the
          * correct callback will automatically be called (see invokeCallback())
+         *
          * @param type the type of mouse input that occurred
-         * @param x the x position of the mouse in world coordinate or camera-view coordinates, depending on the mouse
-         *          input engine's camera usage flag for this particular implementing object
-         * @param y the y position of the mouse in world coordinate or camera-view coordinates, depending on the mouse
-         *          input engine's camera usage flag for this particular implementing object
+         * @param x    the x position of the mouse in world coordinate or camera-view coordinates, depending on the mouse
+         *             input engine's camera usage flag for this particular implementing object
+         * @param y    the y position of the mouse in world coordinate or camera-view coordinates, depending on the mouse
+         *             input engine's camera usage flag for this particular implementing object
          */
         void mouseInteraction(MouseInputType type, float x, float y);
 
@@ -155,10 +165,11 @@ public class MouseInputEngine {
         /**
          * Automatically handles callback saving. This should be called by implementing objects whenever their
          * giveCallback() method is called in order to correctly save the callback
+         *
          * @param type the kind of mouse input callback being saved
-         * @param mc the mouse callback being saved
-         * @param mcs in order for this method to work properly, the implementing object must have a length-4 array of
-         *            mouse callbacks saved as a member whichs should be passed in here
+         * @param mc   the mouse callback being saved
+         * @param mcs  in order for this method to work properly, the implementing object must have a length-4 array of
+         *             mouse callbacks saved as a member whichs should be passed in here
          */
         static void saveCallback(MouseInputType type, MouseCallback mc, MouseCallback[] mcs) {
             switch (type) { // switch on the type
@@ -180,9 +191,10 @@ public class MouseInputEngine {
         /**
          * Automatically handles callback invoking. This should be called by implementing objects whenever their
          * mouseInteraction() method is called in order to correctly invoke their callbacks
+         *
          * @param type the kind of mouse input callback being saved
-         * @param mcs in order for this method to work properly, the implementing object must have a length-4 array of
-         *            mouse callbacks saved as a member which should be passed in here
+         * @param mcs  in order for this method to work properly, the implementing object must have a length-4 array of
+         *             mouse callbacks saved as a member which should be passed in here
          * @param x
          * @param y
          */

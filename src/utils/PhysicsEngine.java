@@ -8,6 +8,13 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
+/*
+ * PhysicsEngine.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/22/20
+ */
+
 /**
  * Provides framework for performing physics. Specifically, the physics engine performs moves for world objects. In
  * doing so, it checks for collisions with blocks using a block map, and collisions with other collidable world objects.

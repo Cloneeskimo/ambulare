@@ -3,9 +3,16 @@ package graphics;
 import java.util.HashMap;
 import java.util.Map;
 
+/*
+ * AnimatedTexture.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/27/20
+ */
+
 /**
  * Extends textures by implementing animation. Note that in order for animated textures to animate, they must be
- * updates and the rendering system must update the corresponding model's texture coordinate VBO by calling the
+ * updated and the rendering system must update the corresponding model's texture coordinate VBO by calling the
  * animated texture's getTexCoordVBO() method. It is a bad idea to have game objects update their animated texture,
  * because if two game objects have the same animated texture, it will get updated twice and the animation will appear
  * twice as fast. Instead, a list of unique animated textures should be kept in the rendering system and update

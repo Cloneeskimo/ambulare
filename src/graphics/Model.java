@@ -13,6 +13,13 @@ import static org.lwjgl.opengl.GL20.glDisableVertexAttribArray;
 import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
 import static org.lwjgl.opengl.GL30.*;
 
+/*
+ * Model.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/15/20
+ */
+
 /**
  * Represents a model with model coordinates, texture coordinates, and indices
  * This model supports scaling, rotating, and bounding box generation. However, in order for these to work as intended,
@@ -126,6 +133,10 @@ public class Model {
     /**
      * Members
      */
+    protected final int ids[];           /* integer array to store the various GL object ids: [0] - VAO ID,
+                                            [1] - model coordinate VBO ID, [2] - texture coordinate VBO ID,
+                                            [3] - index VBO ID, [4] - normals VBO ID */
+    protected final int idx;             // the amount of vertices this shape has
     private float[] modelCoords;         // the model's model coordinates
     private float sx = 1f, sy = 1f;      // horizontal and vertical scale
     private float r = 0f;                // rotation in radians
@@ -135,10 +146,6 @@ public class Model {
                                             to true but the model won't re-calculate width and height until the
                                             corresponding methods are called while this flag is true to save computing
                                             power */
-    protected final int ids[];           /* integer array to store the various GL object ids: [0] - VAO ID,
-                                            [1] - model coordinate VBO ID, [2] - texture coordinate VBO ID,
-                                            [3] - index VBO ID, [4] - normals VBO ID */
-    protected final int idx;             // the amount of vertices this shape has
 
     /**
      * Constructs the model

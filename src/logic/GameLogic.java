@@ -4,30 +4,54 @@ import gameobject.ROC;
 import gameobject.ui.TextObject;
 import graphics.Window;
 import utils.Global;
+import utils.Node;
+
+/*
+ * GameLogic.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/15/20
+ */
 
 /**
- * The game logic define how the engine will interact with the game. To aid in the process of designing a game world and
- * interface, this abstract class has an ROC to store, interact with, and render game objects in a wide variety of ways
- * without being too intensive (see ROC class). If the extending class doesn't want to use an ROC, a flag to
- * enable/disable rendering of the ROC exists as well
+ * The game logic defines how the engine will interact with the game. To aid in the process of designing a game world
+ * and interface, this abstract class has an ROC to store, interact with, and render game objects in a wide variety of
+ * ways without being too intensive (see ROC class). If the extending class doesn't want to use an ROC, a flag to
+ * enable/disable rendering of the ROC exists as well. There is also a static logic change member which can be set from
+ * anywhere and which contains information necessary for the engine to switch logic sets. It is up to the engine to
+ * check when this logic change information has been set. The idea is for different game states to be represented by
+ * extensions of this very general logic class
  */
 public abstract class GameLogic {
 
     /**
      * Static Data
      */
-    public static LogicChange logicChange = null; // info about logic changes
+    public static LogicChange logicChange = null; /* info about log change. See class info above and
+                                                     GameLogic.LogicChange */
 
     /**
      * Members
      */
-    protected ROC roc;                        // holds and renders all game objects
+    protected ROC roc;                        // holds and renders all objects. See gameobject.ROC
+    protected Node transferData;              /* when a logic is switched to, this will store any transfer data from
+                                                 the logic change. This may be null if no transfer data was given */
     protected boolean renderROC = true;       /* extending classes can disable ROC rendering if they want to render in
-                                                 some other manner*/
+                                                 some other manner that does not involve an ROC */
     private boolean FPSItemsAdded = false;    /* flag representing whether the FPS HUD items have been added. It is
                                                  possible they are not added if extending classes override
                                                  initOtherItems() without calling super so this is necessary to ensure
                                                  that no text updates are called on TextObjects that do not exist */
+
+    /**
+     * Gives the game logic transfer data to use when initializing
+     *
+     * @param transferData data to transfer to the logic. If null, it will be assumed that there is no transfer data.
+     *                     Extending classes can access this data by accessing the transferData member
+     */
+    public void giveTransferData(Node transferData) {
+        this.transferData = transferData; // save as members
+    }
 
     /**
      * Initializes the logic. This method is the only entry point into the logic other then input, update, and render
@@ -37,7 +61,7 @@ public abstract class GameLogic {
      * @param window the window
      */
     public final void init(Window window) {
-        this.roc = new ROC();
+        this.roc = new ROC(); // initialize ROC
         this.initOthers(window); // allow extending classes to initialize other members
     }
 
@@ -155,7 +179,9 @@ public abstract class GameLogic {
 
     /**
      * Outlines necessary data to perform a logic change in the engine. By setting GameLogic.logicChange to an
-     * instance of this, the engine will change its logic
+     * instance of this, the engine will change its logic. LogicChanges can be given a transition time before the actual
+     * change occurs. This allows for animations/fades. Transfer data can also be given in the form of a Node which will
+     * be given to the new logic
      */
     public static class LogicChange {
 
@@ -163,14 +189,26 @@ public abstract class GameLogic {
          * Members
          */
         private GameLogic newLogic; // the new logic to switch to
+        private Node transferData;  // data to give to the new logic
+        private float transition;   // the amount of time to take before the transition between logics occurs
 
         /**
          * Constructor
          *
          * @param newLogic the new logic to switch to
          */
-        public LogicChange(GameLogic newLogic) {
+        public LogicChange(GameLogic newLogic, float transition) {
             this.newLogic = newLogic;
+            this.transition = transition;
+        }
+
+        /**
+         * Sets transfer data to be passed to the new logic
+         *
+         * @param data the data to pass
+         */
+        public void useTransferData(Node data) {
+            this.transferData = data; // save as member
         }
 
         /**
@@ -178,6 +216,20 @@ public abstract class GameLogic {
          */
         public GameLogic getNewLogic() {
             return this.newLogic;
+        }
+
+        /**
+         * @return the logic change's transfer data, or null if there is no transfer data
+         */
+        public Node getTransferData() {
+            return this.transferData;
+        }
+
+        /**
+         * @return the transition time for the logic change
+         */
+        public float getTransitionTime() {
+            return this.transition;
         }
     }
 }

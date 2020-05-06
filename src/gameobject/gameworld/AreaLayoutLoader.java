@@ -680,7 +680,7 @@ public class AreaLayoutLoader {
                     else Utils.log(Utils.getImproperFormatErrorLine("pin", "DecorInfo",
                                 "pin must be one of the following: none, left, above, right, or below",
                                 true), "gameobject.gameworld.AreaLayoutLoader.DecorInfo",
-                                "parseChild(c)",false); // if none of the above, log and ignore
+                                "parseChild(c)", false); // if none of the above, log and ignore
                 } else if (n.equals("x_offset")) { // horizontal offset
                     try {
                         this.xOffset = Float.parseFloat(c.getValue()); // try to convert to a float

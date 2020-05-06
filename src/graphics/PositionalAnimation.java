@@ -1,23 +1,30 @@
 package graphics;
 
+/*
+ * PositionalAnimation.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/18/20
+ */
+
 /**
- * Contains tools necessary for a game object to undergo a positional animation (one where its position changes)
- * This class stores more variables than necessary to avoid repetitive arithmetic because instantiations of this class
- * won't actually exist for longer than their duration (usually) so the tradeoff of memory for these extraneous
- * variables versus the smoothness they may provide is worth it
+ * Contains tools necessary for an object to undergo a positional animation (one where its position changes). This class
+ * stores more variables than necessary to avoid repetitive arithmetic because instantiations of this class shouldn't
+ * actually exist for longer than their duration (usually) so the tradeoff of memory for these extraneous variables
+ * versus the smoothness they may provide is worth it
  */
 public class PositionalAnimation {
 
     /**
      * Members
      */
-    boolean x = true, y = true, r = true; // flags representing which components are being animated
     float x0, y0, r0;                     // starting position and rotation of owning game object
     float xf, yf, rf;                     // ending position and rotation of owning game object
     float dx, dy, dr;                     // difference between end and start pos and rotation of owning game object
     float duration;                       // duration (in seconds) of the animation
     float animProg;                       // animation progress (0-1)
     float time;                           // current amount of time that animating has occurred (in seconds)
+    boolean x = true, y = true, r = true; // flags representing which components are being animated
 
     /**
      * Constructs this animation

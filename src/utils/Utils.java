@@ -12,6 +12,38 @@ import java.util.Scanner;
  */
 public class Utils {
 
+    /*
+     * Utils.java
+     * Ambulare
+     * Jacob Oaks
+     * 4/15/20
+     */
+
+    /**
+     * Opens the given path in the native operating system's file explorer if it exists. This will not work for
+     * resource-relative paths
+     *
+     * @param filePath the path to open
+     */
+    public static void openNativeFileExplorer(String filePath) {
+        File file = new File(filePath); // create a file at that path
+        if (file.exists()) { // if the path exists
+            try { // try to open a native file explorer at that path
+                String os = System.getProperty("os.name").toLowerCase(); // get the operating system
+                if (os.contains("win")) { // if the operating system is windows
+                    Runtime.getRuntime().exec(new String[]{"rundll32", "url.dll,FileProtocolHandler",
+                            file.getAbsolutePath()}); // open using windows
+                } else if (os.contains("nux") || os.contains("nix") || os.contains("mac")) // if linux or mac
+                    Runtime.getRuntime().exec(new String[]{"/usr/bin/open", file.getAbsolutePath()}); // open with linux
+            } catch (Exception e) { // if an exception occurs, log and ignoree
+                Utils.log("Unable to open path: " + filePath + " in native file explorer for reason: " +
+                        e.getMessage(), "utils.Utils", "openNativeFileExplorer(String)", false);
+            }
+        } else // if the file doesn't exist
+            Utils.log("Unable to open path: " + file + " in native file exploreer for reason: non-existent",
+                    "utils.Utils", "openNativeFileExplorer(String)", false); // log and ignore
+    }
+
     /**
      * Performs a logical exclusive or (XOR) operation on two booleans
      *
@@ -176,10 +208,11 @@ public class Utils {
         List<String> file = new ArrayList<>(); // create empty ArrayList
         try (BufferedReader in = new BufferedReader(new InputStreamReader(Class.forName(Utils.class.getName())
                 .getResourceAsStream(resPath)))) { // attempt to open resource
-            String line;
+            String line; // variable to store a single line
             while ((line = in.readLine()) != null) file.add(line); // read each line until eof
-        } catch (Exception e) {
-            handleException(e, "utils.Utils", "resToStringList(String)", true);
+        } catch (Exception e) { // if there is an exception
+            handleException(new Exception("Could not load resource: " + resPath + " for reason: " + e.getMessage()),
+                    "utils.Utils", "resToStringList(String)", true); // handle it
         }
         return file;
     }

@@ -7,6 +7,13 @@ import java.util.Map;
 
 import static org.lwjgl.opengl.GL20.*;
 
+/*
+ * ShaderProgram.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/15/20
+ */
+
 /**
  * Represents a GLSL shader program. All uniforms must be registered and set before rendering. The shader program class
  * provides essy ways to register and set an array of lights uniform of length MAX_LIGHTS and of name LIGHT_ARRAY_NAME

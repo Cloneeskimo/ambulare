@@ -1,5 +1,12 @@
 package graphics;
 
+/*
+ * MSAT.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/27/20
+ */
+
 /**
  * MSATs (Multi-State Animated Textures) extend animated textures by providing support for multiple states of animation
  * where each state represents a different set of frames within the texture to use
@@ -21,9 +28,9 @@ public class MSAT extends AnimatedTexture {
     /**
      * Members
      */
-    private MSATState[] states; // the different animation states to use
-    private int stateFrame = 0; // the current frame within the current animate state
-    private int state = 0;      // the current animation state
+    private final MSATState[] states; // the different animation states to use
+    private int stateFrame = 0;       // the current frame within the current animate state
+    private int state = 0;            // the current animation state
 
     /**
      * Constructor

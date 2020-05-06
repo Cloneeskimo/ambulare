@@ -4,6 +4,13 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/*
+ * Node.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/14/20
+ */
+
 /**
  * A tree-like data structure for storing data that can easily be loaded and stored in files
  * A file containing data able to be read and parsed into a node is called a node-file. By convention, node-files

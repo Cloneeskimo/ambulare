@@ -1,5 +1,12 @@
 package utils;
 
+/*
+ * Timer.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/15/20
+ */
+
 /**
  * Keeps track of time and allows for easily getting elapsed time for things like game loops
  */
