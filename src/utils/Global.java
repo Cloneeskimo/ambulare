@@ -40,7 +40,7 @@ public class Global {
      */
     public static void init() {
         // initialize the global font
-        Global.FONT = new Font("/textures/ui/font.png", Node.resToNode("/font_info.txt"));
+        Global.FONT = new Font("/textures/ui/font.png", Node.resToNode("/font.node"));
     }
 
     /**
@@ -51,5 +51,40 @@ public class Global {
     public static void updateAr(Window w) {
         Global.ar = (float) w.getFBWidth() / (float) w.getFBHeight(); // calculate aspect ratio
         Global.arAction = (Global.ar < 1.0f); // calculate the aspect ratio action. See static data for more information
+    }
+
+    /**
+     * Grabs the exact rgba color corresponding to the given theme color. The point of this method is to have important
+     * colors match a general theme and to originate from the same place
+     * @param tc the theme color whose exact rgba color to return
+     * @return the exact rgba color corresponding to the given theme color
+     */
+    public static float[] getThemeColor(ThemeColor tc) {
+        float[] c = null;
+        switch (tc) { // switch on the theme color
+            case GRAY: // gray
+                c = new float[] { 0.522f, 0.522f, 0.522f, 1f };
+                break;
+            case WHITE: // white
+                c = new float[] { 0.97f, 0.97f, 0.97f, 1f };
+                break;
+            case DARK_GREEN: // dark green
+                c = new float[] { 0.082f, 0.349f, 0.098f, 1f };
+                break;
+            case GREEN: // green
+                c = new float[] { 0.333f, 0.584f, 0.318f, 1f };
+                break;
+            case SKY_BLUE: // sky blues
+                c = new float[] { 0.49f, 0.808f, 0.922f, 1f };
+                break;
+        }
+        return c; // return the corresponding color
+    }
+
+    /**
+     * Defines a set of consolidated theme colors whose exact RGBA equivalents are outlined in getThemeColor()
+     */
+    public enum ThemeColor {
+        GRAY, WHITE, DARK_GREEN, GREEN, SKY_BLUE
     }
 }

@@ -95,7 +95,8 @@ public class NewGameLogic extends GameLogic {
          */
         private final MouseInputEngine.MouseCallback[] mcs = new MouseInputEngine.MouseCallback[4]; /* callback array as
             outlined by the mouse interaction interface */
-        private final TextObject name, author, path; // text objects for the story name, author, and path
+        private final TextButton name; // text button for name
+        private final TextObject author, path; // text objects for author and path
 
         /**
          * Constructor
@@ -105,13 +106,12 @@ public class NewGameLogic extends GameLogic {
         public StoryListItem(Story story) {
             // call super with a standard square model and with a transparent material
             super(Model.getStdGridRect(1, 1), new Material(new float[]{1f, 1f, 1f, 0f}));
-            this.name = new TextObject(Global.FONT, story.getName()); // create name text object with story name
+            this.name = new TextButton(Global.FONT, story.getName()); // create name text button with story name
             this.name.setScale(0.8f, 0.8f); // scale story name down a little bit
-            this.author = new TextObject(Global.FONT, "author: " + story.getAuthor(),
-                    new float[]{0.3f, 0.3f, 0.3f, 1f}); // create author text object with story object
+            this.author = new TextObject(Global.FONT, "author: " + story.getAuthor()); // create author text object
             this.author.setScale(0.4f, 0.4f); // scale author down by a little over half
             this.path = new TextObject(Global.FONT, "path: " + (story.isResRelative() ? "<res>" : "") +
-                    story.getPath(), new float[]{0.3f, 0.3f, 0.3f, 1f}); // create path text object with story path
+                    story.getPath()); // create path text object with story path
             this.path.setScale(0.3f, 0.3f); // scale path down by about one third
             this.position(); // position the text objects in the story list item
         }
@@ -179,14 +179,7 @@ public class NewGameLogic extends GameLogic {
         @Override
         public void mouseInteraction(MouseInputEngine.MouseInputType type, float x, float y) {
             MouseInputEngine.MouseInteractive.invokeCallback(type, this.mcs, x, y); // invoke necessary callbacks
-            // if hover or release mouse event
-            if (type == MouseInputEngine.MouseInputType.HOVER || type == MouseInputEngine.MouseInputType.RELEASE) {
-                this.name.getMaterial().setColor(new float[]{0.5f, 0.5f, 0.5f, 1f}); // make the name gray
-            } else if (type == MouseInputEngine.MouseInputType.DONE_HOVERING) { // if hovering has ended
-                this.name.getMaterial().setColor(new float[]{1f, 1f, 1f, 1f}); // make the name white (like normal)
-            } else if (type == MouseInputEngine.MouseInputType.PRESS) { // if press event
-                this.name.getMaterial().setColor(new float[]{1f, 1f, 0f, 1f}); // change the name color to yellow
-            }
+            this.name.mouseInteraction(type, x, y); // pass mouse interaction to button
         }
     }
 
@@ -254,7 +247,8 @@ public class NewGameLogic extends GameLogic {
 
         // create name input text input object for player name select
         this.nameInput = new TextInputObject(window, Global.FONT, "(name)",
-                new float[]{0.5f, 0.5f, 0.5f, 0.5f}, new float[]{1f, 1f, 0f, 1f}); // create text input object
+                Global.getThemeColor(Global.ThemeColor.GRAY),
+                Global.getThemeColor(Global.ThemeColor.GREEN)); // create name input text input object
         this.nameInput.setAcceptInput(false); // do not accept input until at the correct phase
         this.nameInput.setMinLength(MIN_NAME_LENGTH); // set the minimum length to be the minimum name length
         this.nameInput.setMaxLength(MAX_NAME_LENGTH); // set the maximum length to be the maximum name length
@@ -262,12 +256,16 @@ public class NewGameLogic extends GameLogic {
             this.phase = 5; // go to phase 5
         });
 
-        // add ui elements to their starting positions in the ROC and fade in
-        // add the story list in the middle of the window
-        this.roc.addStaticObject(lo, new ROC.PositionSettings(0f, 0f, false, 0f));
-        // add a text object prompting the player to select a story at the top of the window
+        // add ui elements to their starting positions outside of view and fly them in
+        this.roc.addStaticObject(lo, new ROC.PositionSettings(0f, -2f - (1f / Global.ar), false,
+                0f)); // add the story list below
+        this.roc.moveStaticObject(0, new ROC.PositionSettings(0f, 0f, false, 0f),
+                0.5f); // fly in story list
+        // add a text object prompting the player to select a story above
         this.roc.addStaticObject(new TextObject(Global.FONT, "Choose a story:"),
-                new ROC.PositionSettings(0f, 1f, true, 0.2f));
+                new ROC.PositionSettings(0f, 2f + (1f / Global.ar), true, 0.2f));
+        this.roc.moveStaticObject(1, new ROC.PositionSettings(0f, 1f, true, 0.2f),
+                0.5f); // fly in story prompt
         TextButton returnButton = new TextButton(Global.FONT, "Return"); // create a button to return to main menu
         returnButton.setScale(0.5f, 0.5f); // scale return button by about half
         returnButton.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { // when return is clicked
@@ -277,9 +275,13 @@ public class NewGameLogic extends GameLogic {
                 this.roc.fadeOut(new float[]{0f, 0f, 0f, 0f}, 0.5f); // begin fade out to black
             }
         });
-        this.roc.addStaticObject(returnButton, new ROC.PositionSettings(0f, -1f, true,
-                0.05f)); // add return button to bottom of the window
-        this.roc.fadeIn(new float[]{0f, 0f, 0f, 1f}, 0.5f); // fade in the ROC
+        this.roc.addStaticObject(returnButton, new ROC.PositionSettings(0f, -2f - (1f / Global.ar),
+                true,0.05f)); // add return button below
+        this.roc.moveStaticObject(2, new ROC.PositionSettings(0f, -1f, true, 0.02f),
+                0.5f); // fly in return button
+        this.roc.useBackground(new GameObject(Model.getStdGridRect(1, 1), new Material(
+                new Texture("/textures/ui/menu_back.png", true)))); // use background
+
     }
 
     /**
@@ -308,6 +310,8 @@ public class NewGameLogic extends GameLogic {
             case 1: // PHASE 1: fly story selection ui elements out of view
                 this.roc.moveStaticObject(0, new ROC.PositionSettings(0f, -2f - (1f / Global.ar),
                         false, 0f), 0.5f); // fly list downwards
+                this.roc.moveStaticObject(2, new ROC.PositionSettings(0f, -2f - (1f / Global.ar),
+                        false, 0f), 0.5f); // fly return button downwards
                 this.roc.moveStaticObject(1, new ROC.PositionSettings(0f, 2f + (1f / Global.ar),
                         false, 0f), 0.5f); // fly prompt upwards
                 this.phase = 2; // advance to phase 2
@@ -340,6 +344,8 @@ public class NewGameLogic extends GameLogic {
                         1f, 0.1f), 0f); // move prompt to above name input
                 this.roc.moveStaticObject(3, new ROC.PositionSettings(0f, 0f, false,
                         0f), 0.5f); // fly name input ui down from about
+                this.roc.moveStaticObject(2, new ROC.PositionSettings(0f, -1f, true,
+                        0.02f),0.5f); // fly return button back in
                 this.phase = 4; // advance to phase 4
 
             case 4: // PHASE 4: ensure prompt and finish button follow name input
@@ -350,6 +356,8 @@ public class NewGameLogic extends GameLogic {
             case 5: // PHASE 5: save name to transfer data and fly out name input ui elements
                 this.roc.moveStaticObject(1, new ROC.PositionSettings(0f, 2f + (1f / Global.ar),
                         false, 0f), 0.5f); // fly out name input above
+                this.roc.moveStaticObject(2, new ROC.PositionSettings(0f, -2f - (1f / Global.ar),
+                        false, 0f), 0.5f); // fly out return button below
                 this.roc.moveStaticObject(3, new ROC.PositionSettings(0f, -2f - (1f / Global.ar),
                         false, 0f), 0.5f); // fly out finish button below
                 this.phase = 6; // advance to phase 6

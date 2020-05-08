@@ -7,8 +7,10 @@ import graphics.*;
 import utils.Global;
 import utils.MouseInputEngine;
 import utils.PhysicsEngine;
+import utils.Utils;
 
 import static org.lwjgl.glfw.GLFW.GLFW_PRESS;
+import static org.lwjgl.opengl.GL30.*;
 
 /*
  * MainMenuLogic.java
@@ -28,13 +30,13 @@ public class MainMenuLogic extends GameLogic {
     /**
      * Members
      */
-    private Material[] bMats;  // store the main menu button's materials for changing opacity
-    private Window window;     // store reference to window to close when exit button is pressed
-    private GameObject title;  // title object before added to ROC
-    private ShaderProgram sp;  // shader program to render title before adding to ROC
-    private float titleV;      // the velocity of the title before added to ROC
-    private float time;        // a generic timer used for timing within each phase of the animation
-    private int phase;         // the phase of the main menu animation
+    private TextButton newGame, exit; // new game and exit buttons
+    private Window window;            // store reference to window to close when exit button is pressed
+    private GameObject title;         // title object before added to ROC
+    private ShaderProgram sp;         // shader program to render title before adding to ROC
+    private float titleV;             // the velocity of the title before added to ROC
+    private float time;               // a generic timer used for timing within each phase of the animation
+    private int phase;                // the phase of the main menu animation
 
     /**
      * Initializes the window game object and begins the intro animation if the program was just started up
@@ -44,6 +46,8 @@ public class MainMenuLogic extends GameLogic {
     @Override
     public void initOthers(Window window) {
         this.window = window; // save window reference
+        this.roc.useBackground(new GameObject(Model.getStdGridRect(1, 1), new Material(
+                new Texture("/textures/ui/menu_back.png", true)))); // use ROC background
         float[] titleModelCoords = new float[]{ // create model coordinates for title game object
                 -1.62f, -.305f, // bottom left
                 -1.62f, .305f, // top left
@@ -57,7 +61,6 @@ public class MainMenuLogic extends GameLogic {
         if (this.transferData == null) {
             initSP(); // initialize the shader program
             title.setPos(0f, 2f + (1f / Global.ar)); // move title to be up and out of view
-            this.renderROC = false; // turn off ROC rendering for now
         } else { // if the program didn't just start up, skip the beginning animation
             // add title to ROC
             this.roc.addStaticObject(title, new ROC.PositionSettings(0f, 0.5f, true, 0f));
@@ -130,33 +133,31 @@ public class MainMenuLogic extends GameLogic {
                 break;
 
             case 4: // PHASE 4: create buttons and add to ROC
-                // create new wgame button
-                TextButton newGame = new TextButton(Global.FONT, "New Game");
+                // create new game button
+                newGame = new TextButton(Global.FONT, "New Game");
                 newGame.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> {
                     this.phase = 7;
                 });
+                newGame.setOpacity(0f); // start as invisible
                 // create exit button
-                TextButton exit = new TextButton(Global.FONT, "Exit");
+                exit = new TextButton(Global.FONT, "Exit");
                 exit.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> {
                     window.close();
                 });
+                exit.setOpacity(0f); // start as invisible
                 // add new game button below title and exit button below new game button
                 this.roc.addStaticObject(newGame, new ROC.PositionSettings(null, title, 0f, -2f,
                         0f));
                 this.roc.addStaticObject(exit, new ROC.PositionSettings(null, newGame, 0f, -2f,
                         0f));
-                bMats = new Material[]{newGame.getMaterial(), exit.getMaterial()}; // get button's materials
-                // make the buttons completely transparent to start
-                bMats[0].getColor()[3] = 0f;
-                bMats[1].getColor()[3] = 0f;
                 phase = 5; // go to phase 5
                 break;
 
             case 5: // PHASE 5: fade in buttons
                 time += interval; // account for time
                 // change transparency based on how much time has passed
-                bMats[0].getColor()[3] = (time / 1.5f);
-                bMats[1].getColor()[3] = (time / 1.5f);
+                this.newGame.setOpacity(time / 1.5f);
+                this.exit.setOpacity(time / 1.5f);
                 if (time > 1.5f) { // if one and a half seconds has passed
                     time = 0f; // reset timer
                     phase = 6; // go to phase 6
@@ -170,19 +171,12 @@ public class MainMenuLogic extends GameLogic {
                         0.5f); // fly the title upwards out of view
                 this.roc.moveStaticObject(1, new ROC.PositionSettings(0f, -2f - (1f / Global.ar), false, 0f),
                         0.5f); // fly the buttons downwards out of view
+                GameLogic.logicChange = new LogicChange(new NewGameLogic(), 0.5f);
                 phase = 8; // go to phase 8
                 break;
 
-            case 8: // PHASE 8: wait for title and button to be out of view
+            case 8: // PHASE 8: make sure exit button follows new game button out of view
                 this.roc.ensurePlacement(2); // make sure exit button is following play button
-                if (!title.posAnimating()) phase = 9; // if they are out of view, go to phase 9
-                break;
-
-            case 9: // PHASE 9: begin fade out
-                GameLogic.logicChange = new LogicChange(new NewGameLogic(), 0.5f);
-                this.roc.fadeOut(new float[]{0f, 0f, 0f, 0f}, 0.5f); // begin fade out to black
-                phase = 10; // go to phase 10
-                break;
         }
     }
 

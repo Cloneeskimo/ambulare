@@ -96,7 +96,7 @@ public class Story {
                 if (n.equals("name")) this.name = c.getValue(); // if name -> save story name as member
                 else if (n.equals("author")) this.author = c.getValue(); // if author -> save author as member
                 else if (!n.equals("starting_area") && !n.equals("starting_pos") && !n.equals("path") &&
-                        !n.equals("resource_relative")) // if an unrecognized child is found
+                        !n.equals("resource_relative") && !n.equals("starting_position")) // if unrecognized child found
                     Utils.log("Unrecognized child given for story_info.node info:\n" + c + "Ignoring.",
                             "story.Story", "Story(Node, String, boolean)", false); // log and ignore
             }

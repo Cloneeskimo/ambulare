@@ -1,10 +1,5 @@
 area:
 {
-    # TODO:
-    # non-square collidables
-    # slopes
-    # sun/moon
-
     # specify the name of the area
     name: Noob Forest
 
@@ -14,9 +9,7 @@ area:
     # specify the backdrop details
     backdrop:
     {
-        texture_path: /textures/backdrop.jpg
-        blend_mode: multiplicative
-        color: 1f 0.5f 1.1f 1f
+        texture_path: /textures/ui/menu_back.png
     }
 
     # provide a key mapping from characters in the layout to blocks

@@ -145,7 +145,7 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
     }
 
     /**
-     * Responds to mouse input by changing the nameplate color and scale when the entity is hovered
+     * Responds to mouse input by scaling the nameplate
      *
      * @param type the type of mouse input that occurred
      * @param x    the x position of the mouse in world coordinate or camera-view coordinates, depending on the mouse
@@ -155,11 +155,9 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
     @Override
     public void mouseInteraction(MouseInputEngine.MouseInputType type, float x, float y) {
         if (type == MouseInputEngine.MouseInputType.HOVER) { // if entity is being hovered
-            this.nameplate.getMaterial().setColor(new float[]{1f, 1f, 0f, 1f}); // make nameplate yellow
             this.nameplate.setScale(3f, 3f); // scale up slightly
             this.positionNameplate(); // reposition nameplate
         } else if (type == MouseInputEngine.MouseInputType.DONE_HOVERING) { // if entity is done being hovered
-            this.nameplate.getMaterial().setColor(new float[]{1f, 1f, 1f, 1f}); // make nameplate white again
             this.nameplate.setScale(2.5f, 2.5f); // scale back to normal
             this.positionNameplate(); // reposition nameplate
         }

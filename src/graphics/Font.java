@@ -16,7 +16,14 @@ import java.util.Map;
 /**
  * Represents a font by containing a font sheet texture with all characters in the font and info about the font such
  * as cutoffs, characters per row, and characters per column. Fonts must be loaded using a node-file to lay out this
- * kind of information. See the constructor for information oh how to format font info node-files
+ * kind of information. See the constructor for information on how to format font info node-files. There should be some
+ * space between characters both horizontally and vertically in the font sheet not accounted for by cutoffs. Otherwise,
+ * characters will be directly next to each other. For example, if one grid cell of the font sheet is 32 pixels by 32
+ * pixels, and the character in a grid is 25 by 25 pixels wide, that leaves 7 pixels of space around the edges. The
+ * cutoff for this character should be 3 or 4 to leave some space between characters after cutoff (as opposed to cutting
+ * off all 7 pixels of space). All center points of characters must be equidistant from each other within an axis but
+ * not across both. In other words, all grid cells must be the same width and same height but width doesn't need to
+ * equal height
  */
 public class Font {
 

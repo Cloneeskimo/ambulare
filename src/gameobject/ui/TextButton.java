@@ -1,6 +1,7 @@
 package gameobject.ui;
 
 import graphics.Font;
+import utils.Global;
 import utils.MouseInputEngine;
 
 /*
@@ -19,8 +20,9 @@ public class TextButton extends TextObject implements MouseInputEngine.MouseInte
     /**
      * Static Data
      */
-    private static final float[] DEFAULT_HOVER_COLOR = new float[]{0.5f, 0.5f, 0.5f, 1.0f}; // default hover color
-    private static final float[] DEFAULT_PRESS_COLOR = new float[]{1.0f, 1.0f, 0.0f, 1.0f}; // default press color
+    private static final float[] DEFAULT_NORMAL_COLOR = Global.getThemeColor(Global.ThemeColor.GRAY); // default normal
+    private static final float[] DEFAULT_HOVER_COLOR = Global.getThemeColor(Global.ThemeColor.WHITE); // default hover
+    private static final float[] DEFAULT_PRESS_COLOR = Global.getThemeColor(Global.ThemeColor.GREEN); // default press
 
     /**
      * Members
@@ -53,13 +55,14 @@ public class TextButton extends TextObject implements MouseInputEngine.MouseInte
      * @param text the text to display
      */
     public TextButton(Font font, String text) {
-        super(font, text);
-        this.defaultC = this.material.getColor(); // get default text color from the material (super will have set it)
-        this.hoverC = new float[]{DEFAULT_HOVER_COLOR[0], DEFAULT_HOVER_COLOR[1], DEFAULT_HOVER_COLOR[2],
-                DEFAULT_HOVER_COLOR[3]}; // use default hover color
-        this.pressC = new float[]{DEFAULT_PRESS_COLOR[0], DEFAULT_PRESS_COLOR[1], DEFAULT_PRESS_COLOR[2],
-                DEFAULT_PRESS_COLOR[3]}; // use default press color
-        this.mcs = new MouseInputEngine.MouseCallback[4]; // create array for callbacks
+        this(font, text, // call other constructor using the given font and text
+                new float[]{DEFAULT_NORMAL_COLOR[0], DEFAULT_NORMAL_COLOR[1], DEFAULT_NORMAL_COLOR[2],
+                        DEFAULT_NORMAL_COLOR[3]}, // with the default normal color
+                new float[]{DEFAULT_HOVER_COLOR[0], DEFAULT_HOVER_COLOR[1], DEFAULT_HOVER_COLOR[2],
+                    DEFAULT_HOVER_COLOR[3]}, // the default hover color
+                new float[]{DEFAULT_PRESS_COLOR[0], DEFAULT_PRESS_COLOR[1], DEFAULT_PRESS_COLOR[2],
+                    DEFAULT_PRESS_COLOR[3]} // and the default press color
+        );
     }
 
     /**
@@ -96,5 +99,17 @@ public class TextButton extends TextObject implements MouseInputEngine.MouseInte
                 break;
         }
         MouseInputEngine.MouseInteractive.invokeCallback(type, this.mcs, x, y); // invoke callback
+    }
+
+    /**
+     * Updates the opacity of the text button
+     * @param opacity the new opacity from 0f to 1f
+     */
+    @Override
+    public void setOpacity(float opacity) {
+        super.setOpacity(opacity); // update current color
+        this.defaultC[3] = opacity; // update default color
+        this.hoverC[3] = opacity; // update hover color
+        this.pressC[3] = opacity; // update press colors
     }
 }

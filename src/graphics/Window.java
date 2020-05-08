@@ -3,6 +3,7 @@ package graphics;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GL;
+import utils.Global;
 import utils.Pair;
 import utils.Utils;
 
@@ -106,7 +107,8 @@ public class Window {
         GL.createCapabilities(); // allows interaction between GLFW and GL. Nothing will work without this
         glEnable(GL_BLEND); // essentially allows transparency
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // defines how the blending will create transparency
-        glClearColor(0.53f, 0.81f, 0.92f, 0.0f); // set clear color
+        float[] c = Global.getThemeColor(Global.ThemeColor.SKY_BLUE); // get sky blue theme color for background
+        glClearColor(c[0], c[1], c[2], 0f); // set clear color
     }
 
     /**

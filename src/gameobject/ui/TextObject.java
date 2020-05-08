@@ -5,6 +5,7 @@ import graphics.Font;
 import graphics.Material;
 import graphics.Model;
 import graphics.ShaderProgram;
+import utils.Global;
 
 /*
  * TextObject.java
@@ -23,7 +24,7 @@ public class TextObject extends GameObject {
      */
     public static final float DEFAULT_SIZE = 0.1f; /* defines the default text size in normalized coordinates. That
         is, text will, by default, be 0.1f tall and however wide necessary to accommodate all characters */
-    private static final float[] DEFAULT_COLOR = new float[]{1.0f, 1.0f, 1.0f, 1.0f}; // default text color
+    private static final float[] DEFAULT_COLOR = Global.getThemeColor(Global.ThemeColor.WHITE); // default is white
 
     /**
      * Members
@@ -70,13 +71,15 @@ public class TextObject extends GameObject {
         float[] texCoords = new float[text.length() * 8]; // texture coordinate array
         int[] idx = new int[text.length() * 6]; // indices array
         float charWidth = font.getCharWidth(); // get character width from the font
+        float charHeight = font.getCharHeight(); // get character height from the font
+        float charAr = charWidth / charHeight; // calculate aspect ratio of a character from the font
 
         // preprocess to find widths and total width
         float[] widths = new float[text.length()]; // width for each character
         float width = 0; // total width
         for (int i = 0; i < text.length(); i++) { // for each character
             float cw = charWidth - (float) (font.getCharCutoff(text.charAt(i)) * 2); // width of particular character
-            float modelcw = (cw / charWidth * DEFAULT_SIZE); // width in terms of standard square model size
+            float modelcw = (cw / charWidth * DEFAULT_SIZE) * charAr; // width in terms of standard square model size
             widths[i] = modelcw; // add character width
             width += modelcw; // add to cumulative width
         }
@@ -156,6 +159,14 @@ public class TextObject extends GameObject {
     @Override
     public void render(ShaderProgram sp) {
         if (!this.text.equals("")) super.render(sp); // only render if there is actually text
+    }
+
+    /**
+     * Updates the opacity of the text object
+     * @param opacity the new opacity from 0f to 1f
+     */
+    public void setOpacity(float opacity) {
+        this.material.getColor()[3] = opacity;
     }
 
     /**
