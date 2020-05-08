@@ -62,7 +62,9 @@ public class Texture {
                                 "") + "path '" + path + "' for reason: " + stbi_failure_reason()), "graphics.Texture",
                         "Texture(String)", true); // throw exception if unable to load texture
         } catch (Exception e) { // if exception
-            Utils.handleException(e, "graphics.Texture", "Texture(String)", true); // handle exception
+            Utils.handleException(new Exception("Unable to load texture with " + (resPath ? ("resource-relative ") :
+                            "") + "path '" + path + "' for reason: " + e.getMessage()), "graphics.Texture",
+                    "Texture(String)", true); // throw exception if unable to load texture
         }
 
         // save info, create texture, cleanup

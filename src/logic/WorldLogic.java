@@ -69,12 +69,12 @@ public class WorldLogic extends GameLogic {
         // create player entity
         player = new Entity(this.transferData.getChild("name").getValue(), Model.getStdGridRect(1, 2),
                 new LightSourceMaterial(new MSAT("/textures/entity/player.png", true, new MSAT.MSATState[]{
+                        new MSAT.MSATState(2, 0.5f),
+                        new MSAT.MSATState(2, 0.5f),
                         new MSAT.MSATState(1, 1f),
                         new MSAT.MSATState(1, 1f),
-                        new MSAT.MSATState(1, 1f),
-                        new MSAT.MSATState(1, 1f),
-                        new MSAT.MSATState(5, 0.05f),
-                        new MSAT.MSATState(5, 0.05f)
+                        new MSAT.MSATState(12, 0.025f),
+                        new MSAT.MSATState(12, 0.025f)
                 }), new LightSource(new float[]{1f, 1f, 1f, 1f}, 5f, 1.5f)));
         // lower player bounding width slightly to fit better and appear more aesthetically
         player.setBoundingWidth(0.9f);

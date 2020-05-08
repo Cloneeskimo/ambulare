@@ -332,16 +332,32 @@ public class PhysicsEngine {
      * @return if there is an object or block in the given direction of the given object
      */
     public static boolean nextTo(WorldObject wo, float x, float y) {
+        // calculate necessary movement to check if next to
         float dx = (x < 0f) ? -0.005f : (x > 0f) ? 0.005f : 0f;
         float dy = (y < 0f) ? -0.005f : (y > 0f) ? 0.005f : 0f;
+        // save original position to reset later
         float ox = wo.getX();
         float oy = wo.getY();
+        // move slightly next to according to parameters
         wo.setX(round(wo.getX() + dx));
         wo.setY(round(wo.getY() + dy));
+        // check if new position collides with blocks
         boolean nextTo = checkBlocks(wo.getAABB()) != null;
+        if (!nextTo) { // if no block collision was found
+            AABB aabb = wo.getAABB(); // get the object's axis-aligned bounding box
+            for (WorldObject o : wo.getCollidables()) { // and for each collidable object
+                if (o != wo) { // don't check the object against itseslf
+                    if (AABBColliding(aabb, o.getAABB()) != null) { // if they are colliding
+                        nextTo = true; // the object is next to something
+                        break; // break from the loop
+                    }
+                }
+            }
+        }
+        // reset object to original position
         wo.setX(ox);
         wo.setY(oy);
-        return nextTo;
+        return nextTo; // return whether the object was determined to be next to anothers
     }
 
     /**
