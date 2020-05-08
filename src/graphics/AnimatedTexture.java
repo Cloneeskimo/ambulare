@@ -23,24 +23,30 @@ public class AnimatedTexture extends Texture {
     /**
      * Static Data
      */
-    public static Map<Integer, int[]> texCoords = new HashMap<>(); /* this maps from amount of frames of an
-        animation to set of texture coordinate VBOs to used when rendering a frame. Since many textures may be
-        animated, this saves from having tons of repeat lists/arrays of texture coordinates. The fact that there is a
+    public static Map<Integer, int[][]> texCoords = new HashMap<>(); /* this maps from amount of frames of an animation
+        to two sets of texture coordinate VBOs to used when rendering a frame, where value[0] is the set of texture
+        coordinate VBOs for un-flipped textures for the amount of frames given by the key and texCoords[1] is the set of
+        texture coordinate VBOs for flipped textures for the amount of frames given by the key. Since many textures may
+        be animated, this saves from having tons of repeat lists/arrays of texture coordinates. The fact that there is a
         different set for each amount of frames also means that less variance in frame count is more space efficient */
 
     /**
      * Will get the correct texture coordinate vertex buffer object to give to a model given the current frame of the
-     * texture and the total amount of frames
+     * texture, the total amount of frames, and a flag representing whether to flip the texture coordinates or not.
      *
+     * @param frame the frame whose texture coordinate VBO to return
+     * @param of the total amount of frames in the considered texture
+     * @param flip whether to flip the texture horizontally. This is useful for animations for entities that may be
+     *             facing either left or right at any given time
      * @return the correct texture coordinate VBO as described above
      */
-    public static int getTexCoordVBO(int frame, int of) {
-        int[] texCoordVBOs = AnimatedTexture.texCoords.get(of); // try to get the set of VBOs
-        if (texCoordVBOs == null) { // if this set of texture coordinate VBOs hasn't been calculated yet
-            texCoordVBOs = Model.calcTexCoordVBOs(of); // calculate the tex coords for that amount of frames
-            AnimatedTexture.texCoords.put(of, texCoordVBOs); // save to map
-        }
-        return texCoordVBOs[frame]; // get and return the texture coordinates for the current frame
+    public static int getTexCoordVBO(int frame, int of, boolean flip) {
+        // get the two sets of texture coordinate VBOs for the given amount of frames
+        int[][] texCoordVBOs = AnimatedTexture.texCoords.computeIfAbsent(of, k -> new int[2][]);
+        int[] vbos = texCoordVBOs[flip ? 1 : 0]; // get the VBOss corresponding to the flip flag
+        // if there are no VBOs for the given frame count and flip flag, create them
+        if (vbos == null) vbos = texCoordVBOs[flip ? 1 : 0] = Model.calcTexCoordVBOs(of, flip);
+        return vbos[frame]; // return the texture coordinate VBO for the current frame
     }
 
     /**
@@ -81,9 +87,12 @@ public class AnimatedTexture extends Texture {
     }
 
     /**
+     * Grabs the correct texture coordinate VBO to give to a model to represent the current frame of the texture
+     * @param flip whether to flip the texture horizontally. This is useful for animations for entities that may be
+     *             facing either left or right at any given time
      * @return the id of the correct texture coordinate VBO to use given the current frame of the animated texture
      */
-    public int getTexCoordVBO() {
-        return AnimatedTexture.getTexCoordVBO(this.frame, this.frames);
+    public int getTexCoordVBO(boolean flip) {
+        return AnimatedTexture.getTexCoordVBO(this.frame, this.frames, flip);
     }
 }

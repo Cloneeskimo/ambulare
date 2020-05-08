@@ -139,6 +139,22 @@ public class ListObject extends GameObject implements MouseInputEngine.MouseInte
     }
 
     /**
+     * Overrides game object positional animation updating by not attempting to update rotation
+     * @param interval the amount of time, in seconds, to account for
+     */
+    @Override
+    protected void updatePosAnim(float interval) {
+        this.posAnim.update(interval); // update animation
+        this.setX(this.posAnim.getX()); // set x position
+        this.setY(this.posAnim.getY()); // set y position
+        if (this.posAnim.finished()) { // if animation is over
+            this.setX(this.posAnim.getFinalX()); // make sure at the correct ending x
+            this.setY(this.posAnim.getFinalY()); // make sure at the correct ending y
+            this.posAnim = null; // delete the animation
+        }
+    }
+
+    /**
      * Renders the list and the list items
      *
      * @param sp the shader program to use to render the list object

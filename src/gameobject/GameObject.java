@@ -25,8 +25,8 @@ public class GameObject {
     protected PositionalAnimation posAnim; // positional animation which can be set to animate positional changes
     protected Material material;           // material to use when rendering
     protected Model model;                 // model to use when rendering
-    private float x, y;                    // position
     protected boolean visible = true;      // visibility
+    private float x, y;                    // position
 
     /**
      * Constructs the game object at (0, 0)
@@ -97,9 +97,19 @@ public class GameObject {
         if (this.material instanceof LightSourceMaterial) ((LightSourceMaterial) this.material).setPos(this.x, this.y);
         this.material.setUniforms(sp); // set material uniforms
         Texture t = this.material.getTexture(); // get material's texture
-        if (t instanceof AnimatedTexture) this.model.useTexCoordVBO(((AnimatedTexture) t).getTexCoordVBO(),
-                false); // if the texture is animated, tell the model which texture coordinates to use
+        // if the texture is animated, tell the model which texture coordinates to use
+        if (t instanceof AnimatedTexture) this.updateAnimatedTexture((AnimatedTexture)t, false);
         this.model.render(); // render model
+    }
+
+    /**
+     * Given an animated texture and a flip flag, this method will grab the appropriate texture coordinate VBO from the
+     * animated texture and tell the model to use it
+     * @param at the animated texture to consider
+     * @param flip whether to flip the texture or not
+     */
+    protected void updateAnimatedTexture(AnimatedTexture at, boolean flip) {
+        this.model.useTexCoordVBO(at.getTexCoordVBO(flip), false); // get and use appropriate VBO
     }
 
     /**

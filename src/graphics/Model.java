@@ -31,11 +31,12 @@ public class Model {
      * Calculates the sets of texture coordinates for each frame
      *
      * @param frameCount the amount of horizontal frames in the corresponding texture
+     * @param flip whether to flip the texture coordinates horizontally
      */
-    public static int[] calcTexCoordVBOs(int frameCount) {
+    public static int[] calcTexCoordVBOs(int frameCount, boolean flip) {
         int[] VBOs = new int[frameCount]; // create new array for the VBOs
         for (int i = 0; i < frameCount; i++) { // for each frame
-            float[] texCoords = getTexCoordsForFrame(i, frameCount); // calc the texture coordinates
+            float[] texCoords = getTexCoordsForFrame(i, frameCount, flip); // calc the texture coordinates
             FloatBuffer fb = MemoryUtil.memAllocFloat(texCoords.length); // allocate buffer space for tex coord data
             fb.put(texCoords).flip(); // put texture coordinate data into buffer
             VBOs[i] = glGenBuffers(); // generate texture coordinate vertex buffer object
@@ -52,16 +53,23 @@ public class Model {
      *
      * @param i  the frame to calculate the texture coordinates for
      * @param of the total amount of horizontal frames in the corresponding texture
+     * @param flip whether to flip the texture coordinates horizontally
      * @return the length-eight float array containing the texture coordinates
      */
-    public static float[] getTexCoordsForFrame(int i, int of) {
+    public static float[] getTexCoordsForFrame(int i, int of, boolean flip) {
         float frameWidth = (float) 1 / (float) of; // calculate width of one frame
         float frac = (float) i / (float) of; // calculates how horizontally far this frame is in texture
-        return new float[]{ // create texture coordinates array
+        if (!flip) return new float[] { // create un-flipped texture coordinates array if flip is false
                 frac, 1.0f, // top left
                 frac, 0.0f, // bottom left
                 frac + frameWidth, 0.0f, // bottom right
                 frac + frameWidth, 1.0f // top right
+        };
+        return new float[] { // created flipped texture coordinates array if flip is true
+                frac + frameWidth, 1.0f, // top left
+                frac + frameWidth, 0.0f, // bottom left
+                frac, 0.0f, // bottom right
+                frac, 1.0f // top right
         };
     }
 

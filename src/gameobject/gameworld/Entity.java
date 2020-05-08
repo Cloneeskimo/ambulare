@@ -1,10 +1,7 @@
 package gameobject.gameworld;
 
 import gameobject.ui.TextObject;
-import graphics.MSAT;
-import graphics.Material;
-import graphics.Model;
-import graphics.ShaderProgram;
+import graphics.*;
 import utils.Global;
 import utils.MouseInputEngine;
 import utils.PhysicsEngine;
@@ -31,6 +28,8 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
     /**
      * Members
      */
+    private MouseInputEngine.MouseCallback[] mcs = new MouseInputEngine.MouseCallback[4]; /* array of mouse callbacks as
+        specified by the mouse interaction interface */
     private String name;          // name of the entity
     private TextObject nameplate; // nameplate to display above entity
     private boolean right;        // whether the entity is facing to the right
@@ -82,9 +81,7 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
     private void updateTextureState() {
         if (this.material.getTexture() instanceof MSAT) { // if the material's texture is even an MSAT
             MSAT t = (MSAT) this.material.getTexture(); // get an MSAT reference to it
-            int state = (right ? 1 : 0) + (airborne ? 2 : 0); // state based on left/right and airborne/non-airborne
-            if (!this.airborne && this.moving) state += 4; // state based on moving
-            t.setState(state); // set state
+            t.setState(airborne ? 1 : this.moving ? 2 : 0); // set state based on airborne and moving flags
         }
     }
 
@@ -113,6 +110,9 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
             this.airborne = airborne; // update flag
             this.updateTextureState(); // and update state in MSAT
         }
+        // update facing flag based on velocity
+//        if (this.vx > 0f) this.right = true;
+//        else if (this.vx < 0f) this.right = false;
     }
 
     /**
@@ -135,17 +135,29 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
     }
 
     /**
-     * Entities do not accept callbacks for now
+     * Tells the model with VBO to use based on the animated texture's current frame and whether the entity is facing
+     * left or right
+     * @param at the animated texture to consider
+     * @param flip whether to flip the texture or not (not actually used in this overridden method)
+     */
+    @Override
+    protected void updateAnimatedTexture(AnimatedTexture at, boolean flip) {
+        super.updateAnimatedTexture(at, this.right);
+    }
+
+    /**
+     * Saves the given callback according to the mouse interaction interface
      *
      * @param type the mouse input type to give a callback for
      * @param mc   the callback
      */
     @Override
     public void giveCallback(MouseInputEngine.MouseInputType type, MouseInputEngine.MouseCallback mc) {
+        MouseInputEngine.MouseInteractive.saveCallback(type, mc, this.mcs);
     }
 
     /**
-     * Responds to mouse input by scaling the nameplate
+     * Responds to mouse input by scaling the nameplate and invoking any necessary callbacks
      *
      * @param type the type of mouse input that occurred
      * @param x    the x position of the mouse in world coordinate or camera-view coordinates, depending on the mouse
@@ -161,5 +173,6 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
             this.nameplate.setScale(2.5f, 2.5f); // scale back to normal
             this.positionNameplate(); // reposition nameplate
         }
+        MouseInputEngine.MouseInteractive.invokeCallback(type, this.mcs, x, y); // invoke necessary callbacks
     }
 }

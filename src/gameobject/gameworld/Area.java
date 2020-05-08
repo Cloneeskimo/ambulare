@@ -64,10 +64,10 @@ public class Area {
                                     Map<Material, List<Pair<Integer>>> blockPositions) {
         for (Material m : blockPositions.keySet()) { // for each material
             Texture t = m.getTexture(); // get texture for material
-            // if the texture is animated, tell the model which texture coordinates (frame) to use
-            if (t instanceof AnimatedTexture) bm.useTexCoordVBO(((AnimatedTexture) t).getTexCoordVBO(), false);
+            if (t instanceof AnimatedTexture) bm.useTexCoordVBO(((AnimatedTexture) t).getTexCoordVBO(false),
+                    false); // if the texture is animated, tell the model which tex coords (frame) to use
                 // if the texture isn't animated, just use the entire texture
-            else bm.useTexCoordVBO(AnimatedTexture.getTexCoordVBO(0, 1), false);
+            else bm.useTexCoordVBO(AnimatedTexture.getTexCoordVBO(0, 1, false), false);
             m.setUniforms(sp); // set the appropriate material uniforms
             bm.renderBlocks(sp, blockPositions.get(m)); // render all the blocks with that material at once
         }
@@ -85,9 +85,9 @@ public class Area {
                                                                  background decor and decor[1] is foreground decor */
     private final List<AnimatedTexture> ats;                  // a list of animated textures to update
     private final boolean[][] blockMap;                       // block map of the middleground for collision detection
-    private BackDrop backdrop;                                // the scrolling backdrop rendered behind the world
     private final BlockModel bm = new BlockModel();           /* all blocks use same 1x1 square model. See BlockModel
                                                                  for more info on how it extends a regular model */
+    private BackDrop backdrop;                                // the scrolling backdrop rendered behind the world
     private String name = "Unnamed";                          // the name of the area
     private boolean lightForeground = false;                  // whether to apply lights to objects in the foreground
 
