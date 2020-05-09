@@ -29,6 +29,8 @@ public abstract class GameLogic {
      */
     public static LogicChange logicChange = null; /* info about log change. See class info above and
                                                      GameLogic.LogicChange */
+    private static final int TAG_FPSS = -1;       // ROC tag for fps static text
+    private static final int TAG_FPSC = -2;       // ROC tag for fps counter text
 
     /**
      * Members
@@ -78,10 +80,10 @@ public abstract class GameLogic {
         FPSCount.setScale(0.6f, 0.6f); // scale actual FPS count text
         FPSStatic.setVisibility(false); // invisible to start
         FPSCount.setVisibility(false); // invisible to start
-        this.roc.addStaticObject(FPSStatic, new ROC.PositionSettings(-1f, 1f, true,
-                0.02f)); // add static FPS text to ROC as a static object
-        this.roc.addStaticObject(FPSCount, new ROC.PositionSettings(FPSStatic, FPSStatic, 1f,
-                0f, 0f)); // add actual FPS text to ROC as a static object
+        this.roc.addStaticObject(FPSStatic, TAG_FPSS, false, new ROC.PositionSettings(-1f, 1f,
+                true, 0.02f)); // add static FPS text to ROC as a static object
+        this.roc.addStaticObject(FPSCount, TAG_FPSC, false, new ROC.PositionSettings(FPSStatic, FPSStatic,
+                1f, 0f, 0f)); // add actual FPS text to ROC as a static object
         this.FPSItemsAdded = true; // save that these FPS items have been added
     }
 
@@ -138,11 +140,11 @@ public abstract class GameLogic {
     }
 
     /**
-     * Reacts to the window resizing by calculating the new aspect ratio and aspect ratio action (see GameLogic.init)
-     * and then notifying the ROC
-     * Extending classes cannot override this method
+     * Reacts to the window resizing by notifying the ROC
+     * Extending classes can override this method but should definitely call super.resize() or the ROC may not respond
+     * to the resize
      */
-    public final void resized() {
+    public void resized() {
         this.roc.resized(); // notify ROC of resize
     }
 
@@ -157,13 +159,13 @@ public abstract class GameLogic {
     public void reportFPS(Float FPS) {
         if (this.FPSItemsAdded) { // only modify the FPS displaying items if they were actually added
             if (FPS == null) { // if FPS reporting toggled off
-                this.roc.getStaticGameObject(0).setVisibility(false); // hide FPS static text
-                this.roc.getStaticGameObject(1).setVisibility(false); // hide FPS counter text
+                this.roc.getStaticGameObject(TAG_FPSS).setVisibility(false); // hide FPS static text
+                this.roc.getStaticGameObject(TAG_FPSC).setVisibility(false); // hide FPS counter text
             } else { // otherwise
-                this.roc.getStaticGameObject(0).setVisibility(true); // show FPS static text
-                this.roc.getStaticGameObject(1).setVisibility(true); // show FPS counter text
-                ((TextObject) this.roc.getStaticGameObject(1)).setText(Float.toString(FPS)); // update with new FPS
-                this.roc.ensurePlacement(1); // ensure text placement
+                this.roc.getStaticGameObject(TAG_FPSS).setVisibility(true); // show FPS static text
+                this.roc.getStaticGameObject(TAG_FPSC).setVisibility(true); // show FPS counter text
+                ((TextObject) this.roc.getStaticGameObject(TAG_FPSC)).setText(Float.toString(FPS)); // update with new FPS
+                this.roc.ensurePlacement(TAG_FPSC); // ensure text placement
             }
         }
     }

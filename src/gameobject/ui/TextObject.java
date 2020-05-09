@@ -163,6 +163,7 @@ public class TextObject extends GameObject {
 
     /**
      * Updates the opacity of the text object
+     *
      * @param opacity the new opacity from 0f to 1f
      */
     public void setOpacity(float opacity) {

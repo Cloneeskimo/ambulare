@@ -104,6 +104,26 @@ public class Texture {
     }
 
     /**
+     * Calculates and returns appropriate model coords for a model to have the correct size to use the texture in its
+     * native aspect ratio
+     *
+     * @param relativeTo what to calculate the model coordinates relative to. For example, if this is set to 32 and the
+     *                   texture's width is 64 and the height is 128, the model will be 2 wide and 4 tall. Smaller
+     *                   values of relativeTo will lead to larger models
+     * @return the model coordinates described above
+     */
+    public float[] getModelCoords(float relativeTo) {
+        float w2 = (this.w / relativeTo / 2); // calculate half width of model
+        float h2 = (this.h / relativeTo / 2); // calculate half height of model
+        return new float[]{ // create array with correct model coordinates and return it
+                -w2, -h2, // bottom left
+                -w2, h2, // top left
+                w2, h2, // top right
+                w2, -h2 // bottom right
+        };
+    }
+
+    /**
      * Cleans up the texture
      */
     public void cleanup() {

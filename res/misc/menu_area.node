@@ -1,0 +1,104 @@
+area:
+{
+    # specify the name of the area
+    name:
+
+    # specify that lights should be applied to foreground objects
+    light_foreground: true
+
+    # specify the backdrop details
+    backdrop:
+    {
+        texture_path: /textures/ui/menu_back.png
+    }
+
+    # provide a key mapping from characters in the layout to blocks
+    block_key:
+    {
+        d: resfrom /stories/mainstory/blocks/dirt.node
+        g: resfrom /stories/mainstory/blocks/grass.node
+    }
+
+    # provides a key mapping characters in the layout to decor
+    decor_key:
+    {
+        # background weeds
+        w:
+        {
+            texture_path: /textures/decor/foliage/weeds.png
+            texture_path: /textures/decor/foliage/weeds2.png
+            pin: below
+            x_random_interval: 0.4f
+        }
+
+        # background dead tree
+        t:
+        {
+            texture_path: /textures/decor/foliage/dead_tree.png
+            pin: below
+            x_random_interval: 0.4f
+            light_source:
+            {
+                reach: 2f
+            }
+        }
+
+        # foreground weeds
+        W:
+        {
+            texture_path: /textures/decor/foliage/weeds.png
+            texture_path: /textures/decor/foliage/weeds2.png
+            pin: below
+            x_random_interval: 0.4f
+            y_offset: -0.09f
+        }
+
+        # foreground dead tree
+        T:
+        {
+            texture_path: /textures/decor/foliage/dead_tree.png
+            pin: below
+            x_random_interval: 0.4f
+            y_offset: -0.09f
+            light_source:
+            {
+                reach: 2f
+            }
+        }
+    }
+
+    # specify the layout of the background
+    background_layout:
+    {
+        0:
+        1:
+        2:                            dddddddd
+        3:                            dddddddd
+        4:                            dddddddd
+        5:                            dddddddd
+        6:
+        7:
+    }
+
+    # specify the layout of the middleground
+    middleground_layout:
+    {
+        0: wwwwwwwwwwwwwwwtw        ggggwtwwtw
+        1: gggwtw       wggg        dddddddddd
+        2: dddggg       ddddg     www ddddddddwwwwwww     wwww
+        3: ddddddw wwwdddddddg   wwww ww w  www  wwtw     wtww
+        4: ddddddgggggddddddddg  ggggwwwwwwwwwwwwgggg     gggg
+        5:   dddddddddddddddddd  ddddgddddddddgggdddd     dddd
+        6:       ddddddd           ddddddddddddddddd
+        7:                              dddddd
+    }
+
+    # specify the layout of the foreground
+    foreground_layout:
+    {
+        0:
+        1:
+        2:            WT
+        3:        T              T W
+    }
+}

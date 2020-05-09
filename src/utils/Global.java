@@ -3,10 +3,7 @@ package utils;
 import graphics.Font;
 import graphics.Window;
 
-import java.math.RoundingMode;
-
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_1;
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_F;
 
 /*
  * Global.java
@@ -40,7 +37,7 @@ public class Global {
      */
     public static void init() {
         // initialize the global font
-        Global.FONT = new Font("/textures/ui/font.png", Node.resToNode("/font.node"));
+        Global.FONT = new Font("/textures/ui/font.png", Node.resToNode("/misc/font.node"));
     }
 
     /**
@@ -56,6 +53,7 @@ public class Global {
     /**
      * Grabs the exact rgba color corresponding to the given theme color. The point of this method is to have important
      * colors match a general theme and to originate from the same place
+     *
      * @param tc the theme color whose exact rgba color to return
      * @return the exact rgba color corresponding to the given theme color
      */
@@ -63,19 +61,19 @@ public class Global {
         float[] c = null;
         switch (tc) { // switch on the theme color
             case GRAY: // gray
-                c = new float[] { 0.522f, 0.522f, 0.522f, 1f };
+                c = new float[]{0.522f, 0.522f, 0.522f, 1f};
                 break;
             case WHITE: // white
-                c = new float[] { 0.97f, 0.97f, 0.97f, 1f };
+                c = new float[]{0.97f, 0.97f, 0.97f, 1f};
                 break;
             case DARK_GREEN: // dark green
-                c = new float[] { 0.082f, 0.349f, 0.098f, 1f };
+                c = new float[]{0.082f, 0.349f, 0.098f, 1f};
                 break;
             case GREEN: // green
-                c = new float[] { 0.333f, 0.584f, 0.318f, 1f };
+                c = new float[]{0.333f, 0.584f, 0.318f, 1f};
                 break;
             case SKY_BLUE: // sky blues
-                c = new float[] { 0.49f, 0.808f, 0.922f, 1f };
+                c = new float[]{0.49f, 0.808f, 0.922f, 1f};
                 break;
         }
         return c; // return the corresponding color

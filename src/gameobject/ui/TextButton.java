@@ -59,9 +59,9 @@ public class TextButton extends TextObject implements MouseInputEngine.MouseInte
                 new float[]{DEFAULT_NORMAL_COLOR[0], DEFAULT_NORMAL_COLOR[1], DEFAULT_NORMAL_COLOR[2],
                         DEFAULT_NORMAL_COLOR[3]}, // with the default normal color
                 new float[]{DEFAULT_HOVER_COLOR[0], DEFAULT_HOVER_COLOR[1], DEFAULT_HOVER_COLOR[2],
-                    DEFAULT_HOVER_COLOR[3]}, // the default hover color
+                        DEFAULT_HOVER_COLOR[3]}, // the default hover color
                 new float[]{DEFAULT_PRESS_COLOR[0], DEFAULT_PRESS_COLOR[1], DEFAULT_PRESS_COLOR[2],
-                    DEFAULT_PRESS_COLOR[3]} // and the default press color
+                        DEFAULT_PRESS_COLOR[3]} // and the default press color
         );
     }
 
@@ -103,6 +103,7 @@ public class TextButton extends TextObject implements MouseInputEngine.MouseInte
 
     /**
      * Updates the opacity of the text button
+     *
      * @param opacity the new opacity from 0f to 1f
      */
     @Override

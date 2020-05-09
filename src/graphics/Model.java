@@ -31,7 +31,7 @@ public class Model {
      * Calculates the sets of texture coordinates for each frame
      *
      * @param frameCount the amount of horizontal frames in the corresponding texture
-     * @param flip whether to flip the texture coordinates horizontally
+     * @param flip       whether to flip the texture coordinates horizontally
      */
     public static int[] calcTexCoordVBOs(int frameCount, boolean flip) {
         int[] VBOs = new int[frameCount]; // create new array for the VBOs
@@ -51,21 +51,21 @@ public class Model {
     /**
      * Calculates the set of texture coordinates for the given horizontal frame
      *
-     * @param i  the frame to calculate the texture coordinates for
-     * @param of the total amount of horizontal frames in the corresponding texture
+     * @param i    the frame to calculate the texture coordinates for
+     * @param of   the total amount of horizontal frames in the corresponding texture
      * @param flip whether to flip the texture coordinates horizontally
      * @return the length-eight float array containing the texture coordinates
      */
     public static float[] getTexCoordsForFrame(int i, int of, boolean flip) {
         float frameWidth = (float) 1 / (float) of; // calculate width of one frame
         float frac = (float) i / (float) of; // calculates how horizontally far this frame is in texture
-        if (!flip) return new float[] { // create un-flipped texture coordinates array if flip is false
+        if (!flip) return new float[]{ // create un-flipped texture coordinates array if flip flag is false
                 frac, 1.0f, // top left
                 frac, 0.0f, // bottom left
                 frac + frameWidth, 0.0f, // bottom right
                 frac + frameWidth, 1.0f // top right
         };
-        return new float[] { // created flipped texture coordinates array if flip is true
+        return new float[]{ // created flipped texture coordinates array if flip flag is true
                 frac + frameWidth, 1.0f, // top left
                 frac + frameWidth, 0.0f, // bottom left
                 frac, 0.0f, // bottom right
@@ -141,15 +141,15 @@ public class Model {
     /**
      * Members
      */
-    protected final int ids[];           /* integer array to store the various GL object ids: [0] - VAO ID,
+    protected final int[] ids;           /* integer array to store the various GL object ids: [0] - VAO ID,
                                             [1] - model coordinate VBO ID, [2] - texture coordinate VBO ID,
                                             [3] - index VBO ID, [4] - normals VBO ID */
     protected final int idx;             // the amount of vertices this shape has
-    private float[] modelCoords;         // the model's model coordinates
+    private final float[] modelCoords;   // the model's model coordinates
+    private final float uw, uh;          // width and height of the model when not rotated
     private float sx = 1f, sy = 1f;      // horizontal and vertical scale
     private float r = 0f;                // rotation in radians
     private float w = 0, h = 0;          // width and height of the model in model coordinates
-    private float uw, uh;                // width and height of the model when not rotated
     private boolean outdatedSize = true; /* whenever scale or rotation of the model is changed, this flag will be set
                                             to true but the model won't re-calculate width and height until the
                                             corresponding methods are called while this flag is true to save computing
@@ -167,7 +167,8 @@ public class Model {
     public Model(float[] modelCoords, float[] texCoords, int[] indices) {
 
         // set and initialize members
-        this.modelCoords = modelCoords; // save model coordinates
+        this.modelCoords = new float[modelCoords.length]; // create new array for model coordinates
+        for (int i = 0; i < modelCoords.length; i++) this.modelCoords[i] = modelCoords[i]; // copy model coordinates
         this.idx = indices.length; // save index count
         this.ids = new int[4]; // initialize ID array
 

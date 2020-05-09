@@ -5,7 +5,6 @@ import gameobject.ui.TextButton;
 import gameobject.ui.TextObject;
 import gameobject.gameworld.Area;
 import gameobject.gameworld.Entity;
-import gameobject.gameworld.WorldObject;
 import graphics.*;
 import story.Story;
 import utils.*;
@@ -25,6 +24,14 @@ import static org.lwjgl.glfw.GLFW.*;
  * converted into a node (the result of Story.toNode())
  */
 public class WorldLogic extends GameLogic {
+
+    /**
+     * ROC (UI Element) Tagss
+     */
+    private static final int TAG_PLAYER_POS = 0; // player position text
+    private static final int TAG_RESET = 1;      // reset message text
+    private static final int TAG_RETURN = 2;     // return button
+    private static final int TAG_AREA = 3;       // area name text
 
     /**
      * Members
@@ -106,32 +113,31 @@ public class WorldLogic extends GameLogic {
     private void initHUDObjects() {
 
         // create and add player position text
-        this.roc.addStaticObject(new TextObject(Global.FONT, "(0, 0)"), // player pos text
-                new ROC.PositionSettings(-1f, -1f, true, 0.02f));
-        this.roc.getStaticGameObject(2).setScale(0.6f, 0.6f); // scale text down
+        this.roc.addStaticObject(new TextObject(Global.FONT, "(0, 0)"), TAG_PLAYER_POS, false,
+                new ROC.PositionSettings(-1f, -1f, true, 0.02f)); // create pos text
+        this.roc.getStaticGameObject(TAG_PLAYER_POS).setScale(0.6f, 0.6f); // scale text down
 
         // create and add return button
         TextButton returnButton = new TextButton(Global.FONT, "Return"); // create return button
         returnButton.setScale(0.6f, 0.6f); // scale return button down by about half
         returnButton.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { // when pressed
             if (GameLogic.logicChange == null) { // if no logic change is currently underway
-                GameLogic.logicChange = new LogicChange(new MainMenuLogic(), 0.5f); // change to main menu
-                GameLogic.logicChange.useTransferData(new Node()); // give transfer data to signify not startup
+                GameLogic.logicChange = new LogicChange(new MenuLogic(), 0.5f); // change to main menu
                 this.roc.fadeOut(new float[]{0f, 0f, 0f, 0f}, 0.5f); // fade out ROC
             }
         });
-        this.roc.addStaticObject(returnButton, new ROC.PositionSettings(1f, -1f, true,
-                0.02f)); // add return buttonb to ROC
+        this.roc.addStaticObject(returnButton, TAG_RETURN, false, new ROC.PositionSettings(1f, -1f,
+                true, 0.02f)); // add return button to ROC
 
         // create and add area name
-        this.roc.addStaticObject(new TextObject(Global.FONT, this.roc.getGameWorld().getArea().getName()),
-                new ROC.PositionSettings(0f, 1f, true, 0.1f)); // create area name
-        this.roc.getStaticGameObject(4).setScale(0.8f, 0.8f); // scale area name
+        this.roc.addStaticObject(new TextObject(Global.FONT, this.roc.getGameWorld().getArea().getName()), TAG_AREA,
+                false, new ROC.PositionSettings(0f, 1f, true, 0.1f));
+        this.roc.getStaticGameObject(TAG_AREA).setScale(0.8f, 0.8f); // scale area name
 
         // create and add reset info
-        this.roc.addStaticObject(new TextObject(Global.FONT, "Press enter to reset"),
-                new ROC.PositionSettings(0f, -1f, true, 0.1f)); // create reset info
-        this.roc.getStaticGameObject(5).setScale(0.7f, 0.7f); // scale area name
+        this.roc.addStaticObject(new TextObject(Global.FONT, "Press enter to reset"), TAG_RESET, false,
+                new ROC.PositionSettings(0f, -1f, true, 0.1f)); // create and add
+        this.roc.getStaticGameObject(TAG_RESET).setScale(0.7f, 0.7f); // scale area name
 
         // ensure all hud items are placed correctly
         this.roc.ensureAllPlacements();
@@ -179,8 +185,8 @@ public class WorldLogic extends GameLogic {
     public void update(float interval) {
         super.update(interval); // update game logic members
         // update player position text on hud
-        if (((TextObject) this.roc.getStaticGameObject(2)).setText(player.getX() + ", " + player.getY() + ")"))
-            this.roc.ensurePlacement(2); // update placement if changed
+        if (((TextObject) this.roc.getStaticGameObject(TAG_PLAYER_POS)).setText(player.getX() + ", " + player.getY() + ")"))
+            this.roc.ensurePlacement(TAG_PLAYER_POS); // update placement if changed
         int vx = 0; // calculate player horizontal velocity starting at zero
         if (window.isKeyPressed(GLFW_KEY_D)) vx += 4; // if D is pressed, move player to the right
         if (window.isKeyPressed(GLFW_KEY_A)) vx -= 4; // if A is pressed, move player to the left

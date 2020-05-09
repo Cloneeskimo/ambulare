@@ -35,9 +35,9 @@ public class AnimatedTexture extends Texture {
      * texture, the total amount of frames, and a flag representing whether to flip the texture coordinates or not.
      *
      * @param frame the frame whose texture coordinate VBO to return
-     * @param of the total amount of frames in the considered texture
-     * @param flip whether to flip the texture horizontally. This is useful for animations for entities that may be
-     *             facing either left or right at any given time
+     * @param of    the total amount of frames in the considered texture
+     * @param flip  whether to flip the texture horizontally. This is useful for animations for entities that may be
+     *              facing either left or right at any given time
      * @return the correct texture coordinate VBO as described above
      */
     public static int getTexCoordVBO(int frame, int of, boolean flip) {
@@ -88,6 +88,7 @@ public class AnimatedTexture extends Texture {
 
     /**
      * Grabs the correct texture coordinate VBO to give to a model to represent the current frame of the texture
+     *
      * @param flip whether to flip the texture horizontally. This is useful for animations for entities that may be
      *             facing either left or right at any given time
      * @return the id of the correct texture coordinate VBO to use given the current frame of the animated texture

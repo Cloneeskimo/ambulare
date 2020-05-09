@@ -89,7 +89,7 @@ public class GameWorld {
     public void update(float interval) {
         this.dnc.update(interval); // update the day/night cycle
         for (WorldObject po : this.objects) po.update(interval); // update the world objects
-        this.cam.update(); // update camera
+        this.cam.update(interval); // update camera
         this.area.update(interval); // update the area
     }
 

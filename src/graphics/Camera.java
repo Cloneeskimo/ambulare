@@ -56,12 +56,14 @@ public class Camera {
 
     /**
      * Updates the camera
+     *
+     * @param interval the amount of time (in seconds) to account for
      */
-    public void update() {
+    public void update(float interval) {
         if (this.following == null) { // if not following anything
-            // update world position based on velocity
-            this.x += this.vx;
-            this.y += this.vy;
+            // update world position based on velocity and interval
+            this.x += (this.vx * interval);
+            this.y += (this.vy * interval);
         } else { // if following something
             // set position to the followed object's position
             this.x = this.following.getX();
@@ -103,6 +105,20 @@ public class Camera {
     public void setPos(float x, float y) {
         this.x = x;
         this.y = y;
+    }
+
+    /**
+     * Update the camera's x (horizontal) velocity
+     */
+    public void setVX(float vx) {
+        this.vx = vx;
+    }
+
+    /**
+     * Update the camera's y (vertical) velocity
+     */
+    public void setVY(float vy) {
+        this.vy = vy;
     }
 
     /**

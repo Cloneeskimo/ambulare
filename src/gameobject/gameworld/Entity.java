@@ -137,7 +137,8 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
     /**
      * Tells the model with VBO to use based on the animated texture's current frame and whether the entity is facing
      * left or right
-     * @param at the animated texture to consider
+     *
+     * @param at   the animated texture to consider
      * @param flip whether to flip the texture or not (not actually used in this overridden method)
      */
     @Override

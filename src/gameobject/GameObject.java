@@ -98,14 +98,15 @@ public class GameObject {
         this.material.setUniforms(sp); // set material uniforms
         Texture t = this.material.getTexture(); // get material's texture
         // if the texture is animated, tell the model which texture coordinates to use
-        if (t instanceof AnimatedTexture) this.updateAnimatedTexture((AnimatedTexture)t, false);
+        if (t instanceof AnimatedTexture) this.updateAnimatedTexture((AnimatedTexture) t, false);
         this.model.render(); // render model
     }
 
     /**
      * Given an animated texture and a flip flag, this method will grab the appropriate texture coordinate VBO from the
      * animated texture and tell the model to use it
-     * @param at the animated texture to consider
+     *
+     * @param at   the animated texture to consider
      * @param flip whether to flip the texture or not
      */
     protected void updateAnimatedTexture(AnimatedTexture at, boolean flip) {

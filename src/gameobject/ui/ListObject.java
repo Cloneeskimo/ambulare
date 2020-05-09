@@ -140,6 +140,7 @@ public class ListObject extends GameObject implements MouseInputEngine.MouseInte
 
     /**
      * Overrides game object positional animation updating by not attempting to update rotation
+     *
      * @param interval the amount of time, in seconds, to account for
      */
     @Override

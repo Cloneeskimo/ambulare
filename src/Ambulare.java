@@ -1,4 +1,5 @@
-import logic.MainMenuLogic;
+
+import logic.MenuLogic;
 
 /*
  * Ambulare.java
@@ -18,7 +19,7 @@ public class Ambulare {
      * @param args the command-line arguments
      */
     public static void main(String[] args) {
-        GameEngine g = new GameEngine(new MainMenuLogic()); // create the engine and tell it which logic to follow
+        GameEngine g = new GameEngine(new MenuLogic()); // create the engine and tell it which logic to start with
         g.start(); // start the engine
     }
 }

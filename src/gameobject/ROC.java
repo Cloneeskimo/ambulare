@@ -9,6 +9,7 @@ import utils.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /*
  * ROC.java
@@ -21,7 +22,8 @@ import java.util.List;
  * Holds a collection of game objects and renders them all in one method call. This class divides the game objects it
  * contains into:
  * (1) StaticObjects: bound to certain positions in the window and have extensive positioning settings and customization
- * (useful for HUD creation)
+ * (useful for HUD creation). These are indexed by integer tags and it is a good idea to keep static final integer
+ * variables maintaining tags for every element added to the ROC for easier retrieval
  * (2) WorldObjects: objects with physics that are directly given to a game world to manage
  * Note that, by default, ROCs do not instantiate their game world to save on resources for settings where a game world
  * is not necessary. useGameWorld() must be called for the ROC to instantiate its game world
@@ -32,24 +34,24 @@ public class ROC {
     /**
      * Members
      */
-    private List<StaticObject> staticObjects; /* a list of game objects that will not used the camera when rendered.
-                                                 Instead, they are bound to positioning settings that determine where
-                                                 in the window they should be rendered at all times. In other words,
-                                                 these are HUD items */
-    private List<AnimatedTexture> ats;        // list of animated textures to update
-    private GameWorld gameWorld;              // the game world to render underneath the static objects
-    private GameObject fadeBox;               // fade box used for fading the entire screen for smooth transitions
-    private GameObject background;            // a background game object to be rendered before anything else
-    private MouseInputEngine mip;             // mouse input engine to handle mouse input
-    private ShaderProgram sp;                 // the shader program to use to render static objects
-    private float fadeTime;                   // amount of time the fade box fade should take
-    private float fadeTimeLeft;               // amount of time left for the fade box fade if one is occurring
+    private Map<Integer, StaticObject> staticObjects; /* a mapping from tags to game objects that will not used the
+                                          camera when rendered. Instead, they are bound to positioning settings that
+                                          determine where in the window they should be rendered at all times. In other
+                                          words, these are HUD items. See ROC.PositionSettings for more info */
+    private List<AnimatedTexture> ats; // list of animated textures to update
+    private GameWorld gameWorld;       // the game world to render underneath the static objects
+    private GameObject fadeBox;        // fade box used for fading the entire screen for smooth transitions
+    private GameObject background;     // a background game object to be rendered before anything else
+    private MouseInputEngine mip;      // mouse input engine to handle mouse input
+    private ShaderProgram sp;          // the shader program to use to render static objects
+    private float fadeTime;            // amount of time the fade box fade should take
+    private float fadeTimeLeft;        // amount of time left for the fade box fade if one is occurring
 
     /**
      * Constructor
      */
     public ROC() {
-        this.staticObjects = new ArrayList<>(); // initialize static objects to an empty list
+        this.staticObjects = new HashMap<>(); // initialize static objects to an empty hash map
         this.ats = new ArrayList<>(); // initialize animated textures to an empty list
         this.mip = new MouseInputEngine(); // initialize mouse input engine
         this.initSP(); // create and initialize shader program
@@ -70,7 +72,7 @@ public class ROC {
      * Initializes the static object shader program by creating it and then registering the appropriate uniforms
      */
     protected void initSP() {
-        // create the shader program using the hud shaders
+        // create the static object shader program using the HUD shaders
         this.sp = new ShaderProgram("/shaders/hud_vertex.glsl", "/shaders/hud_fragment.glsl");
         sp.registerUniform("ar"); // register aspect ratio uniform
         sp.registerUniform("arAction"); // register aspect ratio action uniform
@@ -99,10 +101,12 @@ public class ROC {
      */
     public void resized() {
         this.ensureAllPlacements(); // make sure static objects are correctly positioned
-        if (this.fadeBox != null) // if there is a fade box, update it to fit the new window size
-            this.fadeBox.setScale(2f * (Global.ar > 1f ? Global.ar : 1), 2f / (Global.ar < 1f ? Global.ar : 1));
-        if (this.background != null) // if there is a background, update it to fit the new window size
-            this.background.setScale(2f * (Global.ar > 1f ? Global.ar : 1), 2f / (Global.ar < 1f ? Global.ar : 1));
+        if (this.fadeBox != null) // if there is a fade box,
+            this.fadeBox.setScale(2f * (Global.ar > 1f ? Global.ar : 1),
+                    2f / (Global.ar < 1f ? Global.ar : 1)); // update it to fit the new window size
+        if (this.background != null) // if there is a background,
+            this.background.setScale(2f * (Global.ar > 1f ? Global.ar : 1),
+                    2f / (Global.ar < 1f ? Global.ar : 1)); //  update it to fit the new window size
         if (this.gameWorld != null) this.gameWorld.getArea().resized(); // tell the game world's area about the resize
     }
 
@@ -114,7 +118,7 @@ public class ROC {
     public void update(float interval) {
         for (AnimatedTexture at : this.ats) at.update(interval); // update animated textures
         if (this.gameWorld != null) this.gameWorld.update(interval); // update the game world if it's not null
-        for (StaticObject so : this.staticObjects) so.o.update(interval); // update static objects
+        for (StaticObject so : this.staticObjects.values()) so.o.update(interval); // update static objects
         if (this.fadeBox != null) { // if there is a fade box, need to update it
             if (this.fadeTimeLeft > 0f) { // if fading in
                 fadeTimeLeft -= interval; // account for the time
@@ -131,7 +135,7 @@ public class ROC {
     }
 
     /**
-     * Renders everything held within the ROC: the background,  game world, static objects, and the fade box
+     * Renders everything held within the ROC: the background, the game world, the static objects, and the fade box
      */
     public void render() {
         if (this.background != null) { // if tere is a background
@@ -147,13 +151,14 @@ public class ROC {
         this.sp.setUniform("texSampler", 0); // set texture sampler uniform to use texture unit 0
         this.sp.setUniform("ar", Global.ar); // set aspect ratio uniform
         this.sp.setUniform("arAction", Global.arAction ? 1 : 0); // set aspect ratio action uniform
-        for (StaticObject so : this.staticObjects) so.o.render(this.sp); // render static objects
+        for (StaticObject so : this.staticObjects.values()) so.o.render(this.sp); // render static objects
         if (this.fadeBox != null) fadeBox.render(this.sp); // render fade box if enabled
         this.sp.unbind(); // unbind shader program
     }
 
     /**
-     * Givese the ROC a background to render before anything else
+     * Gives the ROC a background to render before anything else
+     *
      * @param b the background to render before anything else
      */
     public void useBackground(GameObject b) {
@@ -191,33 +196,33 @@ public class ROC {
     }
 
     /**
-     * Ensures the positions of all static objects in the order that they were added
+     * Ensures the positions of all static objects
      */
     public void ensureAllPlacements() {
-        for (StaticObject so : this.staticObjects) so.ensurePosition(Global.ar);
+        for (StaticObject so : this.staticObjects.values()) so.ensurePosition(Global.ar);
     }
 
     /**
-     * Ensures the static object at the given index is positioned according to its position settings. This is good to
+     * Ensures the static object with the given tag is positioned according to its position settings. This is good to
      * call after modifying the size of a static object's corresponding game object in any fashion (scale, width, new
-     * Model, etc.) or if the object at the given index is dependent on a different object's position which has recently
+     * Model, etc.) or if the object with the given tag is dependent on a different object's position which has recently
      * changed
      *
-     * @param i the index of the object whose placement should be ensured
+     * @param tag the tag of the object whose placement should be ensured
      */
-    public void ensurePlacement(int i) {
-        getStaticObject(i).ensurePosition(Global.ar);
+    public void ensurePlacement(int tag) {
+        getStaticObject(tag).ensurePosition(Global.ar);
     }
 
     /**
-     * Changes the positioning settings of the static object at the given index with an optional positional animation
+     * Changes the positioning settings of the static object with the given tag with an optional positional animation
      *
-     * @param i        the index to look for the static object whose settings are to be changed
+     * @param tag      the tag of the static object to move
      * @param settings the new settings
      * @param duration the duration of animation to undergo when changing (<= 0f will result in no animation)
      */
-    public void moveStaticObject(int i, PositionSettings settings, float duration) {
-        StaticObject so = getStaticObject(i); // attempt to get static object
+    public void moveStaticObject(int tag, PositionSettings settings, float duration) {
+        StaticObject so = getStaticObject(tag); // attempt to get static object
         so.settings = settings; // update settings
         if (duration > 0f) { // if animated change
             Pair<Float> pos = so.settings.getCorrectPosition(so.o, Global.ar); // get correct position
@@ -258,14 +263,18 @@ public class ROC {
      * Adds the given game object to the ROC as a static object
      *
      * @param o        the game object to add
-     * @param settings the settings to use to place the game objet
+     * @param tag      the tag to use to identify the static object
+     * @param replace  whether to replace a theoretically already existing static object with the same tag
+     * @param settings the settings to use to place the game object
      */
-    public void addStaticObject(GameObject o, PositionSettings settings) {
+    public void addStaticObject(GameObject o, int tag, boolean replace, PositionSettings settings) {
+        // if a static object with the same tag already exists and replacing is disabled, return
+        if (!replace && this.staticObjects.get(tag) != null) return;
         StaticObject so = new StaticObject(o, settings); // wrap object and settings into single object
         if (o instanceof MouseInputEngine.MouseInteractive) // if object is able to be interacted with by a mouse
             this.mip.add((MouseInputEngine.MouseInteractive) o, false); // add to MIP with cam flag set to false
         so.ensurePosition(Global.ar); // position the object according to its settings
-        this.staticObjects.add(so); // add object to static objects list
+        this.staticObjects.put(tag, so); // add object to static objects map
         Texture t = o.getMaterial().getTexture(); // get the texture of the object's material
         if (t instanceof AnimatedTexture) { // if it's an animated texture
             AnimatedTexture at = (AnimatedTexture) t; // cast it to an animated texture
@@ -274,27 +283,25 @@ public class ROC {
     }
 
     /**
-     * Attempts to acquire the static object at the given index, throwing an error if out of bounds
+     * Attempts to acquire the static object with the given tag, throwing an error if it doesn't existss
      *
-     * @param i the index to look for the static object
+     * @param tag the tag of the object to get
      */
-    private StaticObject getStaticObject(int i) {
-        try { // try to get item
-            return this.staticObjects.get(i); // and return it
-        } catch (Exception e) { // if exception
-            Utils.handleException(e, "gameobjects.ROC", "getStaticObject(i)", true); // handle
-        }
-        return null; // this is here to make the compiler be quiet
+    private StaticObject getStaticObject(int tag) {
+        StaticObject so = this.staticObjects.get(tag); // try to retrieve the static object
+        if (so == null) Utils.handleException(new Exception("No static object found for tag '" + tag + "'"),
+                "gameobjects.ROC", "getStaticObject(String)", true); // crash program if the static object is null
+        return so; // return the static object
     }
 
     /**
-     * Attempts to acquire the static game object at the given index
+     * Attempts to acquire the static object's game object with the given tag
      *
-     * @param i the index to look at
+     * @param tag the tag of the item to return
      * @return the static game object at the corresponding index
      */
-    public GameObject getStaticGameObject(int i) {
-        return getStaticObject(i).o; // get static object's game object and return
+    public GameObject getStaticGameObject(int tag) {
+        return getStaticObject(tag).o; // get static object's game object and return
     }
 
     /**
@@ -305,6 +312,13 @@ public class ROC {
     }
 
     /**
+     * @return whether or not the ROC is performing a fade
+     */
+    public boolean fading() {
+        return this.fadeBox != null; // if the fade box isn't null, a fade is being performed
+    }
+
+    /**
      * Cleans up the ROC by cleaning up static objects and the game world
      */
     public void cleanup() {
@@ -312,7 +326,7 @@ public class ROC {
         if (this.gameWorld != null) this.gameWorld.cleanup(); // cleanup game worlds
         if (this.background != null) this.background.cleanup(); // cleanup background
         if (this.fadeBox != null) this.fadeBox.cleanup(); // cleanup fade box
-        for (StaticObject so : this.staticObjects) so.o.cleanup(); // cleanup static objects
+        for (StaticObject so : this.staticObjects.values()) so.o.cleanup(); // cleanup static objects
         AnimatedTexture.texCoords = new HashMap<>(); // reset animated texture texture coordinate VBOs
     }
 

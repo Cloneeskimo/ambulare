@@ -1,8 +1,17 @@
 package story;
 
-import utils.Node;
-import utils.Pair;
-import utils.Utils;
+import gameobject.GameObject;
+import gameobject.ui.ListObject;
+import gameobject.ui.TextButton;
+import gameobject.ui.TextObject;
+import graphics.Material;
+import graphics.Model;
+import graphics.ShaderProgram;
+import utils.*;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /*
  * Story.java
@@ -22,6 +31,46 @@ import utils.Utils;
  * are picked up. See Story's constructor to see how story_info.node should be formatted
  */
 public class Story {
+
+    /**
+     * Gets all stories (res-relative and data directory relative) installed with a story info node-file. For
+     * resource-relative stories, this will look at stories/stories.node. For each child listed in that node-file, the
+     * value will be assumed to be the path to the story folder. For data directory stories, Ambulare/stories/ will
+     * be checked for story folders. For all story folders found/specified as described above, they must have a valid
+     * story_info.node node-file within their directory to be populated in the list returned by this method. See
+     * story.Story's constructor for more information on how to format a story info node-files
+     *
+     * @return a list of all stories described above
+     */
+    public static List<Story> getStories() {
+        List<Story> stories = new ArrayList<>(); // initialize stories list as an empty array list
+        try { // wrap in a try-catch to make sure any issues are logged
+
+            // get data directory relative stories
+            Utils.ensureDirs("/stories/", true); // make sure stories directory exists
+            File dir = new File(Utils.getDataDir() + "/stories"); // create a file at the stories directory
+            for (File f : dir.listFiles()) { // for all files within the stories directory
+                if (f.isDirectory()) { // if that file itself iss a directory
+                    String infoPath = f.getAbsolutePath() + "/story_info.node"; // represent the path of the story info
+                    if (Utils.fileExists(infoPath, false)) // if the story info file exists
+                        stories.add(new Story(Node.fileToNode(infoPath, false), f.getAbsolutePath(),
+                                false)); // attempt to create the story and add it to the lists
+                }
+            }
+
+            // get resource-relative stories
+            Node resStories = Node.resToNode("/stories/stories.node"); // read the stories list node-file
+            for (Node n : resStories.getChildren()) { // for each child in the stories list
+                String infoPath = n.getValue() + "/story_info.node"; // represent the path of the story info
+                if (Utils.fileExists(infoPath, true)) // if the story info file exists
+                    stories.add(new Story(Node.resToNode(infoPath), n.getValue(), true)); // create and add
+            }
+        } catch (Exception e) { // if an exception occurs
+            Utils.handleException(new Exception("Unable to load stories list: " + e.getMessage()),
+                    "story.Story", "getStories()", true); // crash
+        }
+        return stories; // return the compiled list of stories
+    }
 
     /**
      * Members
@@ -185,5 +234,108 @@ public class Story {
         node.addChild("starting_position", +this.startingPos.x + " " + this.startingPos.y);
         node.addChild("resource_relative", Boolean.toString(this.resRelative)); // save resource relativity
         return node; // return created nodes
+    }
+
+    /**
+     * A list object's list item tailored towards showing info about a single story
+     */
+    public static class StoryListItem extends GameObject implements ListObject.ListItem {
+
+        /**
+         * Static Data
+         */
+        private static final float PADDING = 0.02f; // how much padding to place between text and around the edgese
+
+        /**
+         * Members
+         */
+        private final MouseInputEngine.MouseCallback[] mcs = new MouseInputEngine.MouseCallback[4]; /* callback array as
+            outlined by the mouse interaction interface */
+        private final TextButton name; // text button for name
+        private final TextObject author, path; // text objects for author and path
+
+        /**
+         * Constructor
+         *
+         * @param story the story that the story list item should represent
+         */
+        public StoryListItem(Story story) {
+            // call super with a standard square model and with a transparent material
+            super(Model.getStdGridRect(1, 1), new Material(new float[]{1f, 1f, 1f, 0f}));
+            this.name = new TextButton(Global.FONT, story.getName()); // create name text button with story name
+            this.name.setScale(0.8f, 0.8f); // scale story name down a little bit
+            this.author = new TextObject(Global.FONT, "author: " + story.getAuthor()); // create author text object
+            this.author.setScale(0.4f, 0.4f); // scale author down by a little over half
+            this.path = new TextObject(Global.FONT, "path: " + (story.isResRelative() ? "<res>" : "") +
+                    story.getPath()); // create path text object with story path
+            this.path.setScale(0.3f, 0.3f); // scale path down by about one third
+            this.position(); // position the text objects in the story list item
+        }
+
+        /**
+         * Responds to movement by repositioning the text objects in the story list item
+         */
+        @Override
+        protected void onMove() {
+            this.position(); // reposition the text objects
+        }
+
+        /**
+         * Positions the text objects in the story list item depending on the story list item's position. This method
+         * also calculates and performs the appropriate scaling for the story list item to fit all text object members
+         */
+        private void position() {
+            // height of the story list item is the height of the text objects plus padding between and around the edges
+            float h = this.name.getHeight() + this.author.getHeight() + this.path.getHeight() + PADDING * 4;
+            // width of the story list item is the maximum width of the text objects plus padding on the left and right
+            float w = Math.max(Math.max(this.name.getWidth(), this.author.getWidth()), this.path.getWidth()) +
+                    PADDING * 2;
+            this.model.setScale(w, h); // scale according to the calculate width and height
+            // reposition items using a cumulative y variable starting at the bottom of the story list item
+            float y = this.getY() - (this.getHeight() / 2) + this.path.getHeight() / 2 + PADDING;
+            this.path.setPos(this.getX(), y); // set the path to be on the bottom
+            y += this.path.getHeight() / 2 + PADDING + this.author.getHeight() / 2; // increment y
+            this.author.setPos(this.getX(), y); // set the author to be above the path
+            y += this.author.getHeight() / 2 + PADDING + this.name.getHeight() / 2; // increment y
+            this.name.setPos(this.getX(), y); // set the name to be on top
+        }
+
+        /**
+         * Renders the story list item by rendering each text object component of it
+         *
+         * @param sp the shader program to use for rendering
+         */
+        @Override
+        public void render(ShaderProgram sp) {
+            this.name.render(sp); // render the name of the story
+            this.author.render(sp); // render the author of the story
+            this.path.render(sp); // render the path of the story
+        }
+
+        /**
+         * Saves the given mouse input callback to be called when the given mouse input occurs
+         *
+         * @param type the mouse input type to give a callback for
+         * @param mc   the callback
+         */
+        @Override
+        public void giveCallback(MouseInputEngine.MouseInputType type, MouseInputEngine.MouseCallback mc) {
+            MouseInputEngine.MouseInteractive.saveCallback(type, mc, this.mcs); // save callback
+        }
+
+        /**
+         * Responds to mouse interaction by highlighting the name of the story list and by invoking appropriate
+         * callbacks
+         *
+         * @param type the type of mouse input that occurred
+         * @param x    the x position of the mouse in world coordinate or camera-view coordinates, depending on the mouse
+         *             input engine's camera usage flag for this particular implementing object
+         * @param y    the y position of the mouse in world coordinate or camera-view coordinates, depending on the mouse
+         */
+        @Override
+        public void mouseInteraction(MouseInputEngine.MouseInputType type, float x, float y) {
+            MouseInputEngine.MouseInteractive.invokeCallback(type, this.mcs, x, y); // invoke necessary callbacks
+            this.name.mouseInteraction(type, x, y); // pass mouse interaction to button
+        }
     }
 }
