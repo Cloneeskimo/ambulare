@@ -1,7 +1,6 @@
 package gameobject.gameworld;
 
 import gameobject.GameObject;
-import gameobject.ui.ListObject;
 import graphics.*;
 import utils.*;
 
@@ -10,10 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL20.glDisableVertexAttribArray;
-import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
-import static org.lwjgl.opengl.GL30.glBindVertexArray;
+import static gameobject.gameworld.Block.renderBlocks;
 import static org.lwjgl.opengl.GL30.glGetIntegeri_v;
 
 /*
@@ -37,7 +33,7 @@ import static org.lwjgl.opengl.GL30.glGetIntegeri_v;
  * with all blocks in the middleground
  * <p>
  * - Decor: decor can be any size, can emit light, and has additional properties that allow it to be more customized.
- * Decor does not cause collisions. See AreaLayoutLoader.DecorInfo for a list of properties. Decor is represented as a
+ * Decor does not cause collisions. See Decor.DecorInfo for a list of properties. Decor is represented as a
  * simple list of game objects to update and render every game loop. Decor can either exist in the background or the
  * foreground. Any decor put in the middleground layer in the area node-file will be assumed to be background decor
  * <p>
@@ -46,63 +42,41 @@ import static org.lwjgl.opengl.GL30.glGetIntegeri_v;
  * the one that the player is in should be rendered and updated. Some game world mechanics that are independent of area
  * (such as the day/night cycle) are stored in the GameWorld class instead. Areas are loaded through the use of a
  * node-file. See utils.Node for information on node files and see Area's constructor for how area node-files should be
- * laid out
+ * formatted
  */
 public class Area {
 
     /**
-     * Renders the set of blocks corresponding to the given set of block positions very efficiently using the given
-     * shader program
-     *
-     * @param bm             the block model to render
-     * @param sp             the shader program to render with
-     * @param blockPositions the list of block positions grouped together by material. The reason it is set up as a map
-     *                       from material to pair lists is because by rendering all blocks of a certain material at
-     *                       once, repetitive calls can be avoided
-     */
-    public static void renderBlocks(BlockModel bm, ShaderProgram sp,
-                                    Map<Material, List<Pair<Integer>>> blockPositions) {
-        for (Material m : blockPositions.keySet()) { // for each material
-            Texture t = m.getTexture(); // get texture for material
-            if (t instanceof AnimatedTexture) bm.useTexCoordVBO(((AnimatedTexture) t).getTexCoordVBO(false),
-                    false); // if the texture is animated, tell the model which tex coords (frame) to use
-                // if the texture isn't animated, just use the entire texture
-            else bm.useTexCoordVBO(AnimatedTexture.getTexCoordVBO(0, 1, false), false);
-            m.setUniforms(sp); // set the appropriate material uniforms
-            bm.renderBlocks(sp, blockPositions.get(m)); // render all the blocks with that material at once
-        }
-    }
-
-    /**
      * Members
      */
-    private final Map<Material, List<Pair<Integer>>>[] blocks; /* an array of lists of block positions grouped by
+    private final Map<Material, List<Pair<Integer>>>[] blocks;  /* an array of lists of block positions grouped by
         material. Blocks are indexed by material in this way this way to facilitate efficient rendering of large
         quantities of blocks. See the renderBlocks() method for more info on efficient block rendering. There are three
         different maps in this array where blocks[0] represents the background blocks, blocks[1] represents the
         middleground blocks, and blocks[2] represents the foreground blocks */
-    private final List<GameObject>[] decor;                   /* two lists of decor in the area where decor[0] is
-                                                                 background decor and decor[1] is foreground decor */
-    private final List<AnimatedTexture> ats;                  // a list of animated textures to update
-    private final boolean[][] blockMap;                       // block map of the middleground for collision detection
-    private final BlockModel bm = new BlockModel();           /* all blocks use same 1x1 square model. See BlockModel
-                                                                 for more info on how it extends a regular model */
-    private BackDrop backdrop;                                // the scrolling backdrop rendered behind the world
-    private String name = "Unnamed";                          // the name of the area
-    private boolean lightForeground = false;                  // whether to apply lights to objects in the foreground
+    private final List<GameObject>[] decor;                     /* two lists of decor in the area where decor[0] is
+                                                                   background decor and decor[1] is foreground decor */
+    private final List<AnimatedTexture> ats;                    // a list of animated textures to update
+    private final boolean[][] blockMap;                         // block map of the middleground for collision
+    private final Block.BlockModel bm = new Block.BlockModel(); /* all blocks use same 1x1 square model. See
+                                                                   Block.BlockModel for more info on how it extends a
+                                                                   regular model */
+    private BackDrop backdrop;                                  // the backdrop rendered behind the world
+    private String name = "Unnamed";                            // the name of the area
+    private boolean lightForeground = false;                    // whether to apply lights to objects in the foreground
 
     /**
      * Constructs the area by compiling information from a given node. Most of the loading process is actually done in
-     * the area layout loader to avoid cluttering the area class with a bunch of large static methods. An area node can
-     * have the following children:
+     * the decor class or the block class to avoid cluttering the area class with a bunch of large static methods. An
+     * area node can have the following children:
      * <p>
-     * - block_key [required]: this key maps characters in the layout to tile info that describes the corresponding
+     * - block_key [required]: this key maps characters in the layout to block info that describes the corresponding
      * block. Each child of the block_key child should have its name be a single character that appears in the layout
      * (if there is more than one character, only the first will be used) and the rest of the child should be formatted
-     * as a tile info node. See AreaLayoutLoader.TileInfo's constructor for more information.
+     * as a block info node. See Block.BlockInfo's constructor for more information.
      * <p>
      * - middleground_layout [required]: the middleground layout should contain a child for each row, where the value of
-     * the row is the set of characters describing that row for which corresponding tiles will be searched for in the
+     * the row is the set of characters describing that row for which corresponding items will be searched for in the
      * keys to build the middleground. Rows will be read and loaded top-down and left-to-right so that they appear in
      * the same order as they do in the node-file. Extra empty rows at the bottom are not necessary, however empty rows
      * at the top are necessary to line up with the background and the foreground. If a character is encountered that is
@@ -112,7 +86,7 @@ public class Area {
      * - decor_key [optional][default: no decor]: this kep maps characters in the layout to decor info that describes
      * the corresponding decor. Each child of the decor_key child should have its name be a single character that
      * appears in the layout (if there is more than one character, only the first will be used) and the rest of the
-     * child should be formatted as a decor info node. See AreaLayoutLoader.DecorInfo's constructor for more information
+     * child should be formatted as a decor info node. See Decor.DecorInfo's constructor for more information
      * <p>
      * - background_layout [optional][default: no background]: the background layout should contain children formatted
      * in the same way as the middleground layout. Anything placed in the background will be rendered before the
@@ -135,7 +109,7 @@ public class Area {
      *
      * @param info the node to create the area from
      */
-    public Area(Node info) {
+    public Area(Node info, Window window) {
 
         // load three layers of layout
         Node background = info.getChild("background_layout"); // get background layout child
@@ -159,14 +133,14 @@ public class Area {
         // create three empty block lists: background, middleground, and foreground
         this.blocks = new Map[]{new HashMap<>(), new HashMap<>(), new HashMap<>()};
         this.ats = new ArrayList<>(); // create animated textures list
-        // use the area layout loader to actually load the blocks
-        this.blockMap = AreaLayoutLoader.loadLayoutBlocks(blockKey, background, middleground, foreground, blocks, ats);
+        // use the abstract block class to actually load the blocks
+        this.blockMap = Block.loadLayoutBlocks(blockKey, background, middleground, foreground, blocks, ats, window);
 
         // load decor
         Node decorKey = info.getChild("decor_key"); // get decor key child
         // create two empty decor lists: background and foreground
         this.decor = new List[]{new ArrayList<>(), new ArrayList<>()};
-        if (decorKey != null) AreaLayoutLoader.loadLayoutDecor(decorKey, background, middleground, foreground,
+        if (decorKey != null) Decor.loadLayoutDecor(decorKey, background, middleground, foreground,
                 this.decor, this.ats, this.blockMap); // if there is a key for decor, load decor
 
         // parse other area properties
@@ -266,43 +240,6 @@ public class Area {
     }
 
     /**
-     * Extends a normal model by providing optimizations for rendering many blocks at once. Specifically, it will simply
-     * render a bunch of blocks at once using the same model, only updating the position in between each rather than
-     * enabling and then disabling VAOs and VBOs for each individual block
-     */
-    private static class BlockModel extends Model {
-
-        /**
-         * Constructor
-         */
-        public BlockModel() {
-            super(Model.getGridRectModelCoords(1, 1), Model.getStdRectTexCoords(), Model.getStdRectIdx());
-        }
-
-        /**
-         * Renders the set of blocks corresponding to the given list of block positions. Note that all blocks in the
-         * given list should have the same material and that this method should be called once for each material
-         *
-         * @param sp     the shader program to use to render
-         * @param blocks the positions of the blocks to render
-         */
-        public void renderBlocks(ShaderProgram sp, List<Pair<Integer>> blocks) {
-            glBindVertexArray(this.ids[0]); // bind vao
-            glEnableVertexAttribArray(0); // enable model coordinate vbo
-            glEnableVertexAttribArray(1); // enable texture coordinate vbo
-            for (Pair<Integer> b : blocks) { // loop through all blocks
-                // set the position of the block in the shader program
-                sp.setUniform("x", Transformation.getCenterOfCellComponent((int) b.x));
-                sp.setUniform("y", Transformation.getCenterOfCellComponent((int) b.y));
-                glDrawElements(GL_TRIANGLES, this.idx, GL_UNSIGNED_INT, 0); // draw block model at that position
-            }
-            glDisableVertexAttribArray(0); // disable model coordinate vbo
-            glDisableVertexAttribArray(1); // disable texture coordinate vbo
-            glBindVertexArray(0); // disable vao
-        }
-    }
-
-    /**
      * Represents a scrollable backdrop that is rendered behind everything in an area. These are loaded from node-files.
      * See the constructor for more details on the how to format a backdrop node. Note that a backdrop must be given a
      * camera to follow by calling useCam() or it will not render at all
@@ -312,18 +249,18 @@ public class Area {
         /**
          * Members
          */
-        private Camera cam;                 // the camera to follow and use for scrolling calculations
-        private int areaWidth, areaHeight;  // the width and height of the area to consider for scrolling
-        private float texAr;                // the aspect ratio of the texture if the backdrop is textured
-        private float viewScale = 1f;       /* how much of the width/height of the texture to show depending on aspect
-                                               ratios. See the constructor for more info on view scale */
-        private float zoomFactor;           /* how much camera zoom affects view scale. See the constructor for more
-                                               info on zoom factor */
+        private final int areaWidth, areaHeight;  // the width and height of the area to consider for scrolling
+        private Camera cam;                       // the camera to follow and use for scrolling calculations
+        private float texAr;                      // the aspect ratio of the texture if the backdrop is textured
+        private float viewScale = 1f;             /* how much of the width/height of the texture to show depending on
+                                                     aspect ratios. See the constructor for more info on view scale */
+        private float zoomFactor;                 /* how much camera zoom affects view scale. See the constructor for
+                                                     more info on zoom factor */
 
         /**
          * Constructs the backdrop by compiling information from a given node. If the value of the root node starts with
          * the statements 'from' or 'resfrom', the next statement will be assumed to be a different path at which to
-         * find the tile info. This is useful for reusing the same backdrop in multiple settings. 'from' assumes the
+         * find the backdrop info. This is useful for reusing the same backdrop in multiple settings. 'from' assumes the
          * following path is relative to the Ambulare data folder (in the user's home folder) while 'resfrom' assumes
          * the following path is relative to Ambulares's resource path. Note that these kinds of statements cannot be
          * chained together. A backdrop node can have the following children:

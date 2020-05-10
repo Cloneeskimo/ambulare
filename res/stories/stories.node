@@ -1,4 +1,6 @@
+# lists all resource-relative stories and its story folder path
 stories:
 {
+    # main story of Ambulare
     main story: /stories/mainstory
 }

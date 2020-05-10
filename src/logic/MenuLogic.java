@@ -3,19 +3,27 @@ package logic;
 import gameobject.GameObject;
 import gameobject.ROC;
 import gameobject.gameworld.Area;
+import gameobject.gameworld.Block;
 import gameobject.ui.ListObject;
 import gameobject.ui.TextButton;
 import gameobject.ui.TextInputObject;
 import gameobject.ui.TextObject;
 import graphics.*;
+import org.lwjgl.opengl.GL32;
+import org.lwjgl.opengl.GLUtil;
 import story.Story;
 import utils.*;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.glfw.GLFW.GLFW_RELEASE;
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL30.*;
+import static org.lwjgl.opengl.GL30.glDeleteFramebuffers;
 
 /**
  * Lays out the logic for the menu of the game. This logic is divided up into a complex number of phases which determine
@@ -166,7 +174,7 @@ public class MenuLogic extends GameLogic {
      */
     private void initMenuArea() {
         // tell the ROC to use a game world with the menu area
-        this.roc.useGameWorld(this.window.getHandle(), new Area(Node.resToNode("/misc/menu_area.node")));
+        this.roc.useGameWorld(this.window.getHandle(), new Area(Node.resToNode("/misc/menu_area.node"), this.window));
         this.cam = this.roc.getGameWorld().getCam(); // save camera handle to make sure it stays within bounds
         // place camera at a random x within the area and at the vertical center of the area
         this.cam.setPos((float) Math.random() * (float) this.roc.getGameWorld().getArea().getBlockMap().length,

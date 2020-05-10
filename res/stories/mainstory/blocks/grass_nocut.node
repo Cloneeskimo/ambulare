@@ -1,0 +1,8 @@
+block info:
+{
+    # specify the texture path for the grass block
+    texture_path: /textures/blocks/grass/grass.png
+
+    # specify a cut radius of zero to avoid cutting
+    cut_radius: 0
+}

@@ -66,7 +66,7 @@ public class WorldLogic extends GameLogic {
         this.story = new Story(transferData.getChild("story")); // create story from transfer data node
         Node startingArea = story.isResRelative() ? (Node.resToNode(story.getAbsStartingAreaPath()))
                 : Node.fileToNode(story.getAbsStartingAreaPath(), false); // get starting area node
-        this.roc.useGameWorld(window.getHandle(), new Area(startingArea)); // create game world using starting area
+        this.roc.useGameWorld(window.getHandle(), new Area(startingArea, this.window)); // create game world with area
     }
 
     /**

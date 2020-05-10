@@ -1,7 +1,7 @@
 area:
 {
     # specify the name of the area
-    name:
+    name: Noob Forest
 
     # specify that lights should be applied to foreground objects
     light_foreground: true
@@ -9,7 +9,7 @@ area:
     # specify the backdrop details
     backdrop:
     {
-        texture_path: /textures/ui/menu_back.png
+        texture_path: /textures/backdrop.png
     }
 
     # provide a key mapping from characters in the layout to blocks
@@ -17,6 +17,7 @@ area:
     {
         d: resfrom /stories/mainstory/blocks/dirt.node
         g: resfrom /stories/mainstory/blocks/grass.node
+        G: resfrom /stories/mainstory/blocks/grass_nocut.node
     }
 
     # provides a key mapping characters in the layout to decor
@@ -83,12 +84,12 @@ area:
     # specify the layout of the middleground
     middleground_layout:
     {
-        0: wwwwwwwwwwwwwwwtw        ggggwtwwtw
-        1: gggwtw       wggg        dddddddddd
-        2: dddggg       ddddg     www ddddddddwwwwwww     wwww
-        3: ddddddw wwwdddddddg   wwww ww w  www  wwtw     wtww
-        4: ddddddgggggddddddddg  ggggwwwwwwwwwwwwgggg     gggg
-        5:   dddddddddddddddddd  ddddgddddddddgggdddd     dddd
+        0: wwwwwwwwwwwwwwwtw        ddddwtwwtw
+        1: dddwtw   d   wddd        dddddddddd
+        2: dddddd       ddddd     www ddddddddwwwwwww     wwww
+        3: ddddddw wwwdddddddd   wwww ww w  www  wwtw     wtww
+        4: dddddddddddddddddddd  ddddwwwwwwwwwwwwdddd     dddd
+        5:   dddddddddddddddddd  dddddddddddddddddddd     dddd
         6:       ddddddd           ddddddddddddddddd
         7:                              dddddd
     }
@@ -96,9 +97,11 @@ area:
     # specify the layout of the foreground
     foreground_layout:
     {
-        0:
-        1:
-        2:            WT
-        3:        T              T W
+        0:                          gggg
+        1: ggg           ggg
+        2:    ggg     WTg   g
+        3:        T   gG     g   T W
+        4:       GgggG        g  gggg            gggg     gggg
+        5:                           G        GgG
     }
 }

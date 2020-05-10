@@ -3,10 +3,13 @@ story info:
 {
     # the name of the story
     name: Main Story
+
     # the author of the story
     author: Jacob Oaks
+
     # the path to the starting area
     starting_area: /areas/area.node
+
     # the starting position of the player
     starting_position: 1 9
 }

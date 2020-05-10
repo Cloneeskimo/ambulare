@@ -3,7 +3,7 @@
 
 ### Overview
 
-Ambulare is a side-scrolling fantasy RPG. It runs in the JVM, and relies on LWJGL.
+Ambulare is a side-scrolling fantasy RPG. It runs in the Java Virtual Machine, and is built using the Light-Weight Java Game Library (LWJGL).
 
 ### Building
 
@@ -20,4 +20,4 @@ If you experience screen tearing on MacOS despite V-Sync being enabled, run the 
 ```
 defaults write -g NSRequiresAquaSystemAppearance -bool No
 ```
-I have no idea how but this will magically fix it.
+I have no idea how but this will magically fix it. I promise.

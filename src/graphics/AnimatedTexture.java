@@ -74,6 +74,14 @@ public class AnimatedTexture extends Texture {
         this.frameTimeLeft = randStart ? ((float) Math.random() * frameTime) : frameTime; // calc starting time left
     }
 
+    public AnimatedTexture(int id, int w, int h, int frames, float frameTime, boolean randStart) {
+        super(id, w, h);
+        this.frames = frames;
+        this.frameTime = frameTime;
+        this.frame = randStart ? ((int) (Math.random() * frames)) : 0; // calc starting frame
+        this.frameTimeLeft = randStart ? ((float) Math.random() * frameTime) : frameTime; // calc starting time left
+    }
+
     /**
      * Updates the animated texture
      */
@@ -84,6 +92,14 @@ public class AnimatedTexture extends Texture {
             this.frame++; // go to the next frame
             if (this.frame >= this.frames) this.frame = 0; // go back to start after last frame
         }
+    }
+
+    public int getFrameCount() {
+        return this.frames;
+    }
+
+    public float getFrameTime() {
+        return this.frameTime;
     }
 
     /**

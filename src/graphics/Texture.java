@@ -2,15 +2,24 @@ package graphics;
 
 import org.apache.commons.io.IOUtils;
 import org.lwjgl.BufferUtils;
+import org.lwjgl.opengl.GL32;
 import org.lwjgl.system.MemoryStack;
 import utils.Utils;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
+import java.awt.image.DataBufferByte;
+import java.awt.image.DataBufferInt;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL30.glGenerateMipmap;
+import static org.lwjgl.opengl.GL13C.glActiveTexture;
+import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.stb.STBImage.*;
 
 /*
@@ -36,6 +45,7 @@ public class Texture {
      * @param path    the path to the image
      * @param resPath whether the given path is resource-relative
      */
+
     public Texture(String path, boolean resPath) {
 
         // create buffers to hold texture info
@@ -80,6 +90,30 @@ public class Texture {
                 buf); // generate texture
         glGenerateMipmap(GL_TEXTURE_2D); // generate mip maps
         stbi_image_free(buf); // cleanup by freeing image memory
+    }
+
+    /**
+     * Construct a texture with the given GL texture ID, width and height.
+     * @param id the OpenGL id of the texture
+     * @param w the width of the texture in pixels
+     * @param h the height of the texture in pixels
+     */
+    public Texture(int id, int w, int h) {
+        this.id = id; // save id as member
+        this.w = w; // save width as member
+        this.h = h; // save height as member
+    }
+
+    /**
+     * Turns a texture into an animated one using the given animation properties
+     * @param frames how many frames the animation should have
+     * @param frameTime how much time (in seconds) each frame should last
+     * @param randStart whether the animation should start at a random point or not
+     * @return the texture turned into an animated texture. Note that this will still be using the same OpenGL texture
+     * id as the non-animated texture before
+     */
+    public AnimatedTexture animate(int frames, float frameTime, boolean randStart) {
+        return new AnimatedTexture(this.id, this.w, this.h, frames, frameTime, randStart);
     }
 
     /**

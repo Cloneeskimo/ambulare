@@ -155,6 +155,8 @@ public class GameEngine {
         if (key == Global.FPS_REPORTING_TOGGLE_KEY && action == GLFW_RELEASE) { // if FPS report toggling key,
             GameEngine.reportingFPS = !GameEngine.reportingFPS; // toggle static flag
             if (!GameEngine.reportingFPS) logic.reportFPS(null); // if toggled off, tell logic reporting has stopped
+        } else if (key == Global.POLYGON_MODE_TOGGLE_KEY && action == GLFW_RELEASE) { // if polygon toggle key pressed
+            Global.togglePolygonMode(); // toggle the polygon mode
         }
         logic.keyboardInput(key, action); // notify logic of input
     }

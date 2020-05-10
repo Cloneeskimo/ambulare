@@ -4,6 +4,8 @@ import graphics.Font;
 import graphics.Window;
 
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_1;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_2;
+import static org.lwjgl.opengl.GL11.*;
 
 /*
  * Global.java
@@ -23,6 +25,7 @@ public class Global {
     public static final String WINDOW_TITLE = "Ambulare"; // the window title
     public static final float TIME_BETWEEN_FPS_REPORTS = 1f; // time between FPS reports when reports are enabled
     public static final int FPS_REPORTING_TOGGLE_KEY = GLFW_KEY_1; // the key to toggle FPS reporting in the engine
+    public static final int POLYGON_MODE_TOGGLE_KEY = GLFW_KEY_2; // the key to toggle between fill/line polygon modes
     public static final int TARGET_FPS = 60; // the target frames per second when vertical sync is off
     public static final int TARGET_UPS = 60; // the target updates per second regardless of vertical sync
     public static final boolean V_SYNC = true; // whether to enable vertical sync in the Window
@@ -31,6 +34,7 @@ public class Global {
     public static boolean arAction = false; /* a flag representing how to distort coordinates when rendering depending
         on the game window's aspect ratio. If ar < 1.0f (height > width) then we will make objects shorter to compensate
         and if ar > 1.0f, the opposite is true */
+    private static boolean polygonMode; // the current polygon mode used by GL (lines or fill)
 
     /**
      * Initialize any global members
@@ -43,11 +47,19 @@ public class Global {
     /**
      * Updates the global aspect ratio and aspect ratio variables
      *
-     * @param w the window to use for the calculationsss
+     * @param w the window to use for the calculations
      */
     public static void updateAr(Window w) {
         Global.ar = (float) w.getFBWidth() / (float) w.getFBHeight(); // calculate aspect ratio
         Global.arAction = (Global.ar < 1.0f); // calculate the aspect ratio action. See static data for more information
+    }
+
+    /**
+     * Toggles GL's polygon mode between fill and lines
+     */
+    public static void togglePolygonMode() {
+        Global.polygonMode = !Global.polygonMode; // update flag
+        glPolygonMode(GL_FRONT_AND_BACK, Global.polygonMode ? GL_LINE : GL_FILL); // if true -> lines; false -> fill
     }
 
     /**

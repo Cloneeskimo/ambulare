@@ -138,7 +138,7 @@ public class ROC {
      * Renders everything held within the ROC: the background, the game world, the static objects, and the fade box
      */
     public void render() {
-        if (this.background != null) { // if tere is a background
+        if (this.background != null) { // if there is a background
             this.sp.bind(); // bind static object shader program
             this.sp.setUniform("texSampler", 0); // set texture sampler uniform to use texture unit 0
             this.sp.setUniform("ar", Global.ar); // set aspect ratio uniform
