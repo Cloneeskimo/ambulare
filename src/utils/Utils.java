@@ -1,23 +1,31 @@
 package utils;
 
+import org.lwjgl.BufferUtils;
+
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+import static org.lwjgl.BufferUtils.createByteBuffer;
+
+/*
+ * Utils.java
+ * Ambulare
+ * Jacob Oaks
+ * 4/15/20
+ */
+
 /**
- * Provides various utility methods that are used throughout the program
+ * Provides various utility methods that are used throughout the program, mostly relating to logging/error-handling and
+ * file I/O
  */
 public class Utils {
-
-    /*
-     * Utils.java
-     * Ambulare
-     * Jacob Oaks
-     * 4/15/20
-     */
 
     /**
      * Opens the given path in the native operating system's file explorer if it exists. This will not work for
@@ -45,17 +53,6 @@ public class Utils {
     }
 
     /**
-     * Performs a logical exclusive or (XOR) operation on two booleans
-     *
-     * @param a the first boolean
-     * @param b the second boolean
-     * @return the XOR of a and b
-     */
-    public static boolean XOR(boolean a, boolean b) {
-        return (a || b) && !(a && b);
-    }
-
-    /**
      * Determines if a file with the given path exists
      *
      * @param path    the path to check
@@ -75,6 +72,129 @@ public class Utils {
             return file.exists(); // and check if it exists
         }
         return false;
+    }
+
+    /**
+     * Parses the the given path to separate its directory, name, and extension
+     *
+     * @param resPath whether the file is resource-relative or not
+     * @param file    the path of the file
+     * @return a length three array containing [0] the directory (including the last '/') (or null if not in a
+     * directory), [1] the name of the file excluding the slash and extension, [2] the extension of the file
+     * including the '.' (or null if no extension), [3] 'true' if the file is resource-relative or 'false' otherwise
+     */
+    public static String[] getFileInfoForPath(boolean resPath, String file) {
+        String dir = null, name = file, ext = null;
+        for (int i = file.length() - 1; i >= 0; i--) { // loop through file starting at the end
+            if (file.charAt(i) == '.') { // if we see a dot
+                ext = file.substring(i); // save extension
+                name = file = file.substring(0, i);
+            } else if (file.charAt(i) == '/') { // if we see a slash
+                dir = file.substring(0, i + 1); // save directory
+                name = file.substring(i + 1); // save name
+                break; // break from loop - don't need to continue anymore
+            }
+        }
+        return new String[]{dir, name, ext, resPath ? "true" : "false"};
+    }
+
+    /**
+     * @return the directory of the folder where all game data should be stored. This won't include a slash at the end
+     */
+    public static String getDataDir() {
+        // use user.home plus Ambulare folder. Usually user.home is the folder containing the documents folder
+        return System.getProperty("user.home") + "/Ambulare";
+    }
+
+    /**
+     * Ensures that a directory exists. This will not consider anything after the last slash to avoid turning
+     * what should be normal files into directories themselves (unless there are no slashes)
+     *
+     * @param directory       the directory to ensure
+     * @param dataDirRelative whether the given directory is relative to the data directory (see getDataDir())
+     */
+    public static void ensureDirs(String directory, boolean dataDirRelative) {
+        for (int i = directory.length() - 1; i >= 0; i--) { // loop through directory starting at the end
+            if (directory.charAt(i) == '/') { // if we see a slash
+                directory = directory.substring(0, i); // remove everything after the slash
+                break; // break from loop - only remove stuff after last slash
+            }
+        }
+        File dir = new File((dataDirRelative ? getDataDir() : "") + directory); // create file object
+        dir.mkdirs(); // attempt to create necessary directories
+    }
+
+    /**
+     * Loads a resource into a single string
+     *
+     * @param resPath the resource-relative path of the file
+     * @return the loaded resource as a string
+     */
+    public static String resToString(String resPath) {
+        String result = "";
+        try (InputStream in = Class.forName(Utils.class.getName()).getResourceAsStream(resPath); // try to open resource
+             Scanner scanner = new Scanner(in, "UTF-8")) { // try to then use a scanner to read it
+            result = scanner.useDelimiter("\\A").next(); // read results into single string
+        } catch (Exception e) {
+            handleException(e, "utils.Utils", "resToString(String)", true);
+        }
+        return result;
+    }
+
+    /**
+     * Loads a resource into a list of strings
+     *
+     * @param resPath the resource-relative path of the file
+     * @return the loaded resource as a list of strings
+     */
+    public static List<String> resToStringList(String resPath) {
+        List<String> file = new ArrayList<>(); // create empty ArrayList
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(Class.forName(Utils.class.getName())
+                .getResourceAsStream(resPath)))) { // attempt to open resource
+            String line; // variable to store a single line
+            while ((line = in.readLine()) != null) file.add(line); // read each line until eof
+        } catch (Exception e) { // if there is an exception
+            handleException(new Exception("Could not load resource: " + resPath + " for reason: " + e.getMessage()),
+                    "utils.Utils", "resToStringList(String)", true); // handle it
+        }
+        return file;
+    }
+
+    /**
+     * Converts a file to a byte buffer
+     * @param path the path to the file to convert
+     * @param resRelative whether the path is resource-relative or not
+     * @param bufferSize the initial buffer size to use
+     * @return the byte buffer containing the file data
+     */
+    public static ByteBuffer fileToByteBuffer(String path, boolean resRelative, int bufferSize) {
+        InputStream is = null; // create null input stream
+        if (resRelative) is = Utils.class.getResourceAsStream(path); // for resources, get resource as stream
+        else { // for non-resources
+            try { // try to convert the corresponding file to an input stream
+                is = new FileInputStream(new File(path));
+            } catch (Exception e) { // if an exception occurs while trying to convert file to an input stream
+                Utils.handleException(new Exception("Could not convert file at path: '" + path + "' to a file input" +
+                                "stream for reason: " + e.getMessage()), "utils.Utils",
+                        "fileToByteBuffer(String, boolean, int)", true); // crash the program
+            }
+        }
+        ReadableByteChannel rbc = Channels.newChannel(is); // create a readable byte channel using the input stream
+        ByteBuffer buffer = createByteBuffer(bufferSize); // create a buffer with the given starting size
+        try { // try to read bytes from the RBC into the byte buffer
+            while (true) { // look until break
+                int bytes = rbc.read(buffer); // read bytes
+                if (bytes == -1) break; // if EOF, break from loop
+                // if the buffer is full, resize it
+                if (buffer.remaining() == 0) buffer = resizeBuffer(buffer, buffer.capacity() * 2);
+            }
+        } catch (Exception e) { // if an exception occurs
+            Utils.handleException(new Exception("Unable to read from readable byte channel from file at path: '" +
+                            path + "' for reason: " + e.getMessage()), "utils.Utils", "fileToByteBuffer(String, boolean, int)",
+                    true); // crash the program
+        }
+        buffer.flip(); // flip the result
+        return buffer; // and return the final buffer
     }
 
     /**
@@ -132,89 +252,16 @@ public class Utils {
     }
 
     /**
-     * @return the directory of the folder where all game data should be stored. This won't include a slash at the end
+     * Resizes a byte buffer to the new given capacity
+     * @param buffer the buffer to resize
+     * @param newCapacity the new size to give the buffer
+     * @return the resized buffer
      */
-    public static String getDataDir() {
-        // use user.home plus Ambulare folder. Usually user.home is the folder containing the documents folder
-        return System.getProperty("user.home") + "/Ambulare";
-    }
-
-    /**
-     * Parses the the given path to separate its directory, name, and extension
-     *
-     * @param resPath whether the file is resource-relative or not
-     * @param file    the path of the file
-     * @return a length three array containing [0] the directory (including the last '/') (or null if not in a
-     * directory), [1] the name of the file excluding the slash and extension, [2] the extension of the file
-     * including the '.' (or null if no extension), [3] 'true' if the file is resource-relative or 'false' otherwise
-     */
-    public static String[] getFileInfoForPath(boolean resPath, String file) {
-        String dir = null, name = file, ext = null;
-        for (int i = file.length() - 1; i >= 0; i--) { // loop through file starting at the end
-            if (file.charAt(i) == '.') { // if we see a dot
-                ext = file.substring(i); // save extension
-                name = file = file.substring(0, i);
-            } else if (file.charAt(i) == '/') { // if we see a slash
-                dir = file.substring(0, i + 1); // save directory
-                name = file.substring(i + 1); // save name
-                break; // break from loop - don't need to continue anymore
-            }
-        }
-        return new String[]{dir, name, ext, resPath ? "true" : "false"};
-    }
-
-    /**
-     * Ensures that a directory exists. This will not consider anything after the last slash to avoid turning
-     * what should be normal files into directories themselves (unless there are no slashes)
-     *
-     * @param directory       the directory to ensure
-     * @param dataDirRelative whether the given directory is relative to the data directory (see getDataDir())
-     */
-    public static void ensureDirs(String directory, boolean dataDirRelative) {
-        for (int i = directory.length() - 1; i >= 0; i--) { // loop through directory starting at the end
-            if (directory.charAt(i) == '/') { // if we see a slash
-                directory = directory.substring(0, i); // remove everything after the slash
-                break; // break from loop - only remove stuff after last slash
-            }
-        }
-        File dir = new File((dataDirRelative ? getDataDir() : "") + directory); // create file object
-        dir.mkdirs(); // attempt to create necessary directories
-    }
-
-    /**
-     * Loads a resource into a single string
-     *
-     * @param resPath the resource-relative path of the file
-     * @return the loaded resource as a string
-     */
-    public static String resToString(String resPath) {
-        String result = "";
-        try (InputStream in = Class.forName(Utils.class.getName()).getResourceAsStream(resPath); // try to open resource
-             Scanner scanner = new Scanner(in, "UTF-8")) { // try to then use a scanner to read it
-            result = scanner.useDelimiter("\\A").next(); // read results into single string
-        } catch (Exception e) {
-            handleException(e, "utils.Utils", "resToString(String)", true);
-        }
-        return result;
-    }
-
-    /**
-     * Loads a resource into a list of strings
-     *
-     * @param resPath the resource-relative path of the file
-     * @return the loaded resource as a list of strings
-     */
-    public static List<String> resToStringList(String resPath) {
-        List<String> file = new ArrayList<>(); // create empty ArrayList
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(Class.forName(Utils.class.getName())
-                .getResourceAsStream(resPath)))) { // attempt to open resource
-            String line; // variable to store a single line
-            while ((line = in.readLine()) != null) file.add(line); // read each line until eof
-        } catch (Exception e) { // if there is an exception
-            handleException(new Exception("Could not load resource: " + resPath + " for reason: " + e.getMessage()),
-                    "utils.Utils", "resToStringList(String)", true); // handle it
-        }
-        return file;
+    public static ByteBuffer resizeBuffer(ByteBuffer buffer, int newCapacity) {
+        ByteBuffer newBuffer = BufferUtils.createByteBuffer(newCapacity); // create new byte buffer with given capacity
+        buffer.flip(); // flip original buffer
+        newBuffer.put(buffer); // put original buffer data into new buffer data
+        return newBuffer; // return new buffer
     }
 
     /**

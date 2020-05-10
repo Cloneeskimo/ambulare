@@ -5,6 +5,7 @@ import graphics.*;
 import utils.Global;
 import utils.MouseInputEngine;
 import utils.PhysicsEngine;
+import utils.Sound;
 
 /*
  * Entity.java
@@ -32,6 +33,7 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
         specified by the mouse interaction interface */
     private String name;          // name of the entity
     private TextObject nameplate; // nameplate to display above entity
+    private Sound walk;           // the walking sound of the entity
     private boolean right;        // whether the entity is facing to the right
     private boolean airborne;     // whether the entity is airborne
     private boolean moving;       // whether the entity is moving
@@ -46,13 +48,16 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
      *                 the right, (2) entity airborne and facing to the left, (3) entity airborne and facing to the
      *                 right, (4) entity non-airborne and moving to the left, (5) entity non-airborne and moving to the
      *                 right
+     * @param walk     the walking sound to use for the entity. If null, no walking sound will be used
      */
-    public Entity(String name, Model model, Material material) {
+    public Entity(String name, Model model, Material material, Sound walk) {
         super(model, material); // call world object constructor
         this.name = name; // save name as member
         this.nameplate = new TextObject(Global.FONT, this.name); // create nameplate
         this.nameplate.setScale(2.5f, 2.5f); // make nameplate larger
         this.positionNameplate(); // position the nameplate above the entity
+        this.walk = walk; // save walking sound as reference
+        if (this.walk != null) this.walk.setLoop(true); // walking sound should loop
     }
 
     /**
@@ -86,6 +91,15 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
     }
 
     /**
+     * Updates the sound being made by the entity based on its current state
+     */
+    private void updateSound() {
+        if (this.walk == null) return;
+        if (moving && !airborne) this.walk.play();
+        else this.walk.stop();
+    }
+
+    /**
      * Updates the entity's moving flag which will update the animation
      *
      * @param moving the new moving flag
@@ -94,6 +108,7 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
         if (moving != this.moving) { // if moving changed
             this.moving = moving; // update moving flag
             this.updateTextureState(); // and update state in MSAT
+            this.updateSound(); // update the sound
         }
     }
 
@@ -109,10 +124,8 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
         if (airborne != this.airborne) { // if airborne value is different
             this.airborne = airborne; // update flag
             this.updateTextureState(); // and update state in MSAT
+            this.updateSound(); // update sound
         }
-        // update facing flag based on velocity
-//        if (this.vx > 0f) this.right = true;
-//        else if (this.vx < 0f) this.right = false;
     }
 
     /**
@@ -175,5 +188,14 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
             this.positionNameplate(); // reposition nameplate
         }
         MouseInputEngine.MouseInteractive.invokeCallback(type, this.mcs, x, y); // invoke necessary callbacks
+    }
+
+    /**
+     * Cleans up normal world object properties and any sounds the entity has
+     */
+    @Override
+    public void cleanup() {
+        super.cleanup(); // cleanup world object properties
+        if (this.walk != null) this.walk.cleanup(); // cleanup walking sound
     }
 }

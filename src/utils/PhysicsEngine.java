@@ -1,9 +1,7 @@
 package utils;
 
 import gameobject.gameworld.WorldObject;
-import org.lwjgl.system.CallbackI;
 
-import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;

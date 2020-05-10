@@ -78,8 +78,9 @@ public class WorldLogic extends GameLogic {
                 new LightSourceMaterial(new MSAT("/textures/entity/player.png", true, new MSAT.MSATState[]{
                         new MSAT.MSATState(2, 0.5f),
                         new MSAT.MSATState(1, 1f),
-                        new MSAT.MSATState(12, 0.025f)
-                }), new LightSource(new float[]{1f, 1f, 1f, 1f}, 5f, 1.5f)));
+                        new MSAT.MSATState(12, 0.05f)
+                }), new LightSource(new float[]{1f, 1f, 1f, 1f}, 5f, 1.5f)),
+                new Sound("/sounds/walking1.ogg", true));
         // lower player bounding width slightly to fit better and appear more aesthetically
         player.setBoundingWidth(0.9f);
         player.setBoundingHeight(0.9f);
@@ -90,7 +91,7 @@ public class WorldLogic extends GameLogic {
 
         // create a random object
         Entity o = new Entity("Ball", Model.getStdGridRect(1, 1), new Material(
-                new float[]{1.0f, 0.0f, 0.0f, 1.0f})); // as a pink square
+                new float[]{1.0f, 0.0f, 0.0f, 1.0f}), null); // as a pink square
         o.setScale(0.3f, 0.3f); // scale down a lot
         o.getPhysicsProperties().bounciness = 0.9f; // make very bouncy
         o.getPhysicsProperties().mass = 0.6f; // make it light
@@ -99,7 +100,7 @@ public class WorldLogic extends GameLogic {
 
         // create another random object
         o = new Entity("Ball", Model.getStdGridRect(1, 1), new Material(
-                new float[]{1.0f, 0.0f, 0.0f, 1.0f})); // as a pink square
+                new float[]{1.0f, 0.0f, 0.0f, 1.0f}), null); // as a pink square
         o.setScale(0.3f, 0.3f); // scale down a lot
         o.getPhysicsProperties().bounciness = 0.9f; // make very bouncy
         o.getPhysicsProperties().mass = 0.6f; // make it light

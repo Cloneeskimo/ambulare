@@ -9,18 +9,24 @@ import gameobject.ui.TextButton;
 import gameobject.ui.TextInputObject;
 import gameobject.ui.TextObject;
 import graphics.*;
+import org.lwjgl.openal.AL;
+import org.lwjgl.openal.ALC;
+import org.lwjgl.openal.ALCCapabilities;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GLUtil;
 import story.Story;
 import utils.*;
 
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import static java.sql.Types.NULL;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.glfw.GLFW.GLFW_RELEASE;
+import static org.lwjgl.openal.ALC10.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.opengl.GL30.glDeleteFramebuffers;

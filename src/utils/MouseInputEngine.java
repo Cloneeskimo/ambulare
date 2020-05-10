@@ -1,11 +1,6 @@
 package utils;
 
-import gameobject.GameObject;
 import graphics.Camera;
-import org.w3c.dom.events.MouseEvent;
-import utils.FittingBox;
-import utils.Pair;
-import utils.Transformation;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -57,6 +57,7 @@ public class GameEngine {
      * Initializes the engine
      */
     private void init() {
+        SoundManager.init(); // initialize sound manager
         this.window.init(); // initialize the window
         Global.updateAr(this.window); // update global aspect ratio variable
         this.initInput(); // initialize mouse and keyboard input callbacks
@@ -252,5 +253,6 @@ public class GameEngine {
         wd.addChild("height", Integer.toString(window.getHeight())); // add window height
         Node.nodeToFile(wd, "/wd.node", true); // and save node
         this.logic.cleanup(); // tell logic to cleanup
+        SoundManager.cleanup(); // cleanup the sound manager
     }
 }

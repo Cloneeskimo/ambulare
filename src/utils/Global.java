@@ -42,6 +42,7 @@ public class Global {
     public static void init() {
         // initialize the global font
         Global.FONT = new Font("/textures/ui/font.png", Node.resToNode("/misc/font.node"));
+        Utils.log("Global font initialized", "utils.Global", "init()", false); // log
     }
 
     /**

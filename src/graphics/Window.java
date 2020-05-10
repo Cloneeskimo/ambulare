@@ -108,6 +108,9 @@ public class Window {
         glEnable(GL_BLEND); // essentially allows transparency
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // defines how the blending will create transparency
         glClearColor(0f, 0f, 0f, 0f); // set clear color
+
+        // log successful window initialization
+        Utils.log("Window initialized", "graphics.Window", "init()", false);
     }
 
     /**
@@ -129,6 +132,7 @@ public class Window {
      */
     public void close() {
         glfwSetWindowShouldClose(this.handle, true); // close the window
+        Utils.log("Received close command", "graphics.Window", "close()", false); // log close
     }
 
     /**

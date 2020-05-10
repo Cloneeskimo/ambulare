@@ -43,10 +43,9 @@ public class Texture {
      * Constructor
      *
      * @param path    the path to the image
-     * @param resPath whether the given path is resource-relative
+     * @param resRelative whether the given path is resource-relative
      */
-
-    public Texture(String path, boolean resPath) {
+    public Texture(String path, boolean resRelative) {
 
         // create buffers to hold texture info
         ByteBuffer buf = null; // create buffer for texture data
@@ -57,22 +56,10 @@ public class Texture {
 
         // attempt to load texture
         try {
-            if (resPath) { // if resource-relative path
-                byte[] p = IOUtils.toByteArray(Class.forName(Texture.class.getName())
-                        .getResourceAsStream(path)); // convert resource to byte array
-                ByteBuffer pBuff = BufferUtils.createByteBuffer(p.length); // create buffer for texture data
-                pBuff.put(p).flip(); // put texture data into buffer
-                buf = stbi_load_from_memory(pBuff, w, h, channels, 4); // load texture into buffer
-            } else { // if non-resource path
-                File file = new File(path); // create file with corresponding path
-                buf = stbi_load(file.getAbsolutePath(), w, h, channels, 4); // load texture into buffer
-            }
-            if (buf == null)
-                Utils.handleException(new Exception("Unable to load texture with " + (resPath ? ("resource-relative ") :
-                                "") + "path '" + path + "' for reason: " + stbi_failure_reason()), "graphics.Texture",
-                        "Texture(String)", true); // throw exception if unable to load texture
+            ByteBuffer buff = Utils.fileToByteBuffer(path, resRelative, 1024); // convert image to byte buffer
+            buf = stbi_load_from_memory(buff, w, h, channels, 4); // load image into texture buffer
         } catch (Exception e) { // if exception
-            Utils.handleException(new Exception("Unable to load texture with " + (resPath ? ("resource-relative ") :
+            Utils.handleException(new Exception("Unable to load texture with " + (resRelative ? ("resource-relative ") :
                             "") + "path '" + path + "' for reason: " + e.getMessage()), "graphics.Texture",
                     "Texture(String)", true); // throw exception if unable to load texture
         }
