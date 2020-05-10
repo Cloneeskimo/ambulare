@@ -42,7 +42,7 @@ public class Texture {
     /**
      * Constructor
      *
-     * @param path    the path to the image
+     * @param path        the path to the image
      * @param resRelative whether the given path is resource-relative
      */
     public Texture(String path, boolean resRelative) {
@@ -81,9 +81,10 @@ public class Texture {
 
     /**
      * Construct a texture with the given GL texture ID, width and height.
+     *
      * @param id the OpenGL id of the texture
-     * @param w the width of the texture in pixels
-     * @param h the height of the texture in pixels
+     * @param w  the width of the texture in pixels
+     * @param h  the height of the texture in pixels
      */
     public Texture(int id, int w, int h) {
         this.id = id; // save id as member
@@ -93,7 +94,8 @@ public class Texture {
 
     /**
      * Turns a texture into an animated one using the given animation properties
-     * @param frames how many frames the animation should have
+     *
+     * @param frames    how many frames the animation should have
      * @param frameTime how much time (in seconds) each frame should last
      * @param randStart whether the animation should start at a random point or not
      * @return the texture turned into an animated texture. Note that this will still be using the same OpenGL texture

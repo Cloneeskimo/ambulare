@@ -26,7 +26,7 @@ public abstract class SoundManager {
      * program's startup and at no other point (unless cleanup() is called the sound manager needs re-initialized)
      */
     public static void init() {
-        device = alcOpenDevice((ByteBuffer)null); // open the sound device
+        device = alcOpenDevice((ByteBuffer) null); // open the sound device
         ALCCapabilities c = ALC.createCapabilities(device); // create the openAL capabilities
         context = alcCreateContext(device, (IntBuffer) null); // create the openAL context
         if (context == NULL) Utils.handleException(new Exception("Unable to create an AL context"),

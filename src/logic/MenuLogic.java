@@ -85,15 +85,16 @@ public class MenuLogic extends GameLogic {
      * ROC Static Object (UI Element) Tags
      */
     private static final int TAG_TITLE = 0;      // title
-    private static final int TAG_NEW_GAME = 1;   // new game button (main menu)
-    private static final int TAG_LOAD_GAME = 2;  // load game button (main menu)
-    private static final int TAG_SETTINGS = 3;   // settings button (main menu)
-    private static final int TAG_EXIT = 4;       // exit button (main menu)
-    private static final int TAG_STORY_LIST = 5; // story list (new game)
-    private static final int TAG_PROMPT = 6;     // story selection/name input prompt (new game)
-    private static final int TAG_RETURN = 7;     // return button (new game)
-    private static final int TAG_NAME = 8;       // name input (new game)
-    private static final int TAG_FINISH = 9;     // finish button (new game)
+    private static final int TAG_VERSION = 1;    // version text in bottom of screen
+    private static final int TAG_NEW_GAME = 2;   // new game button (main menu)
+    private static final int TAG_LOAD_GAME = 3;  // load game button (main menu)
+    private static final int TAG_SETTINGS = 4;   // settings button (main menu)
+    private static final int TAG_EXIT = 5;       // exit button (main menu)
+    private static final int TAG_STORY_LIST = 6; // story list (new game)
+    private static final int TAG_PROMPT = 7;     // story selection/name input prompt (new game)
+    private static final int TAG_RETURN = 8;     // return button (new game)
+    private static final int TAG_NAME = 9;       // name input (new game)
+    private static final int TAG_FINISH = 10;    // finish button (new game)
 
     /**
      * Other Static Data
@@ -223,6 +224,10 @@ public class MenuLogic extends GameLogic {
         exit.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { // when clicked,
             window.close(); // close the window
         });
+        TextObject version = new TextObject(Global.FONT, "version: " + Global.VERSION); // create version text
+        version.setScale(0.35f, 0.35f); // make version text small
+        this.roc.addStaticObject(version, TAG_VERSION, false, new ROC.PositionSettings(-1f, -1f,
+                true, 0.01f)); // add version text to ROC at bottom left corner
         // add the new game button at its correct position
         this.roc.addStaticObject(newGame, TAG_NEW_GAME, false, getMainMenuUIPosition(TAG_NEW_GAME));
         // add the load game button at its correct position

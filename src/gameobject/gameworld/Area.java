@@ -256,6 +256,8 @@ public class Area {
                                                      aspect ratios. See the constructor for more info on view scale */
         private float zoomFactor;                 /* how much camera zoom affects view scale. See the constructor for
                                                      more info on zoom factor */
+        private boolean isTextured;               // whether or not the backdrop is actually textured or not
+        private boolean scroll = true;            // whether or not the backdrop should scroll its texture or not
 
         /**
          * Constructs the backdrop by compiling information from a given node. If the value of the root node starts with
@@ -278,6 +280,10 @@ public class Area {
          * texture. (2) multiplicative - the components of the backdrop color and the components of the texture will be
          * multiplied to create a final color. (3) averaged - the components of the backdrop color and the components of
          * the texture will be averaged to create a final color
+         * <p>
+         * - scroll [optional][default: true]: specifies whether to scroll the background according to view_scale and
+         * zoom_factor. If false, the largest possible portion of the texture centered on the middle of the image will
+         * be used at all times. Backdrops without texture cannot scroll
          * <p>
          * - view_scale [optional][default: 1f]: If the backdrop has a texture, this specifies how much of the
          * width/height of the backdrop to show at once. This will apply to both width and height, but it directly
@@ -323,7 +329,7 @@ public class Area {
             }
 
             // relevant variables to hold loaded information
-            float[] color = new float[]{1f, 1f, 1f, 1f}; // holds the material color
+            float[] color = new float[] {1f, 1f, 1f, 1f}; // holds the material color
             String texPath = null; // holds the path to the material texture
             boolean texResPath = true; // holds whether a given texture path is resource-relative
             Material.BlendMode bm = Material.BlendMode.NONE; // holds the material's blend mode
@@ -331,7 +337,7 @@ public class Area {
             // parse node
             try { // wrap entire parsing in a try-catch to make sure all issues are caught and logged
                 for (Node c : info.getChildren()) { // go through each child
-                    String n = c.getName(); // get the name of the child
+                    String n = c.getName().toLowerCase(); // get the name of the child in lowercase
                     if (n.equals("color")) { // color
                         color = Utils.strToColor(c.getValue()); // try to convert to a float array of color components
                         if (color == null) // if conversion was unsuccessful
@@ -339,7 +345,6 @@ public class Area {
                                     "must be four valid floating point numbers separated by spaces",
                                     true), "gameobject.gameworld.Area.BackDrop",
                                     "BackDrop(Node, int, int)", false); // log as much
-                        else color = color; // otherwise save the color
                     } else if (n.equals("texture_path")) texPath = c.getValue(); // texture path
                         // resource relative texture path flag
                     else if (n.equals("resource_relative")) texResPath = Boolean.parseBoolean(c.getValue());
@@ -352,7 +357,8 @@ public class Area {
                                     "gameobject.gameworld.Area.BackDrop", "Area(Node, int, int)",
                                     false);
                         }
-                    } else if (n.equals("view_scale")) { // view scale
+                    } else if (n.equals("scroll")) this.scroll = Boolean.parseBoolean(c.getValue()); // scroll
+                    else if (n.equals("view_scale")) { // view scale
                         try {
                             this.viewScale = Float.parseFloat(c.getValue()); // try to convert to a float
                         } catch (Exception e) { // if conversion was unsuccessful, log as much
@@ -402,13 +408,17 @@ public class Area {
             this.resized(); // scale to the appropriate size to fit the window
             this.areaWidth = areaWidth; // save area width as member
             this.areaHeight = areaHeight; // save area height as member
+            this.isTextured = this.material.isTextured(); // save textured flag
         }
 
         /**
-         * Reacts to window resizing by resizing the backdrop to fit the window perfectly
+         * Reacts to window resizing by resizing the backdrop to fit the window perfectly and updating the texture
+         * coordinates
          */
         public void resized() {
+            // resize the backdrop to fit the window perfectly
             this.setScale(2f * (Global.ar > 1f ? Global.ar : 1), 2f / (Global.ar < 1f ? Global.ar : 1));
+            if (this.cam != null) this.updateTexCoords(); // if there's a camera, update the texture coordinates
         }
 
         /**
@@ -437,6 +447,7 @@ public class Area {
         public void useCam(Camera cam) {
             this.cam = cam; // save the camera reference
             this.setPos(cam.getX(), cam.getY()); // move to the camera position
+            this.updateTexCoords(); // update the texture coordinates
         }
 
         /**
@@ -449,7 +460,7 @@ public class Area {
             if (this.cam != null) { // if a camera has been given
                 this.setPos(cam.getX(), cam.getY()); // follow it
                 // if the backdrop is textured, make sure the correct texture coordinates are being used for scrolling
-                if (this.material.isTextured()) this.updateTexCoords();
+                if (this.isTextured && this.scroll) this.updateTexCoords();
             }
             super.update(interval); // update other game object properties
         }
@@ -461,8 +472,8 @@ public class Area {
         private void updateTexCoords() {
 
             // calculate how far the camera is in proportion to the area width and height
-            float xProp = Math.max(0f, Math.min(1f, this.getX() / (float) this.areaWidth));
-            float yProp = Math.max(0f, Math.min(1f, 1f - this.getY() / (float) this.areaHeight));
+            float xProp = scroll ? Math.max(0f, Math.min(1f, this.getX() / (float) this.areaWidth)) : 0.5f;
+            float yProp = scroll ? Math.max(0f, Math.min(1f, 1f - this.getY() / (float) this.areaHeight)) : 0.5f;
 
             // calculate the width and height of the view depending on the ratio of aspect ratios
             float viewWidth = 1f, viewHeight = 1f;
@@ -472,15 +483,18 @@ public class Area {
                 viewWidth = Global.ar / texAr; // apply ratio of ratios on view width
             }
 
-            // calculate max scaling that can occur before more than entire image is shown for either width or height
-            float maxScale = (1f / viewWidth); // max scaling for width
-            maxScale = Math.min(maxScale, 1f / viewHeight); // max scaling for width and height
+            if (scroll) {
 
-            // apply zoom factor
-            float lz = (1f - cam.getLinearZoom(1.15f)) - 0.5f; // get the linear zoom of the camera
-            float vs = Math.abs(Math.min(maxScale, this.viewScale + (lz * zoomFactor))); // get scaling from zoom factor
-            viewWidth *= vs; // apply zoom factor to view width
-            viewHeight *= vs; // apply zoom factor to view height
+                // calculate max scaling that can occur before more than entire image is shown for either width or height
+                float maxScale = (1f / viewWidth); // max scaling for width
+                maxScale = Math.min(maxScale, 1f / viewHeight); // max scaling for width and height
+
+                // apply zoom factor
+                float lz = (1f - cam.getLinearZoom(1.15f)) - 0.5f; // get the linear zoom of the camera
+                float vs = Math.abs(Math.min(maxScale, this.viewScale + (lz * zoomFactor))); // get scaling from zoom factor
+                viewWidth *= vs; // apply zoom factor to view width
+                viewHeight *= vs; // apply zoom factor to view height
+            }
 
             // calculate final texture coordinates
             float lx = xProp * (1 - viewWidth); // calculate left x tex coordinate

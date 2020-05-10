@@ -78,9 +78,10 @@ public class AnimatedTexture extends Texture {
 
     /**
      * Constructs the animated texture with the given openGL texture ID, width and height, and animation properties
-     * @param id the openGL texture ID to use
-     * @param w the width of the texture
-     * @param h the height of the texture
+     *
+     * @param id        the openGL texture ID to use
+     * @param w         the width of the texture
+     * @param h         the height of the texture
      * @param frames    the total amount of frames
      * @param frameTime the amount of time (in seconds) to give each frame
      * @param randStart whether to start the animation at a random time
@@ -108,6 +109,7 @@ public class AnimatedTexture extends Texture {
 
     /**
      * Sets a frame reach callback to be invoked whenever a new frame is reached in the animation
+     *
      * @param frc the frame reach callback to save and invoke
      */
     public void giveFrameReachCallback(FrameReachCallback frc) {
@@ -147,6 +149,7 @@ public class AnimatedTexture extends Texture {
 
         /**
          * The method that will be called when a new frame is reached
+         *
          * @param frame the frame that was reached
          */
         void atFrame(int frame);

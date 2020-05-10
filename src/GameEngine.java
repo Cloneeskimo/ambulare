@@ -40,8 +40,8 @@ public class GameEngine {
             h = Integer.parseInt(wd.getChild("height").getValue()); // ues saved height of window
         }
         this.window = new Window(Global.WINDOW_TITLE, w, h, Global.V_SYNC); // create window with determined size
-        this.timer = new Timer();
-        this.logic = logic;
+        this.timer = new Timer(); // initialize timer
+        this.logic = logic; // save starting logic as member
     }
 
     /**

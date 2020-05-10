@@ -75,7 +75,7 @@ public class WorldLogic extends GameLogic {
      */
     private void initWorldObjects() {
         // create player entity
-        Sound[] playerStepSounds = new Sound[] {
+        Sound[] playerStepSounds = new Sound[]{
                 new Sound("/sounds/step1.ogg", true),
                 new Sound("/sounds/step2.ogg", true),
                 new Sound("/sounds/step3.ogg", true),

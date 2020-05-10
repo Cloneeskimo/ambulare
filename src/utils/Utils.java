@@ -162,9 +162,10 @@ public class Utils {
 
     /**
      * Converts a file to a byte buffer
-     * @param path the path to the file to convert
+     *
+     * @param path        the path to the file to convert
      * @param resRelative whether the path is resource-relative or not
-     * @param bufferSize the initial buffer size to use
+     * @param bufferSize  the initial buffer size to use
      * @return the byte buffer containing the file data
      */
     public static ByteBuffer fileToByteBuffer(String path, boolean resRelative, int bufferSize) {
@@ -181,7 +182,7 @@ public class Utils {
         }
         if (is == null) { // if the input stream is null
             Utils.handleException(new Exception("Could not convert load file at " + (resRelative ? "resource-relative "
-                            : "") + "path: '"  + path + " - no such file exists."), "utils.Utils",
+                            : "") + "path: '" + path + " - no such file exists."), "utils.Utils",
                     "fileToByteBuffer(String, boolean, int)", true); // crash the program
 
         }
@@ -259,7 +260,8 @@ public class Utils {
 
     /**
      * Resizes a byte buffer to the new given capacity
-     * @param buffer the buffer to resize
+     *
+     * @param buffer      the buffer to resize
      * @param newCapacity the new size to give the buffer
      * @return the resized buffer
      */

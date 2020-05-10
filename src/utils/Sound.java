@@ -26,7 +26,8 @@ public class Sound {
 
     /**
      * Constructor
-     * @param path the path to the sound file (should be in .ogg format)
+     *
+     * @param path        the path to the sound file (should be in .ogg format)
      * @param resRelative whether the given path is resource-relative
      */
     public Sound(String path, boolean resRelative) {
@@ -42,6 +43,7 @@ public class Sound {
 
     /**
      * Updates whether or not the sound should loop when played
+     *
      * @param loop whether the sound should loop when played
      */
     public void setLoop(boolean loop) {
@@ -71,10 +73,11 @@ public class Sound {
 
     /**
      * Reads the sound vorbix and creates the pulse-code modulation
-     * @param path the path to the sound find (should be in .ogg format)
+     *
+     * @param path        the path to the sound find (should be in .ogg format)
      * @param resRelative whether the given path is resource-relative or not
-     * @param bufferSize the initial size to use for the vorbis buffer size
-     * @param info the vorbis info
+     * @param bufferSize  the initial size to use for the vorbis buffer size
+     * @param info        the vorbis info
      * @return a short buffer containing the pulse-code modulation
      */
     private ShortBuffer readVorbis(String path, boolean resRelative, int bufferSize, STBVorbisInfo info) {
@@ -84,7 +87,7 @@ public class Sound {
         long dec = stb_vorbis_open_memory(vorbis, error, null); // open ogg vorbis file
         // if opening failed, crash program
         if (dec == NULL) Utils.handleException(new Exception("Failed to open Ogg Vorbis file. Error code: " +
-                        error.get(0)), "utils.Sound", "readVorbis(String, boolean, int, STBVorbisInfo", true);
+                error.get(0)), "utils.Sound", "readVorbis(String, boolean, int, STBVorbisInfo", true);
         stb_vorbis_get_info(dec, info); // get the vorbis info
         int channels = info.channels(); // get the amount of audio channels
         int length = stb_vorbis_stream_length_in_samples(dec); // get the length of the vorbis in samples

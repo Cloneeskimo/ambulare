@@ -77,7 +77,7 @@ public abstract class Block {
      *                     the background blocks, blocks[1] is for the middleground blocks, and blocks[2] is for the
      *                     foreground blocks
      * @param ats          the list of animated textures to populate
-     * @param w the GLFW window in use
+     * @param w            the GLFW window in use
      * @return the block map for the middleground layer to be used for block collision
      */
     public static boolean[][] loadLayoutBlocks(Node key, Node background, Node middleground, Node foreground,
@@ -131,15 +131,16 @@ public abstract class Block {
 
     /**
      * Loads a single layout layer of blocks
-     * @param mm the material map to draw from and populate. See loadLayoutBlocks() for more information on that
+     *
+     * @param mm     the material map to draw from and populate. See loadLayoutBlocks() for more information on that
      * @param blocks the material to block maps to populate
      * @param layout the layout node from the area node-file to read from
-     * @param key the parsed character to block info key
-     * @param ats the list of animated textures to populate
-     * @param bmw the width of a block map for the corresponding layout
-     * @param bmh the height of a block map for the corresponding layout
-     * @param sp the block formatting shader program created via beginBlockFormatting
-     * @param model the full square model to use for formatting block textures
+     * @param key    the parsed character to block info key
+     * @param ats    the list of animated textures to populate
+     * @param bmw    the width of a block map for the corresponding layout
+     * @param bmh    the height of a block map for the corresponding layout
+     * @param sp     the block formatting shader program created via beginBlockFormatting
+     * @param model  the full square model to use for formatting block textures
      * @return the block map populated of the layout layers
      */
     private static boolean[][] loadLayoutLayerBlocks(Map<List<Object>, Material> mm,
@@ -184,14 +185,14 @@ public abstract class Block {
                     if (m == null) { // if the material doesn't exist, need to create it
                         // if there is no texture, create the material using just the block info's color
                         if (bi.texPaths.size() < 1) m = new Material(bi.color);
-                        // otherwise create the material using the formatted texture
+                            // otherwise create the material using the formatted texture
                         else {
-                            Texture base = bi.animated() ? new AnimatedTexture((String)mmKey.get(1), bi.texResPath,
-                                    bi.animFrames, bi.frameTime, true) : new Texture((String)mmKey.get(1),
+                            Texture base = bi.animated() ? new AnimatedTexture((String) mmKey.get(1), bi.texResPath,
+                                    bi.animFrames, bi.frameTime, true) : new Texture((String) mmKey.get(1),
                                     bi.texResPath);
                             Texture formatted = createTexture(base, bi.overlayTextures, c, bi.cutRadius, cut, sp,
                                     model);
-                            if (formatted instanceof AnimatedTexture) ats.add((AnimatedTexture)formatted);
+                            if (formatted instanceof AnimatedTexture) ats.add((AnimatedTexture) formatted);
                             m = new Material(formatted);
                         }
                         mm.put(mmKey, m); // save in material map
@@ -206,6 +207,7 @@ public abstract class Block {
 
     /**
      * Parses an area node-file's block key child used for loading blocks of an area
+     *
      * @param keyData the area's block_key child node from the area node-file
      * @return a mapping from characters that may appear in the layout to corresponding block information
      */
@@ -221,14 +223,15 @@ public abstract class Block {
      * This method will do its best with the overlays present in the block info but cannot guarantee that connectivity
      * will be aesthetically perfect if not all types of overlay are given. For the best results, ensure that the
      * block has all five overlay textures provided
-     * @param x the x position of the block to calculate connectivity for
-     * @param y the y position of the block to calculate connectivity for
+     *
+     * @param x        the x position of the block to calculate connectivity for
+     * @param y        the y position of the block to calculate connectivity for
      * @param blockMap the block map to use to check for neighbors to calculate connectivity
      * @param overlays a mapping from overlay types to corresponding textures (if an overlay type maps to null, this
      *                 method will assume that no texture for that kind of overlay exists. If this is null, default
      *                 connectivity will be returned
-     * @param cut flags to populate determining what corners to cut (starting at the top-left and continuing counter-
-     *            clockwise) as given by getConnectivity(). Must be initialized to an array of length four
+     * @param cut      flags to populate determining what corners to cut (starting at the top-left and continuing counter-
+     *                 clockwise) as given by getConnectivity(). Must be initialized to an array of length four
      * @return the best possible type of connectivity for the block at the given position given its neighbors and its
      * available overlay textures
      */
@@ -402,15 +405,16 @@ public abstract class Block {
 
     /**
      * Creates the correct texture for a block info using the given connectivity retrieved from getConnectivity().
-     * @param base the base texture to use
-     * @param overlays the mapping from overlay type to overlay texture of the block info that was used to get the given
-     *                 connectivity
-     * @param c the connectivity of the corresponding block
+     *
+     * @param base      the base texture to use
+     * @param overlays  the mapping from overlay type to overlay texture of the block info that was used to get the given
+     *                  connectivity
+     * @param c         the connectivity of the corresponding block
      * @param cutRadius the cut radius to use
-     * @param cut flags determining what corners to cut (starting at the top-left and continuing counter-clockwise) as
-     *            given by getConnectivity()
-     * @param sp the block formatting shader program created via beginBlockFormatting
-     * @param m the square model to use for formatting block textures
+     * @param cut       flags determining what corners to cut (starting at the top-left and continuing counter-clockwise) as
+     *                  given by getConnectivity()
+     * @param sp        the block formatting shader program created via beginBlockFormatting
+     * @param m         the square model to use for formatting block textures
      * @return the created texture
      */
     private static Texture createTexture(Texture base, Map<BlockInfo.OverlayType, Texture> overlays, Connectivity c,
@@ -517,18 +521,15 @@ public abstract class Block {
                     rotations.add(0);
                     if (c == Connectivity.ABOVE_EDGE_LEFT_INSET || tInt) rotations.add(1);
                     if (c == Connectivity.ABOVE_EDGE_RIGHT_INSET || tInt) rotations.add(2);
-                }
-                else if (cs.contains("LEFT_EDGE")) {
+                } else if (cs.contains("LEFT_EDGE")) {
                     rotations.add(1);
                     if (c == Connectivity.LEFT_EDGE_ABOVE_INSET || tInt) rotations.add(3);
                     if (c == Connectivity.LEFT_EDGE_BELOW_INSET || tInt) rotations.add(2);
-                }
-                else if (cs.contains("BELOW_EDGE")) {
+                } else if (cs.contains("BELOW_EDGE")) {
                     rotations.add(2);
                     if (c == Connectivity.BELOW_EDGE_LEFT_INSET || tInt) rotations.add(0);
                     if (c == Connectivity.BELOW_EDGE_RIGHT_INSET || tInt) rotations.add(3);
-                }
-                else if (cs.contains("RIGHT_EDGE")) {
+                } else if (cs.contains("RIGHT_EDGE")) {
                     rotations.add(3);
                     if (c == Connectivity.RIGHT_EDGE_ABOVE_INSET || tInt) rotations.add(0);
                     if (c == Connectivity.RIGHT_EDGE_BELOW_INSET || tInt) rotations.add(2);
@@ -627,6 +628,7 @@ public abstract class Block {
 
     /**
      * Denotes the beginning of block formatting by creating a block formatting shader program
+     *
      * @return returns the block formatting shader program
      */
     private static ShaderProgram beginBlockFormatting() {
@@ -651,8 +653,9 @@ public abstract class Block {
     /**
      * Denotes the ending of block formatting by cleaning up the given shader program and resetting the GL viewport to
      * the correct size based on the given window
+     *
      * @param sp the shader program that was used for block formatting
-     * @param w the window whose frame buffer size will be used to reset the gl viewport size
+     * @param w  the window whose frame buffer size will be used to reset the gl viewport size
      */
     private static void endBlockFormatting(ShaderProgram sp, Window w) {
         sp.cleanup(); // cleanup the shader program
@@ -667,19 +670,20 @@ public abstract class Block {
      * whose width and height should be 2. The shader program and model are taken as parameters with the idea that the
      * calling method will be calling this many times at once and should thus keep a reference to both instead of
      * re-creating them every call
-     * @param base the base block texture
-     * @param overlays the textures to overlay onto the base texture. If empty, no overlay textures will be
-     * @param rotations how to rotate the overlays, kept as a parallel list, when applying it to the base texture. The
-     *                  following values are accepted: 0 - no rotation; 1 - 90 degrees of rotation; 2 - 180 degrees of
-     *                  rotation; 3 - 270 degreees of rotation
-     * @param cutTopLeft whether to apply a cut to the top-left corner
-     * @param cutTopRight whether to apply a cut to the top-right corner
-     * @param cutBottomLeft whether to apply a cut to the bottom-left corner
+     *
+     * @param base           the base block texture
+     * @param overlays       the textures to overlay onto the base texture. If empty, no overlay textures will be
+     * @param rotations      how to rotate the overlays, kept as a parallel list, when applying it to the base texture. The
+     *                       following values are accepted: 0 - no rotation; 1 - 90 degrees of rotation; 2 - 180 degrees of
+     *                       rotation; 3 - 270 degreees of rotation
+     * @param cutTopLeft     whether to apply a cut to the top-left corner
+     * @param cutTopRight    whether to apply a cut to the top-right corner
+     * @param cutBottomLeft  whether to apply a cut to the bottom-left corner
      * @param cutBottomRight whether to apply a cut to the bottom-right corner
-     * @param cutRadius the radius to use when applying cuts. See BlockInfo's constructor for more info on cuts and cut
-     *                  radius
-     * @param sp the block formatting shader program created via beginBlockFormatting
-     * @param m the square model to use for formatting block textures
+     * @param cutRadius      the radius to use when applying cuts. See BlockInfo's constructor for more info on cuts and cut
+     *                       radius
+     * @param sp             the block formatting shader program created via beginBlockFormatting
+     * @param m              the square model to use for formatting block textures
      * @return the formatted texture
      */
     public static Texture applyBlockTextureFormatting(Texture base, List<Texture> overlays, List<Integer> rotations,
@@ -700,7 +704,7 @@ public abstract class Block {
         sp.setUniform("cutBottomLeft", cutBottomLeft ? 1 : 0); // set the bottom-left cutting uniform
         sp.setUniform("cutBottomRight", cutBottomRight ? 1 : 0); // set the bottom-right cutting uniform
         // set the frames uniform based on the base texture's animation properties
-        sp.setUniform("frames", base instanceof AnimatedTexture ? ((AnimatedTexture)base).getFrameCount() : 1);
+        sp.setUniform("frames", base instanceof AnimatedTexture ? ((AnimatedTexture) base).getFrameCount() : 1);
         glActiveTexture(GL_TEXTURE0); // set active texture to the one in slot 0
         glBindTexture(GL_TEXTURE_2D, base.getID()); // bind base texture to slot 0
         for (int i = 0; i < 5; i++) {
@@ -719,13 +723,14 @@ public abstract class Block {
         glDeleteFramebuffers(IDs[0]); // delete the frame buffer object
         Texture formatted = new Texture(IDs[1], base.getWidth(), base.getHeight()); // create the formatted texture
         if (base instanceof AnimatedTexture) { // if the base texture was animated
-            AnimatedTexture at = (AnimatedTexture)base; // cast it to an animated texture
+            AnimatedTexture at = (AnimatedTexture) base; // cast it to an animated texture
             return formatted.animate(at.getFrameCount(), at.getFrameTime(), true); // animate formatted tex
         } else return formatted; // otherwise return vanilla texture
     }
 
     /**
      * Creates a frame buffer object and a texture attachment with the given width and height
+     *
      * @param w the width to give the texture attachment
      * @param h the height to give the textuer attachment
      * @return a length two integer array where [0] is the FBO ID and [1] is the texture attachment's texture ID
@@ -741,7 +746,7 @@ public abstract class Block {
         int texID = glGenTextures(); // generate texture
         glBindTexture(GL_TEXTURE_2D, texID); // bind texture
         // create an empty texture with the given size
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, (ByteBuffer)null);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, (ByteBuffer) null);
         // these parameters make the pixels of the texture crystal clear
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -749,7 +754,7 @@ public abstract class Block {
         glBindTexture(GL_TEXTURE_2D, 0); // unbind texture
 
         // return the fbo and the texture attachment
-        return new int[] { fboID, texID };
+        return new int[]{fboID, texID};
     }
 
     /**
@@ -985,13 +990,13 @@ public abstract class Block {
                 try { // try to convert to a float
                     this.cutRadius = Float.parseFloat(c.getValue());
                 } catch (Exception e) { // if conversion was unsuccessful
-                    Utils.log(Utils.getImproperFormatErrorLine("cut_radius",  "BlockInfo",
+                    Utils.log(Utils.getImproperFormatErrorLine("cut_radius", "BlockInfo",
                             "must be a proper floating pointer number between 0f and 1f inclusive",
                             true), "gameobject.gameworld.Block.BlockInfo", "parseChild(Node)",
                             false); // log as much
                 }
                 if (this.cutRadius < 0f || this.cutRadius > 1f) { // if the cut radius is invalid
-                    Utils.log(Utils.getImproperFormatErrorLine("cut_radius",  "BlockInfo",
+                    Utils.log(Utils.getImproperFormatErrorLine("cut_radius", "BlockInfo",
                             "must be a proper floating pointer number between 0f and 1f inclusive",
                             true), "gameobject.gameworld.Block.BlockInfo", "parseChild(Node)",
                             false); // log as much

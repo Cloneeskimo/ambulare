@@ -41,7 +41,6 @@ public class ROC {
     private List<AnimatedTexture> ats; // list of animated textures to update
     private GameWorld gameWorld;       // the game world to render underneath the static objects
     private GameObject fadeBox;        // fade box used for fading the entire screen for smooth transitions
-    private GameObject background;     // a background game object to be rendered before anything else
     private MouseInputEngine mip;      // mouse input engine to handle mouse input
     private ShaderProgram sp;          // the shader program to use to render static objects
     private float fadeTime;            // amount of time the fade box fade should take
@@ -104,9 +103,6 @@ public class ROC {
         if (this.fadeBox != null) // if there is a fade box,
             this.fadeBox.setScale(2f * (Global.ar > 1f ? Global.ar : 1),
                     2f / (Global.ar < 1f ? Global.ar : 1)); // update it to fit the new window size
-        if (this.background != null) // if there is a background,
-            this.background.setScale(2f * (Global.ar > 1f ? Global.ar : 1),
-                    2f / (Global.ar < 1f ? Global.ar : 1)); //  update it to fit the new window size
         if (this.gameWorld != null) this.gameWorld.getArea().resized(); // tell the game world's area about the resize
     }
 
@@ -138,14 +134,6 @@ public class ROC {
      * Renders everything held within the ROC: the background, the game world, the static objects, and the fade box
      */
     public void render() {
-        if (this.background != null) { // if there is a background
-            this.sp.bind(); // bind static object shader program
-            this.sp.setUniform("texSampler", 0); // set texture sampler uniform to use texture unit 0
-            this.sp.setUniform("ar", Global.ar); // set aspect ratio uniform
-            this.sp.setUniform("arAction", Global.arAction ? 1 : 0); // set aspect ratio action uniform
-            this.background.render(this.sp); // render background
-            this.sp.unbind(); // unbind shader program
-        }
         if (this.gameWorld != null) this.gameWorld.render(); // render the world first, underneath the static objects
         this.sp.bind(); // bind static object shader program
         this.sp.setUniform("texSampler", 0); // set texture sampler uniform to use texture unit 0
@@ -164,7 +152,6 @@ public class ROC {
     public void useBackground(GameObject b) {
         b.setPos(0f, 0f); // set it to the center of the screen
         b.setScale(2f * (Global.ar > 1f ? Global.ar : 1), 2f / (Global.ar < 1f ? Global.ar : 1)); // set size
-        this.background = b; // save background as member
     }
 
     /**
@@ -324,7 +311,6 @@ public class ROC {
     public void cleanup() {
         if (this.sp != null) this.sp.cleanup(); // cleanup shader program
         if (this.gameWorld != null) this.gameWorld.cleanup(); // cleanup game worlds
-        if (this.background != null) this.background.cleanup(); // cleanup background
         if (this.fadeBox != null) this.fadeBox.cleanup(); // cleanup fade box
         for (StaticObject so : this.staticObjects.values()) so.o.cleanup(); // cleanup static objects
         AnimatedTexture.texCoords = new HashMap<>(); // reset animated texture texture coordinate VBOs

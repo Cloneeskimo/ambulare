@@ -2,6 +2,7 @@ package utils;
 
 import graphics.Font;
 import graphics.Window;
+import org.lwjgl.Version;
 
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_1;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_2;
@@ -22,7 +23,8 @@ public class Global {
     /**
      * Static Data
      */
-    public static final String WINDOW_TITLE = "Ambulare"; // the window title
+    public static final String VERSION = "com95"; // the version of the game
+    public static final String WINDOW_TITLE = "Ambulare " + VERSION; // the window title
     public static final float TIME_BETWEEN_FPS_REPORTS = 1f; // time between FPS reports when reports are enabled
     public static final int FPS_REPORTING_TOGGLE_KEY = GLFW_KEY_1; // the key to toggle FPS reporting in the engine
     public static final int POLYGON_MODE_TOGGLE_KEY = GLFW_KEY_2; // the key to toggle between fill/line polygon modes
@@ -40,6 +42,8 @@ public class Global {
      * Initialize any global members
      */
     public static void init() {
+        // log game version
+        Utils.log("Ambulare Version: " + VERSION, "utils.Global", "init()", false);
         // initialize the global font
         Global.FONT = new Font("/textures/ui/font.png", Node.resToNode("/misc/font.node"));
         Utils.log("Global font initialized", "utils.Global", "init()", false); // log

@@ -59,10 +59,10 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
         this.step = step; // save step sounds as member
         if (this.step != null) { // if step sounds were given
             if (this.material.getTexture() instanceof AnimatedTexture) { // and the entity is animated
-                AnimatedTexture at = (AnimatedTexture)this.material.getTexture(); // get the animated texture
+                AnimatedTexture at = (AnimatedTexture) this.material.getTexture(); // get the animated texture
                 at.giveFrameReachCallback((frame) -> { // use a callback for the step sounds
                     if (frame == 6 || frame == 12) { // for now, assume entity is player and play sounds at frames 6/12
-                        this.step[(int)(Math.random() * this.step.length)].play(); // play a random step sound
+                        this.step[(int) (Math.random() * this.step.length)].play(); // play a random step sound
                     }
                 });
             }
