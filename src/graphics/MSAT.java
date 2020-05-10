@@ -59,6 +59,7 @@ public class MSAT extends AnimatedTexture {
             if (this.stateFrame >= this.states[this.state].frames) // if end of frames for current state
                 this.stateFrame = 0; // return to first frame
             this.setAppropriateFrame(); // calculate the appropriate overall frame
+            if (this.frc != null) this.frc.atFrame(this.frame); // invoke the callback if it exists
         }
     }
 

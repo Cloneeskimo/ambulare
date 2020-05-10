@@ -33,7 +33,7 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
         specified by the mouse interaction interface */
     private String name;          // name of the entity
     private TextObject nameplate; // nameplate to display above entity
-    private Sound walk;           // the walking sound of the entity
+    private Sound[] step;         // the step sounds of the entity to be randomized over when the entity takes a step
     private boolean right;        // whether the entity is facing to the right
     private boolean airborne;     // whether the entity is airborne
     private boolean moving;       // whether the entity is moving
@@ -48,16 +48,25 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
      *                 the right, (2) entity airborne and facing to the left, (3) entity airborne and facing to the
      *                 right, (4) entity non-airborne and moving to the left, (5) entity non-airborne and moving to the
      *                 right
-     * @param walk     the walking sound to use for the entity. If null, no walking sound will be used
+     * @param step     an array of step sounds to randomize over when the entity takes a step
      */
-    public Entity(String name, Model model, Material material, Sound walk) {
+    public Entity(String name, Model model, Material material, Sound[] step) {
         super(model, material); // call world object constructor
         this.name = name; // save name as member
         this.nameplate = new TextObject(Global.FONT, this.name); // create nameplate
         this.nameplate.setScale(2.5f, 2.5f); // make nameplate larger
         this.positionNameplate(); // position the nameplate above the entity
-        this.walk = walk; // save walking sound as reference
-        if (this.walk != null) this.walk.setLoop(true); // walking sound should loop
+        this.step = step; // save step sounds as member
+        if (this.step != null) { // if step sounds were given
+            if (this.material.getTexture() instanceof AnimatedTexture) { // and the entity is animated
+                AnimatedTexture at = (AnimatedTexture)this.material.getTexture(); // get the animated texture
+                at.giveFrameReachCallback((frame) -> { // use a callback for the step sounds
+                    if (frame == 6 || frame == 12) { // for now, assume entity is player and play sounds at frames 6/12
+                        this.step[(int)(Math.random() * this.step.length)].play(); // play a random step sound
+                    }
+                });
+            }
+        }
     }
 
     /**
@@ -91,15 +100,6 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
     }
 
     /**
-     * Updates the sound being made by the entity based on its current state
-     */
-    private void updateSound() {
-        if (this.walk == null) return;
-        if (moving && !airborne) this.walk.play();
-        else this.walk.stop();
-    }
-
-    /**
      * Updates the entity's moving flag which will update the animation
      *
      * @param moving the new moving flag
@@ -108,7 +108,6 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
         if (moving != this.moving) { // if moving changed
             this.moving = moving; // update moving flag
             this.updateTextureState(); // and update state in MSAT
-            this.updateSound(); // update the sound
         }
     }
 
@@ -124,7 +123,6 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
         if (airborne != this.airborne) { // if airborne value is different
             this.airborne = airborne; // update flag
             this.updateTextureState(); // and update state in MSAT
-            this.updateSound(); // update sound
         }
     }
 
@@ -196,6 +194,6 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
     @Override
     public void cleanup() {
         super.cleanup(); // cleanup world object properties
-        if (this.walk != null) this.walk.cleanup(); // cleanup walking sound
+        if (this.step != null) for (Sound s : this.step) s.cleanup(); // cleanup step sounds
     }
 }

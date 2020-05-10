@@ -179,6 +179,12 @@ public class Utils {
                         "fileToByteBuffer(String, boolean, int)", true); // crash the program
             }
         }
+        if (is == null) { // if the input stream is null
+            Utils.handleException(new Exception("Could not convert load file at " + (resRelative ? "resource-relative "
+                            : "") + "path: '"  + path + " - no such file exists."), "utils.Utils",
+                    "fileToByteBuffer(String, boolean, int)", true); // crash the program
+
+        }
         ReadableByteChannel rbc = Channels.newChannel(is); // create a readable byte channel using the input stream
         ByteBuffer buffer = createByteBuffer(bufferSize); // create a buffer with the given starting size
         try { // try to read bytes from the RBC into the byte buffer

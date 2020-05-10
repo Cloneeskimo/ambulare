@@ -1,5 +1,6 @@
 package graphics;
 
+import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -52,13 +53,14 @@ public class AnimatedTexture extends Texture {
     /**
      * Members
      */
-    protected int frames;          // total amount of frames and current frame
-    protected int frame;           // current frame of animation
-    protected float frameTime;     // amount of time per frame
-    protected float frameTimeLeft; // amount of time left for the current frame
+    protected int frames;             // total amount of frames and current frame
+    protected int frame;              // current frame of animation
+    protected float frameTime;        // amount of time per frame
+    protected float frameTimeLeft;    // amount of time left for the current frame
+    protected FrameReachCallback frc; // a callback to be called when a new frame in the animation is reached
 
     /**
-     * Constructor
+     * Constructs the animated texture by creating a texture at the given path and with the given animated properties
      *
      * @param path      the path to the image
      * @param resPath   whether the given path is resource-relative
@@ -74,6 +76,15 @@ public class AnimatedTexture extends Texture {
         this.frameTimeLeft = randStart ? ((float) Math.random() * frameTime) : frameTime; // calc starting time left
     }
 
+    /**
+     * Constructs the animated texture with the given openGL texture ID, width and height, and animation properties
+     * @param id the openGL texture ID to use
+     * @param w the width of the texture
+     * @param h the height of the texture
+     * @param frames    the total amount of frames
+     * @param frameTime the amount of time (in seconds) to give each frame
+     * @param randStart whether to start the animation at a random time
+     */
     public AnimatedTexture(int id, int w, int h, int frames, float frameTime, boolean randStart) {
         super(id, w, h);
         this.frames = frames;
@@ -91,15 +102,16 @@ public class AnimatedTexture extends Texture {
             this.frameTimeLeft = frameTime; // reset frame time counter
             this.frame++; // go to the next frame
             if (this.frame >= this.frames) this.frame = 0; // go back to start after last frame
+            if (this.frc != null) this.frc.atFrame(this.frame); // invoke the callback if it exists
         }
     }
 
-    public int getFrameCount() {
-        return this.frames;
-    }
-
-    public float getFrameTime() {
-        return this.frameTime;
+    /**
+     * Sets a frame reach callback to be invoked whenever a new frame is reached in the animation
+     * @param frc the frame reach callback to save and invoke
+     */
+    public void giveFrameReachCallback(FrameReachCallback frc) {
+        this.frc = frc; // save new frame reach callback as a member
     }
 
     /**
@@ -111,5 +123,32 @@ public class AnimatedTexture extends Texture {
      */
     public int getTexCoordVBO(boolean flip) {
         return AnimatedTexture.getTexCoordVBO(this.frame, this.frames, flip);
+    }
+
+    /**
+     * @return the amount of frames the animated texture has
+     */
+    public int getFrameCount() {
+        return this.frames;
+    }
+
+    /**
+     * @return how long each frame in the animated texture should last
+     */
+    public float getFrameTime() {
+        return this.frameTime;
+    }
+
+    /**
+     * This interface can be used to create a callback whenever a new frame is reached in the animation
+     */
+    @FunctionalInterface
+    public interface FrameReachCallback {
+
+        /**
+         * The method that will be called when a new frame is reached
+         * @param frame the frame that was reached
+         */
+        void atFrame(int frame);
     }
 }
