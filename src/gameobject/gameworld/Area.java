@@ -61,6 +61,10 @@ public class Area {
     private final Block.BlockModel bm = new Block.BlockModel(); /* all blocks use same 1x1 square model. See
                                                                    Block.BlockModel for more info on how it extends a
                                                                    regular model */
+    private float startingSunRotation = -1f;                    /* the rotation to set the sun to when the area is
+                                                                   entered. If -1, the sun's rotation will not be
+                                                                   changed */
+    private float sunSpeed = 2f;                                // the sun's speed while in this area
     private BackDrop backdrop;                                  // the backdrop rendered behind the world
     private String name = "Unnamed";                            // the name of the area
     private boolean lightForeground = false;                    // whether to apply lights to objects in the foreground
@@ -102,6 +106,13 @@ public class Area {
      * <p>
      * - backdrop [optional][default: default backdrop]: the backdrop to use for the area. This node should be
      * formatted as a backdrop node. See Area.BackDrop's constructor for more information
+     * <p>
+     * - starting_sun_rotation [optional][default: the current rotation of the world's sun]: the rotation (in
+     * non-negative degrees) to set the sun to when the area is entered
+     * <p>
+     * - sun_speed [optional][default: 2f]: the speed of the sun. This setting can be combined with sun_rotation to
+     * effectively simulate indoor settings (sun rotation of 270 and sun_speed of 0) where windows could then be decor
+     * light sources, or settings where the sun is always setting, or settings where the sun moves super quickly, etc
      * <p>
      * Note that, if any of the info above is improperly formatted, a message saying as much will be logged. As
      * such, when designing areas to be loaded into the game, the logs should be checked often to make sure the
@@ -146,13 +157,45 @@ public class Area {
         // parse other area properties
         try { // wrap entire parsing in a try/catch to catch and log any problems
             for (Node c : info.getChildren()) { // go through each child and parse the values
-                String n = c.getName(); // get name of child
+                String n = c.getName().toLowerCase(); // get name of child in lowercases
                 if (n.equals("name")) { // if the child is for the area's name
                     this.name = c.getValue(); // save name
                 } else if (n.equals("light_foreground")) { // light foreground
                     this.lightForeground = Boolean.parseBoolean(c.getValue()); // save value
                 } else if (n.equals("backdrop")) { // backdrop
                     this.backdrop = new BackDrop(c, this.blockMap.length, this.blockMap[0].length); // create with node
+                } else if (n.equals("starting_sun_rotation")) { // starting sun rotation
+                    try { // try to convert to an float
+                        this.startingSunRotation = Float.parseFloat(c.getValue());
+                    } catch (Exception e) { // if conversion was unsuccessful
+                        Utils.log(Utils.getImproperFormatErrorLine("starting_sun_rotation",
+                                "Area", "must be a proper float greater than or equal to 0 and less " +
+                                        "than 360", true), "gameobject.gameworld.Area",
+                                "Area(Node)", false); // log as much
+                    }
+                    if (this.startingSunRotation < 0f || this.startingSunRotation >= 360f) { // if invalid rotation
+                        Utils.log(Utils.getImproperFormatErrorLine("starting_sun_rotation",
+                                "Area", "must be a proper float greater than or equal to 0f and less " +
+                                        "than 360f", true), "gameobject.gameworld.Areae",
+                                "Area(Node)", false); // log as much
+                        this.startingSunRotation = -1f; // and return to default rotation
+                    }
+                } else if (n.equals("sun_speed")) { // sun speed
+                    try { // try to convert to an float
+                        this.sunSpeed = Float.parseFloat(c.getValue());
+                    } catch (Exception e) { // if conversion was unsuccessful
+                        Utils.log(Utils.getImproperFormatErrorLine("sun_speed",
+                                "Area", "must be a proper float greater than or equal to 0f",
+                                true), "gameobject.gameworld.Area", "Area(Node)",
+                                false); // log as much
+                    }
+                    if (this.sunSpeed < 0f) { // if invalid speed
+                        Utils.log(Utils.getImproperFormatErrorLine("sun_speed",
+                                "Area", "must be a proper float greater than or equal to 0f",
+                                true), "gameobject.gameworld.Area", "Area(Node)",
+                                false); // log as much
+                        this.sunSpeed = 2f; // and return to default speed
+                    }
                 } else { // if the child is unrecognized
                     if (!(n.equals("block_key")) && !(n.equals("decor_key")) && !(n.equals("background_layout")) &&
                             !(n.equals("middleground_layout")) && !(n.equals("foreground_layout")))
@@ -227,6 +270,20 @@ public class Area {
      */
     public String getName() {
         return this.name;
+    }
+
+    /**
+     * @return the rotation the sun should be at (in non-negative degrees) when the area is entered
+     */
+    public float getStartingSunRotation() {
+        return this.startingSunRotation;
+    }
+
+    /**
+     * @return the speed the sun should move at when in the area
+     */
+    public float getSunSpeed() {
+        return this.sunSpeed;
     }
 
     /**

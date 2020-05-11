@@ -47,10 +47,11 @@ public class GameWorld {
      */
     public GameWorld(long windowHandle, Area startingArea) {
         this.objects = new ArrayList<>(); // create empty objects list
-        this.dnc = new DayNightCycle(0f, 20f); // initialize day/night cycle
         this.initSP(); // initialize shader program
         this.cam = new Camera(); // create the camera
         this.area = startingArea; // save the starting area as a member
+        float ssr = area.getStartingSunRotation(); // get the starting sun rotation from the area
+        this.dnc = new DayNightCycle(ssr == -1 ? 0f : ssr, area.getSunSpeed()); // initialize day/night cycle
         this.area.useCam(this.cam); // give the camera to the area to use for rendering
         PhysicsEngine.giveBlockMap(this.area.getBlockMap()); // give the area's block map to the physics engine
         // register GLFW window scroll callback for camera zoom

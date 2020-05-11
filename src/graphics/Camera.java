@@ -21,8 +21,8 @@ public class Camera {
     private float zoom;                              // zoom
     private GameObject following;                    // a game object to follow, if assigned
     public final static float DEFAULT_ZOOM = 0.2f;   // default zoom
-    public final static float MIN_ZOOM = 0.02f;      // minimum zoom
-    public final static float MAX_ZOOM = 1.2f;       // maximum zoom
+    public final static float MIN_ZOOM = 0.15f;       // minimum zoom
+    public final static float MAX_ZOOM = 0.9f;         // maximum zoom
 
     /**
      * Constructs the camera with a specified zoom
