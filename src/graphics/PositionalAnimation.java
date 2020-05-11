@@ -79,6 +79,13 @@ public class PositionalAnimation {
     }
 
     /**
+     * @return the position animation's total assigned duration
+     */
+    public float getDuration() {
+        return this.duration;
+    }
+
+    /**
      * @return the correct x for the owning game object based on how much time has passed
      */
     public float getX() {

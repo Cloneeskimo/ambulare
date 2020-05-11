@@ -3,6 +3,7 @@ package gameobject.gameworld;
 import graphics.Camera;
 import graphics.ShaderProgram;
 import utils.Global;
+import utils.Pair;
 import utils.PhysicsEngine;
 import utils.Utils;
 
@@ -24,11 +25,6 @@ import static org.lwjgl.opengl.GL11.glClearColor;
  * use for rendering
  */
 public class GameWorld {
-
-    /**
-     * Static Members
-     */
-    public static final float ZOOM_SENSITIVITY = 1.1f; // how sensitive the camera zoom is to scrolling
 
     /**
      * Members
@@ -56,7 +52,7 @@ public class GameWorld {
         PhysicsEngine.giveBlockMap(this.area.getBlockMap()); // give the area's block map to the physics engine
         // register GLFW window scroll callback for camera zoom
         glfwSetScrollCallback(windowHandle, (w, x, y) -> { // when the user scrolls
-            this.cam.zoom(y > 0 ? ZOOM_SENSITIVITY : (1f / ZOOM_SENSITIVITY)); // zoom on camera
+            this.cam.aestheticZoom(y > 0 ? 1.1f : (1f / 1.1f)); // zoom on camera
         });
     }
 
@@ -106,7 +102,7 @@ public class GameWorld {
         this.sp.setUniform("camY", this.cam.getY()); // set camera y uniform
         this.sp.setUniform("camZoom", this.cam.getZoom()); // set camera zoom uniform
         this.sp.setUniform("sunPresence", this.dnc.getSunPresence()); // set sun presence uniform
-        this.area.render(this.sp, this.objects); // render the area with the current world objects
+        this.area.render(this.sp, this.objects, this.cam.getView()); // render the area with the current world objects
         this.sp.unbind(); // unbind shader program
     }
 

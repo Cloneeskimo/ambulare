@@ -1,6 +1,10 @@
 package graphics;
 
 import gameobject.GameObject;
+import utils.Global;
+import utils.Pair;
+import utils.PhysicsEngine;
+import utils.Transformation;
 
 /*
  * ROC.java
@@ -15,14 +19,25 @@ import gameobject.GameObject;
 public class Camera {
 
     /**
+     * Static Data
+     */
+    public static final float ZOOM_SENSITIVITY = 0.02f; /* how sensitive aesthetic zooms are to their parameters. Any
+        zoom acceleration given in the aestheticZoom() method will be multiplied by this factor */
+    public static final float ZOOM_ACCELERATION_FRICTION = 0.5f; /* how much friction to apply to zoom acceleration. In
+        other words, how long should zoom acceleration last? Zoom acceleration is multiplied by this every update */
+    public static final float ZOOM_VELOCITY_FRICTION = 0.9f; /* how much friction to apply to zoom velocity. In other
+        words, given a lack of acceleration, how long should zoom velocity last? Zoom velocity is multiplied by this
+        every update */
+
+    /**
      * Members
      */
     private float x, y, vx, vy;                      // position and velocity
-    private float zoom;                              // zoom
+    private float zoom, vz, az;                      // zoom, zoom velocity, zoom acceleration
     private GameObject following;                    // a game object to follow, if assigned
     public final static float DEFAULT_ZOOM = 0.2f;   // default zoom
-    public final static float MIN_ZOOM = 0.15f;       // minimum zoom
-    public final static float MAX_ZOOM = 0.9f;         // maximum zoom
+    public final static float MIN_ZOOM = 0.15f;      // minimum zoom
+    public final static float MAX_ZOOM = 0.9f;       // maximum zoom
 
     /**
      * Constructs the camera with a specified zoom
@@ -69,6 +84,10 @@ public class Camera {
             this.x = this.following.getX();
             this.y = this.following.getY();
         }
+        this.setZoom(this.zoom * (this.vz + 1)); // update zoom based on zoom velocity
+        this.vz += this.az; // update velocity based on zoom acceleration
+        this.az *= ZOOM_ACCELERATION_FRICTION; // apply constant friction to zoom acceleration
+        this.vz *= ZOOM_VELOCITY_FRICTION; // apply constant friction to zoom velocity
     }
 
     /**
@@ -90,10 +109,11 @@ public class Camera {
     }
 
     /**
-     * Change the zoom by the given magnitude in a multiplicative manner
+     * Change the zoom using an aesthetic zoom based on treating the given value as a zoom acceleration
+     * @param za the zoom acceleration
      */
-    public void zoom(float dz) {
-        this.setZoom(this.zoom * dz);
+    public void aestheticZoom(float za) {
+        this.az = (za - 1) * ZOOM_SENSITIVITY;
     }
 
     /**
@@ -119,6 +139,15 @@ public class Camera {
      */
     public void setVY(float vy) {
         this.vy = vy;
+    }
+
+    /**
+     * @return an axis-aligned bounding box defining the camera's view
+     */
+    public PhysicsEngine.AABB getView() {
+        // get the width/height of the bounding box based off zoom and aspect ratio
+        Pair<Float> size = Transformation.deaspect(new Pair<>(2 / this.zoom, 2 / this.zoom), Global.ar);
+        return new PhysicsEngine.AABB(this.x,this.y, size.x, size.y); // create and return bounding box
     }
 
     /**

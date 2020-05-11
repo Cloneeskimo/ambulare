@@ -61,6 +61,7 @@ public class Area {
     private final Block.BlockModel bm = new Block.BlockModel(); /* all blocks use same 1x1 square model. See
                                                                    Block.BlockModel for more info on how it extends a
                                                                    regular model */
+    private Camera cam;                                         // the camera to use for area rendering
     private float startingSunRotation = -1f;                    /* the rotation to set the sun to when the area is
                                                                    entered. If -1, the sun's rotation will not be
                                                                    changed */
@@ -68,6 +69,9 @@ public class Area {
     private BackDrop backdrop;                                  // the backdrop rendered behind the world
     private String name = "Unnamed";                            // the name of the area
     private boolean lightForeground = false;                    // whether to apply lights to objects in the foreground
+
+    private float avg;
+    private int sum = 1;
 
     /**
      * Constructs the area by compiling information from a given node. Most of the loading process is actually done in
@@ -228,17 +232,25 @@ public class Area {
      *
      * @param sp the shader program to use for rendering
      * @param os the lists of world objects to render in the area
+     * @param camView the camera view's axis-aligned bounding box which will be used to only render objects within view.
+     *                This cuts rendering time down by a lot (half the rendering time in some cases according to my
+     *                tests!)
      */
-    public void render(ShaderProgram sp, List<WorldObject> os) {
+    public void render(ShaderProgram sp, List<WorldObject> os, PhysicsEngine.AABB camView) {
+        camView.scale(2f); // scale camera-view to avoid clipping large objects
         this.backdrop.render(sp); // render the backdrop
-        renderBlocks(this.bm, sp, this.blocks[0]); // render the background blocks
-        for (GameObject o : this.decor[0]) o.render(sp); // render the background decor
-        renderBlocks(this.bm, sp, this.blocks[1]); // render the middleground blocks
-        for (WorldObject wo : os) wo.render(sp); // render world objects (middleground) from the game world
+        renderBlocks(this.bm, sp, this.blocks[0], camView); // render the background blocks
+        // render background decor that is within the camera's view
+        for (GameObject o : this.decor[0]) if (camView.contains(o.getX(), o.getY())) o.render(sp);
+        //for (GameObject o : this.decor[0]) o.render(sp);
+        renderBlocks(this.bm, sp, this.blocks[1], camView); // render the middleground blocks
+        // render world objects (middleground) from the game world that are within the camera's view
+        for (WorldObject wo : os) if (camView.contains(wo.getX(), wo.getY())) wo.render(sp);
         // disable light usage for foreground objects if the setting is set to false
         if (!this.lightForeground) sp.setUniform("useLights", 0);
-        renderBlocks(this.bm, sp, this.blocks[2]); // render the foreground blocks
-        for (GameObject o : this.decor[1]) o.render(sp); // render the foreground decor
+        renderBlocks(this.bm, sp, this.blocks[2], camView); // render the foreground blocks
+        // render foreground decor that is within the camera's view
+        for (GameObject o : this.decor[1]) if (camView.contains(o.getX(), o.getY())) o.render(sp);
     }
 
     /**
@@ -248,14 +260,15 @@ public class Area {
      * @param cam the camera being used
      */
     public void useCam(Camera cam) {
-        this.backdrop.useCam(cam);
+        this.cam = cam; // save camera reference
+        this.backdrop.useCam(cam); // give camera reference to the backdrop
     }
 
     /**
      * Handles a window resize by telling the backdrop it needs to resize to fit the new window size
      */
     public void resized() {
-        this.backdrop.resized();
+        this.backdrop.resized(); // tell the backdrop about the resize
     }
 
     /**

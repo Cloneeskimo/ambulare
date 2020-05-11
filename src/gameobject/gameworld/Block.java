@@ -2,10 +2,7 @@ package gameobject.gameworld;
 
 import graphics.*;
 import org.lwjgl.opengl.GL32;
-import utils.Node;
-import utils.Pair;
-import utils.Transformation;
-import utils.Utils;
+import utils.*;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -46,9 +43,11 @@ public abstract class Block {
      * @param blockPositions the list of block positions grouped together by material. The reason it is set up as a map
      *                       from material to pair lists is because by rendering all blocks of a certain material at
      *                       once, repetitive calls can be avoided
+     * @param camView        the axis-aligned bounding box to check the block's position against. If the block is not
+     *                       within the camera's view, it will not be rendered
      */
     public static void renderBlocks(BlockModel bm, ShaderProgram sp,
-                                    Map<Material, List<Pair<Integer>>> blockPositions) {
+                                    Map<Material, List<Pair<Integer>>> blockPositions, PhysicsEngine.AABB camView) {
         for (Material m : blockPositions.keySet()) { // for each material
             Texture t = m.getTexture(); // get texture for material
             if (t instanceof AnimatedTexture) bm.useTexCoordVBO(((AnimatedTexture) t).getTexCoordVBO(false),
@@ -56,7 +55,7 @@ public abstract class Block {
                 // if the texture isn't animated, just use the entire texture
             else bm.useTexCoordVBO(AnimatedTexture.getTexCoordVBO(0, 1, false), false);
             m.setUniforms(sp); // set the appropriate material uniforms
-            bm.renderBlocks(sp, blockPositions.get(m)); // render all the blocks with that material at once
+            bm.renderBlocks(sp, blockPositions.get(m), camView); // render all the blocks with that material at once
         }
     }
 
@@ -128,6 +127,7 @@ public abstract class Block {
             loadLayoutLayerBlocks(mm, blocks[2], foreground, k, ats, bmw, bmh, sp, m); // load foreground
         for (BlockInfo bi : k.values()) bi.cleanup(); // cleanup block info overlay textures
         endBlockFormatting(sp, w); // end block formatting
+        for (BlockInfo bi : k.values()) bi.cleanup(); // cleanup block infos
         return blockMap; // return the middleground block map to use for collision
     }
 
@@ -777,18 +777,22 @@ public abstract class Block {
          * Renders the set of blocks corresponding to the given list of block positions. Note that all blocks in the
          * given list should have the same material and that this method should be called once for each material
          *
-         * @param sp     the shader program to use to render
-         * @param blocks the positions of the blocks to render
+         * @param sp      the shader program to use to render
+         * @param blocks  the positions of the blocks to render
+         * @param camView the axis-aligned bounding box to check the block's position against. If the block is not
+         *                within the camera's view, it will not be rendered
          */
-        public void renderBlocks(ShaderProgram sp, List<Pair<Integer>> blocks) {
+        public void renderBlocks(ShaderProgram sp, List<Pair<Integer>> blocks, PhysicsEngine.AABB camView) {
             glBindVertexArray(this.ids[0]); // bind vao
             glEnableVertexAttribArray(0); // enable model coordinate vbo
             glEnableVertexAttribArray(1); // enable texture coordinate vbo
             for (Pair<Integer> b : blocks) { // loop through all blocks
-                // set the position of the block in the shader program
-                sp.setUniform("x", Transformation.getCenterOfCellComponent(b.x));
-                sp.setUniform("y", Transformation.getCenterOfCellComponent(b.y));
-                glDrawElements(GL_TRIANGLES, this.idx, GL_UNSIGNED_INT, 0); // draw block model at that position
+                if (camView.contains(b.x, b.y)) { // if the block is within the camera's view
+                    // set the position of the block in the shader program
+                    sp.setUniform("x", Transformation.getCenterOfCellComponent(b.x));
+                    sp.setUniform("y", Transformation.getCenterOfCellComponent(b.y));
+                    glDrawElements(GL_TRIANGLES, this.idx, GL_UNSIGNED_INT, 0); // draw block model at that position
+                }
             }
             glDisableVertexAttribArray(0); // disable model coordinate vbo
             glDisableVertexAttribArray(1); // disable texture coordinate vbo

@@ -453,6 +453,27 @@ public class PhysicsEngine {
         }
 
         /**
+         * Calculates if the given point is within the axis-aligned bounding box
+         * @param x the x of the point to check
+         * @param y the y of the point to check
+         * @return whether the given point is within the axis-aligned bounding box
+         */
+        public boolean contains(float x, float y) {
+            return (x >= this.cx - this.w2 && x <= this.cx + this.w2) &&
+                    (y >= this.cy - this.h2 && y <= this.cy + this.h2);
+        }
+
+        /**
+         * Multiplies the width and height of the axis-aligned bounding box by the given factor, essentially shrinking
+         * or expanding it
+         * @param factor the factor to scale by
+         */
+        public void scale(float factor) {
+            this.w2 *= factor; // scale width
+            this.h2 *= factor; // scale height
+        }
+
+        /**
          * @return the center-point x of the axis-aligned bounding box
          */
         public float getCX() {

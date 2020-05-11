@@ -25,17 +25,18 @@ public class FittingBox {
     /**
      * Constructor
      *
-     * @param corners the four corners of the bounding box, x before y, in the following order: bottom left, top left,
+     * @param corners the four corners of the fitting box, x before y, in the following order: bottom left, top left,
      *                top right, then bottom right. These points should be rotated already. That is, passing a
-     *                non-zero value to r will not cause the bounding box to rotate the points
-     * @param r       how rotated the bounding box is
+     *                non-zero value to r will not cause the fitting box to rotate the points
+     * @param r       how rotated the fitting box is
      * @param cx      the center point x
      * @param cy      the center point y
      */
     public FittingBox(float[] corners, float r, float cx, float cy) {
         if (corners.length != 8) // if invalid amount of corners
-            Utils.handleException(new Exception("Invalid corners given for BoundingBox. Length should be 8, is " +
-                    "actually " + corners.length), "BoundingBox", "BoundingBox(float[]", true); // throw exception
+            Utils.handleException(new Exception("Invalid corners given for FittingBox. Length should be 8, is " +
+                    "actually " + corners.length), "FittingBox", "FittingBox(float[], float, float, float)",
+                    true); // throw exception
         this.corners = corners;
         this.r = r;
         this.cx = cx;
