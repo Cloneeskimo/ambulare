@@ -1,0 +1,12 @@
+block info:
+{
+    # specify the texture path for dirt block
+    texture_path: /textures/blocks/gray_brick/dark_gray_brick_worn-1.png
+    texture_path: /textures/blocks/gray_brick/dark_gray_brick_worn-2.png
+
+    # specify a base path to overlay textures to use for corners/edges
+    overlay_path: /textures/blocks/gray_brick/dark_gray_brick
+
+    # specify no cut radius
+    cut_radius: 0f
+}

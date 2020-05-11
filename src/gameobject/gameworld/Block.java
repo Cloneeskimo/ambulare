@@ -120,10 +120,12 @@ public abstract class Block {
         ShaderProgram sp = beginBlockFormatting(); // create shader program for block formatting
         Model m = Model.getStdGridRect(2, 2); // create model for texture creation
         // load layouts for each layer
-        loadLayoutLayerBlocks(mm, blocks[0], background, k, ats, bmw, bmh, sp, m); // load background
+        if (background != null) // if there is a background
+            loadLayoutLayerBlocks(mm, blocks[0], background, k, ats, bmw, bmh, sp, m); // load background
         // load middleground and save the block map for collision
         boolean[][] blockMap = loadLayoutLayerBlocks(mm, blocks[1], middleground, k, ats, bmw, bmh, sp, m);
-        loadLayoutLayerBlocks(mm, blocks[2], foreground, k, ats, bmw, bmh, sp, m); // load foreground
+        if (foreground != null) // if there is a foreground
+            loadLayoutLayerBlocks(mm, blocks[2], foreground, k, ats, bmw, bmh, sp, m); // load foreground
         for (BlockInfo bi : k.values()) bi.cleanup(); // cleanup block info overlay textures
         endBlockFormatting(sp, w); // end block formatting
         return blockMap; // return the middleground block map to use for collision

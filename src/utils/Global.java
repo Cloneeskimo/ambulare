@@ -23,7 +23,7 @@ public class Global {
     /**
      * Static Data
      */
-    public static final String VERSION = "com96"; // the version of the game
+    public static final String VERSION = "com97"; // the version of the game
     public static final String WINDOW_TITLE = "Ambulare " + VERSION; // the window title
     public static final float TIME_BETWEEN_FPS_REPORTS = 1f; // time between FPS reports when reports are enabled
     public static final int FPS_REPORTING_TOGGLE_KEY = GLFW_KEY_1; // the key to toggle FPS reporting in the engine

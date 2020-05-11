@@ -30,7 +30,6 @@ public class WorldLogic extends GameLogic {
      * ROC (UI Element) Tagss
      */
     private static final int TAG_PLAYER_POS = 0; // player position text
-    private static final int TAG_RESET = 1;      // reset message text
     private static final int TAG_RETURN = 2;     // return button
     private static final int TAG_AREA = 3;       // area name text
 
@@ -94,24 +93,6 @@ public class WorldLogic extends GameLogic {
         player.getPhysicsProperties().rigid = true; // make player rigid
         this.roc.addToWorld(player); // add player to world
         this.roc.getGameWorld().getCam().follow(player); // make camera follow player
-
-        // create a random object
-        Entity o = new Entity("Ball", Model.getStdGridRect(1, 1), new Material(
-                new float[]{1.0f, 0.0f, 0.0f, 1.0f}), null); // as a pink square
-        o.setScale(0.3f, 0.3f); // scale down a lot
-        o.getPhysicsProperties().bounciness = 0.9f; // make very bouncy
-        o.getPhysicsProperties().mass = 0.6f; // make it light
-        o.setPos(Transformation.getCenterOfCell(new Pair<>(2, 9))); // move to grid cell 2, 7
-        this.roc.addToWorld(o); // add to ROC
-
-        // create another random object
-        o = new Entity("Ball", Model.getStdGridRect(1, 1), new Material(
-                new float[]{1.0f, 0.0f, 0.0f, 1.0f}), null); // as a pink square
-        o.setScale(0.3f, 0.3f); // scale down a lot
-        o.getPhysicsProperties().bounciness = 0.9f; // make very bouncy
-        o.getPhysicsProperties().mass = 0.6f; // make it light
-        o.setPos(Transformation.getCenterOfCell(new Pair<>(0, 9))); // move to grid cell 5, 7
-        this.roc.addToWorld(o); // add to ROC
     }
 
     /**
@@ -141,11 +122,6 @@ public class WorldLogic extends GameLogic {
                 false, new ROC.PositionSettings(0f, 1f, true, 0.1f));
         this.roc.getStaticGameObject(TAG_AREA).setScale(0.8f, 0.8f); // scale area name
 
-        // create and add reset info
-        this.roc.addStaticObject(new TextObject(Global.FONT, "Press enter to reset"), TAG_RESET, false,
-                new ROC.PositionSettings(0f, -1f, true, 0.1f)); // create and add
-        this.roc.getStaticGameObject(TAG_RESET).setScale(0.7f, 0.7f); // scale area name
-
         // ensure all hud items are placed correctly
         this.roc.ensureAllPlacements();
     }
@@ -160,14 +136,6 @@ public class WorldLogic extends GameLogic {
     public void keyboardInput(int key, int action) {
         if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) { // if space is pressed
             if (PhysicsEngine.nextTo(player, 0f, -1f)) player.setVY(10f); // jump if there is something under
-        } else if (key == GLFW_KEY_ENTER && action == GLFW_RELEASE) { // if enter is pressed
-            player.givePosAnim(new PositionalAnimation(1.5f, 9.5f, null, 1.0f)); // reset player
-            // reset first random object
-            roc.getGameWorld().getWorldObject(1).givePosAnim(new PositionalAnimation(0.5f, 9.5f, null,
-                    1.0f));
-            // reset second random object
-            roc.getGameWorld().getWorldObject(2).givePosAnim(new PositionalAnimation(2.5f, 9.5f, null,
-                    1.0f));
         }
     }
 

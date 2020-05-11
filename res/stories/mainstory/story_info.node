@@ -8,8 +8,8 @@ story info:
     author: Jacob Oaks
 
     # the path to the starting area
-    starting_area: /areas/area.node
+    starting_area: /areas/dank_cellar.node
 
     # the starting position of the player
-    starting_position: 1 9
+    starting_position: 4 9
 }

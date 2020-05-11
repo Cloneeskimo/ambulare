@@ -1,0 +1,84 @@
+area:
+{
+    # specify the name of the area
+    name: Dank Cellar
+
+    # specify that lights should be applied to foreground objects
+    light_foreground: true
+
+    # specify that it should always be night/dark in the area
+    starting_sun_rotation: 270f
+    sun_speed: 0f
+
+    # specify the backdrop as just a gray background matching the bricks
+    backdrop:
+    {
+        color: .145f .145f .145f 1f
+    }
+
+    # provide a key mapping from characters in the layout to blocks
+    block_key:
+    {
+        # gray bricks as the main block
+        g: resfrom /stories/mainstory/blocks/gray_brick.node
+        # background gray bricks which are slightly dark
+        b:
+        {
+            # specify the texture path for dirt block
+            texture_path: /textures/blocks/gray_brick/dark_gray_brick_background.png
+
+            # specify no cut radius
+            cut_radius: 0f
+        }
+    }
+
+    # provides a key mapping characters in the layout to decor
+    decor_key:
+    {
+        # weeds
+        w:
+        {
+            texture_path: /textures/decor/foliage/weeds.png
+            texture_path: /textures/decor/foliage/weeds2.png
+            pin: below
+            x_random_interval: 0.4f
+            y_offset: -0.09f
+        }
+    }
+
+    # specify the layout of the background
+    background_layout:
+    {
+        00:
+        01:
+        02:                                          bbbbbbbbbbbbbbbbbbbbb bbbbbb
+        03:    bbbbb bbbbbbbbbbbbbbbbbbbbbbbbbbb    bbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+        04:    bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb  bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+        05:    bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb  bbbbbbbbbb   bb  bb  bb
+        06:             bb  bb  bb  bb     bbbbbb  bbbbbbb bbb  bbbbbbbbbb
+        07:             bbbbbbbbbbbbbb     bb  bb  bbbbb bbbbb
+        08:                                bbbbbb   bbbbbbbbbb
+        09:                                bbbbbbbbb bbbbbbbbb
+        10:                                bbbbbbbbbbbbbbbbbbb
+        11:                                bbbbb bbbbbb bbbbbb
+    }
+
+    # specify the layout of the middleground
+    middleground_layout:
+    {
+        00: ggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg
+        01: ggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg
+        02: ggggggggggggggggggggggggggggggggggggggggg                     g      gg
+        03: ggg     g                           gggg                             gg
+        04: ggg                                  gg          www  ww  ww         gg
+        05: gggwwwwwwwww  ww  ww  ww  wwwww      gg          ggg  gg  gg  ggggggggg
+        06: gggggggggggg  gg  gg  gg  ggggg  ww  gg       g   gg          ggggggggg
+        07: gggggggggggg              ggggg  gg  gg     g     gg
+        08:                              gg      ggg          gg
+        09:                              gg         g         gg
+        10:                              gg  g           g    gg
+        11:                              ggwwwwwgwwwwwwgwwwwwwgg
+        12:                              ggggggggggggggggggggggg
+        13:                              ggggggggggggggggggggggg
+    }
+}
