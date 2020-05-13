@@ -127,7 +127,6 @@ public abstract class Block {
             loadLayoutLayerBlocks(mm, blocks[2], foreground, k, ats, bmw, bmh, sp, m); // load foreground
         for (BlockInfo bi : k.values()) bi.cleanup(); // cleanup block info overlay textures
         endBlockFormatting(sp, w); // end block formatting
-        for (BlockInfo bi : k.values()) bi.cleanup(); // cleanup block infos
         return blockMap; // return the middleground block map to use for collision
     }
 
@@ -639,7 +638,7 @@ public abstract class Block {
                 "/shaders/format_block_fragment.glsl");
         // register uniforms
         sp.registerUniform("base");
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 4; i++) {
             sp.registerUniform("overlays[" + i + "]");
             sp.registerUniform("rotations[" + i + "]");
         }
@@ -693,11 +692,12 @@ public abstract class Block {
                                                       boolean cutBottomRight, float cutRadius, ShaderProgram sp,
                                                       Model m) {
         // create the FBO and the texture attachment
-        int[] IDs = createFBOWithTextureAttachment(base.getWidth(), base.getHeight());
+        int[] IDs = Utils.createFBOWithTextureAttachment(base.getWidth(), base.getHeight());
 
         // combine the textures by rendering them to the frame buffer using the block formatting shader program
         glBindFramebuffer(GL_FRAMEBUFFER, IDs[0]); // bind the frame buffer object
         glViewport(0, 0, base.getWidth(), base.getHeight()); // set the viewport to the size of the texture
+        glClear(GL_COLOR_BUFFER_BIT);
         sp.bind(); // bind the shader program
         sp.setUniform("base", 0); // set the base texture sampler uniform
         sp.setUniform("cutRadius", cutRadius); // set the cut radius uniform
@@ -709,13 +709,21 @@ public abstract class Block {
         sp.setUniform("frames", base instanceof AnimatedTexture ? ((AnimatedTexture) base).getFrameCount() : 1);
         glActiveTexture(GL_TEXTURE0); // set active texture to the one in slot 0
         glBindTexture(GL_TEXTURE_2D, base.getID()); // bind base texture to slot 0
-        for (int i = 0; i < 5; i++) {
-            if (i < overlays.size()) {
+        for (int i = 0; i < 4; i++) {
+            // activate the corresponding texture slot
+            if (i == 0) glActiveTexture(GL_TEXTURE1);
+            else if (i == 1) glActiveTexture(GL_TEXTURE2);
+            else if (i == 2) glActiveTexture(GL_TEXTURE3);
+            else glActiveTexture(GL_TEXTURE4);
+            if (i < overlays.size()) { // if
                 sp.setUniform("overlays[" + i + "]", i + 1);
                 sp.setUniform("rotations[" + i + "]", rotations.get(i));
-                glActiveTexture(GL_TEXTURE1 + i);
                 glBindTexture(GL_TEXTURE_2D, overlays.get(i).getID());
-            } else sp.setUniform("rotations[" + i + "]", -1);
+            } else {
+                glBindTexture(GL_TEXTURE_2D, 0);
+                sp.setUniform("rotations[" + i + "]", -1);
+                sp.setUniform("overlays[" + i + "]", 0);
+            }
         }
         m.render(); // render the model
         sp.unbind(); // unbind the shader program
@@ -728,35 +736,6 @@ public abstract class Block {
             AnimatedTexture at = (AnimatedTexture) base; // cast it to an animated texture
             return formatted.animate(at.getFrameCount(), at.getFrameTime(), true); // animate formatted tex
         } else return formatted; // otherwise return vanilla texture
-    }
-
-    /**
-     * Creates a frame buffer object and a texture attachment with the given width and height
-     *
-     * @param w the width to give the texture attachment
-     * @param h the height to give the textuer attachment
-     * @return a length two integer array where [0] is the FBO ID and [1] is the texture attachment's texture ID
-     */
-    private static int[] createFBOWithTextureAttachment(int w, int h) {
-
-        // create frame buffer object to draw textures to
-        int fboID = glGenFramebuffers(); // generate frame buffer object
-        glBindFramebuffer(GL_FRAMEBUFFER, fboID); // bind the frame buffer object
-        glDrawBuffer(GL_COLOR_ATTACHMENT0); // enable drawing in color attachment zero
-
-        // create texture attachment for the frame buffer object
-        int texID = glGenTextures(); // generate texture
-        glBindTexture(GL_TEXTURE_2D, texID); // bind texture
-        // create an empty texture with the given size
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, (ByteBuffer) null);
-        // these parameters make the pixels of the texture crystal clear
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        GL32.glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texID, 0); // attach texture to FBO
-        glBindTexture(GL_TEXTURE_2D, 0); // unbind texture
-
-        // return the fbo and the texture attachment
-        return new int[]{fboID, texID};
     }
 
     /**
@@ -805,7 +784,7 @@ public abstract class Block {
      * on how to format a block info node-file, see block info's constructor. When the corresponding blocks are created,
      * the block info is no longer used. Thus, block info is just used for loading purposes
      */
-    private static class BlockInfo {
+    public static class BlockInfo {
 
         /**
          * Defines the types of texture overlays. See BlockInfo's constructor for more info on overlays

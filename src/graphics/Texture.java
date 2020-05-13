@@ -35,6 +35,78 @@ import static org.lwjgl.stb.STBImage.*;
 public class Texture {
 
     /**
+     * Makes a texture that is a sheet where the given material is rendered in a grid-like fashion according to the
+     * given parameters, using aggregation shaders. Optionally, as described in the aggregation shaders, a fade of
+     * transparency can be applied
+     *
+     * @param m       the the material to render onto the sheet
+     * @param cols    how many columns of the given material should be rendered onto the sheet
+     * @param rows    how many rows of the given material should be rendered onto the sheet
+     * @param mw      the width to consider the material to be, in pixels
+     * @param mh      the height to consider the material to be, in pixels
+     * @param fadeDir the direction to apply a transparency fade based off of: 0 - no fade; 1 - fade out to left; 2 -
+     *                fade out to right; 3 - fade out above; 4 - fade out below
+     * @param corners whether to apply corners on the caps of the texture when fadin
+     * @return a texture holding the final product
+     */
+    public static Texture makeSheet(Material m, Window w, int cols, int rows, int mw, int mh, int fadeDir,
+                                    boolean corners) {
+
+        // create the aggregation shader program
+        ShaderProgram sp = new ShaderProgram("/shaders/aggregate_vertex.glsl",
+                "/shaders/aggregate_fragment.glsl");
+        sp.registerUniform("texSampler"); // register the texture sampler uniform
+        sp.registerUniform("color"); // register the material color uniform
+        sp.registerUniform("isTextured"); // register the texture flag uniform
+        sp.registerUniform("blend"); // register the material blend uniform
+        sp.registerUniform("fadeDir"); // register fade direction uniform
+        sp.registerUniform("corners"); // register fade corner uniform
+        sp.registerUniform("w");
+        sp.registerUniform("h");
+        // register offset uniforms
+        sp.registerUniform("x");
+        sp.registerUniform("y");
+
+        // create other necessary items
+        int[] IDs = Utils.createFBOWithTextureAttachment(cols * mw, rows * mh); // create FBO w/ texture attached
+        Model mod = Model.getStdGridRect(2, 2); // create model
+        mod.setScale((float) mw / (float) (cols * mw), (float) mh / (float) (rows * mh)); // scale down appropriately
+
+        // pre-render
+        glBindFramebuffer(GL_FRAMEBUFFER, IDs[0]); // bind the frame buffer object
+        glViewport(0, 0, cols * mw, rows * mh); // set the viewport to the size of the texture
+        glClear(GL_COLOR_BUFFER_BIT); // clear color
+        sp.bind(); // bind the shader program
+        sp.setUniform("texSampler", 0); // tell the texture sampler to look in texture bank 0
+        sp.setUniform("fadeDir", fadeDir); // set the fade direction uniform
+        sp.setUniform("corners", corners ? 1 : 0); // set the fade corner uniform
+        sp.setUniform("w", mw * cols);
+        sp.setUniform("h", mh * rows);
+        m.setUniforms(sp); // set material uniforms
+
+        // render and fill
+        for (int col = 0; col < cols; col++) { // go through each column
+            float x = ((float) col + 0.5f - (float) cols / 2) / ((float) cols / 2); // calculate the norm x
+            for (int row = 0; row < rows; row++) { // go through each row in that column
+                float y = ((float) row + 0.5f - (float) rows / 2) / ((float) rows / 2); // calculate the norm y
+                // set x/y offset uniforms
+                sp.setUniform("x", x);
+                sp.setUniform("y", y);
+                mod.render(); // render the model
+            }
+        }
+
+        // post-render
+        sp.unbind(); // unbind shader program
+        sp.cleanup(); // cleanup shader program
+        Texture t = new Texture(IDs[1], cols * mw, rows * mh); // create final texture
+        glBindFramebuffer(GL_FRAMEBUFFER, 0); // unbind the frame buffer object
+        glDeleteFramebuffers(IDs[0]); // delete the frame buffer object
+        glViewport(0, 0, w.getFBWidth(), w.getFBHeight()); // reset viewport to window's framebuffer size
+        return t; // return the final texture
+    }
+
+    /**
      * Members
      */
     private final int id, w, h; // texture ID, width, and height
@@ -139,10 +211,10 @@ public class Texture {
         float w2 = (this.w / relativeTo / 2); // calculate half width of model
         float h2 = (this.h / relativeTo / 2); // calculate half height of model
         return new float[]{ // create array with correct model coordinates and return it
-                -w2, -h2, // bottom left
-                -w2, h2, // top left
-                w2, h2, // top right
-                w2, -h2 // bottom right
+                -w2, h2, // bottom left
+                -w2, -h2, // top left
+                w2, -h2, // top right
+                w2, h2 // bottom right
         };
     }
 

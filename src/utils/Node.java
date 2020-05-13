@@ -67,10 +67,10 @@ public class Node {
     }
 
     /**
-     * @return the children of this node
+     * @return the children of this node, or an empty array list if there are no children
      */
     public List<Node> getChildren() {
-        return this.children;
+        return this.children == null ? new ArrayList<>() : this.children;
     }
 
     /**

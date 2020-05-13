@@ -39,10 +39,9 @@ import static org.lwjgl.opengl.GL30.glGetIntegeri_v;
  * <p>
  * The idea behind areas is to hold only a portion of the game's world and to be interconnected. The GameWorld class
  * only renders and updates one area at a time, the idea being that many areas can exist and be interconnected but only
- * the one that the player is in should be rendered and updated. Some game world mechanics that are independent of area
- * (such as the day/night cycle) are stored in the GameWorld class instead. Areas are loaded through the use of a
- * node-file. See utils.Node for information on node files and see Area's constructor for how area node-files should be
- * formatted
+ * the one that the player is in should be rendered and updated. Areas also have fairly extensive backdrop options.
+ * Areas are loaded via node-files. For more info on what constitutes an area and how to format an area node-file, see
+ * Area's constructor
  */
 public class Area {
 
@@ -61,17 +60,13 @@ public class Area {
     private final Block.BlockModel bm = new Block.BlockModel(); /* all blocks use same 1x1 square model. See
                                                                    Block.BlockModel for more info on how it extends a
                                                                    regular model */
-    private Camera cam;                                         // the camera to use for area rendering
+    private BackDrop backdrop;                                  // the backdrop rendered behind the world
+    private String name = "Unnamed";                            // the name of the area
     private float startingSunRotation = -1f;                    /* the rotation to set the sun to when the area is
                                                                    entered. If -1, the sun's rotation will not be
                                                                    changed */
     private float sunSpeed = 2f;                                // the sun's speed while in this area
-    private BackDrop backdrop;                                  // the backdrop rendered behind the world
-    private String name = "Unnamed";                            // the name of the area
     private boolean lightForeground = false;                    // whether to apply lights to objects in the foreground
-
-    private float avg;
-    private int sum = 1;
 
     /**
      * Constructs the area by compiling information from a given node. Most of the loading process is actually done in
@@ -108,8 +103,10 @@ public class Area {
      * <p>
      * - light_foreground [optional][default: false]: whether to apply lights to the objects in the foreground
      * <p>
-     * - backdrop [optional][default: default backdrop]: the backdrop to use for the area. This node should be
-     * formatted as a backdrop node. See Area.BackDrop's constructor for more information
+     * - backdrop [optional][default: white material backdrop]: the backdrop to use for the area. The value of this
+     * child should specify what kind of backdrop to use (either 'material_backdrop' or 'block_backdrop'). The rest of
+     * the node should then be formatted as a node of the corresponding kind of backdrop. For more info, see
+     * gameobject.gameworld.BlockBackDrop and gameobject.gameworld.MaterialBackDrop
      * <p>
      * - starting_sun_rotation [optional][default: the current rotation of the world's sun]: the rotation (in
      * non-negative degrees) to set the sun to when the area is entered
@@ -128,17 +125,11 @@ public class Area {
 
         // load three layers of layout
         Node background = info.getChild("background_layout"); // get background layout child
-        if (background == null) Utils.log(Utils.getImproperFormatErrorLine("background_layout", "area",
-                "no background provided: assuming no background", true),
-                "gameobject.gameworld.Area", "Area(Node)", false); // if none, log and ignore
         Node middleground = info.getChild("middleground_layout"); // get middleground layout child
         if (middleground == null) Utils.handleException(new Exception(Utils.getImproperFormatErrorLine(
                 "middleground_layout", "area", "a middleground layout is required",
                 false)), "gameobject.gameworld.Area", "Area(Node)", true); // if no middleground layout, crash
         Node foreground = info.getChild("foreground_layout"); // get foreground layout child
-        if (foreground == null) Utils.log(Utils.getImproperFormatErrorLine("foreground_layout", "area",
-                "no foreground provided: assuming no foreground", true),
-                "gameobject.gameworld.Area", "Area(Node)", false); // if none, log and ignore
 
         // load blocks
         Node blockKey = info.getChild("block_key"); // get block key child
@@ -166,8 +157,6 @@ public class Area {
                     this.name = c.getValue(); // save name
                 } else if (n.equals("light_foreground")) { // light foreground
                     this.lightForeground = Boolean.parseBoolean(c.getValue()); // save value
-                } else if (n.equals("backdrop")) { // backdrop
-                    this.backdrop = new BackDrop(c, this.blockMap.length, this.blockMap[0].length); // create with node
                 } else if (n.equals("starting_sun_rotation")) { // starting sun rotation
                     try { // try to convert to an float
                         this.startingSunRotation = Float.parseFloat(c.getValue());
@@ -187,19 +176,27 @@ public class Area {
                 } else if (n.equals("sun_speed")) { // sun speed
                     try { // try to convert to an float
                         this.sunSpeed = Float.parseFloat(c.getValue());
-                    } catch (Exception e) { // if conversion was unsuccessful
-                        Utils.log(Utils.getImproperFormatErrorLine("sun_speed",
-                                "Area", "must be a proper float greater than or equal to 0f",
-                                true), "gameobject.gameworld.Area", "Area(Node)",
-                                false); // log as much
+                    } catch (Exception e) { // if conversion was unsuccessful, log as much
+                        Utils.log(Utils.getImproperFormatErrorLine("sun_speed", "Area",
+                                "must be a proper float greater than or equal to 0f", true),
+                                "gameobject.gameworld.Area", "Area(Node)", false);
                     }
-                    if (this.sunSpeed < 0f) { // if invalid speed
-                        Utils.log(Utils.getImproperFormatErrorLine("sun_speed",
-                                "Area", "must be a proper float greater than or equal to 0f",
-                                true), "gameobject.gameworld.Area", "Area(Node)",
-                                false); // log as much
+                    if (this.sunSpeed < 0f) { // if invalid speed, log as much
+                        Utils.log(Utils.getImproperFormatErrorLine("sun_speed", "Area",
+                                "must be a proper float greater than or equal to 0f",
+                                true), "gameobject.gameworld.Area", "Area(Node)", false);
                         this.sunSpeed = 2f; // and return to default speed
                     }
+                } else if (n.equals("backdrop")) { // backdrop
+                    String type = c.getValue().toLowerCase(); // get the type of backdrop from the value, in lowercase
+                    if (type.equals("material_backdrop")) this.backdrop = new MaterialBackDrop(c,
+                            this.blockMap.length, this.blockMap[0].length); // if material backdrop, create it
+                    else if (type.equals("block_backdrop")) this.backdrop = new BlockBackDrop(c,
+                            window, this.blockMap.length, this.blockMap[0].length); // if block backdrop, create it
+                    else Utils.log(Utils.getImproperFormatErrorLine("backdrop", "Area",
+                                "unrecognized type of backdrop: '" + type + "'. Must be 'material_backdrop'" +
+                                        " or 'block_backdrop'", true), "gameobject.gameworld.Area",
+                                "Area(Node)", false); // log unrecognized backdrop types
                 } else { // if the child is unrecognized
                     if (!(n.equals("block_key")) && !(n.equals("decor_key")) && !(n.equals("background_layout")) &&
                             !(n.equals("middleground_layout")) && !(n.equals("foreground_layout")))
@@ -207,12 +204,22 @@ public class Area {
                                 "gameobject.gameworld.Area", "Area(Node)", false); // log and ignore
                 }
             }
-            if (this.backdrop == null) this.backdrop = new BackDrop(new Node(), this.blockMap.length,
-                    this.blockMap[0].length); // if no backdrop was loaded, create and use default one
+            if (this.backdrop == null) this.backdrop = new MaterialBackDrop(new Node(), this.blockMap.length,
+                    this.blockMap[0].length); // if no backdrop was specified, use the default backdrop
         } catch (Exception e) { // if any strange exceptions occur
             Utils.handleException(new Exception(Utils.getImproperFormatErrorLine("Area", "Area",
                     e.getMessage(), false)), "gameobject.gameworld.Area", "Area(Node)", true); // log and crash
         }
+    }
+
+    /**
+     * Tells the area which camera is being used by the game world
+     *
+     * @param cam the game world's camera
+     */
+    public void useCam(Camera cam) {
+        // if the area has a material backdrop, give it a reference to the camera to use for scrolling
+        if (this.backdrop instanceof MaterialBackDrop) ((MaterialBackDrop) this.backdrop).useCam(cam);
     }
 
     /**
@@ -224,20 +231,21 @@ public class Area {
         for (AnimatedTexture at : this.ats) at.update(interval); // update animated textures
         for (GameObject o : this.decor[0]) o.update(interval); // update background decor
         for (GameObject o : this.decor[1]) o.update(interval); // update foreground decor
-        this.backdrop.update(interval); // update backdrop
     }
 
     /**
      * Renders the area's blocks and decor
      *
-     * @param sp the shader program to use for rendering
-     * @param os the lists of world objects to render in the area
+     * @param sp      the shader program to use for rendering
+     * @param os      the lists of world objects to render in the area
      * @param camView the camera view's axis-aligned bounding box which will be used to only render objects within view.
      *                This cuts rendering time down by a lot (half the rendering time in some cases according to my
      *                tests!)
      */
     public void render(ShaderProgram sp, List<WorldObject> os, PhysicsEngine.AABB camView) {
         camView.scale(2f); // scale camera-view to avoid clipping large objects
+        sp.setUniform("useDNC", 1); // enable day/night cycle usage
+        sp.setUniform("useLights", 1); // enable usage of single lights after backdrop has been rendered
         this.backdrop.render(sp); // render the backdrop
         renderBlocks(this.bm, sp, this.blocks[0], camView); // render the background blocks
         // render background decor that is within the camera's view
@@ -254,18 +262,7 @@ public class Area {
     }
 
     /**
-     * Tells the Area which camera is being used. This is necessary for the backdrop to scroll properly if it is
-     * textured
-     *
-     * @param cam the camera being used
-     */
-    public void useCam(Camera cam) {
-        this.cam = cam; // save camera reference
-        this.backdrop.useCam(cam); // give camera reference to the backdrop
-    }
-
-    /**
-     * Handles a window resize by telling the backdrop it needs to resize to fit the new window size
+     * Handles a window resize by notifying the backdrop of the resize
      */
     public void resized() {
         this.backdrop.resized(); // tell the backdrop about the resize
@@ -306,275 +303,41 @@ public class Area {
         for (AnimatedTexture at : this.ats) at.cleanup(); // cleanup animated textures
         for (GameObject o : this.decor[0]) o.cleanup(); // cleanup background decor
         for (GameObject o : this.decor[1]) o.cleanup(); // cleanup foreground decor
+        // cleanup block materials
+        for (Map<Material, List<Pair<Integer>>> bs : this.blocks) for (Material m : bs.keySet()) m.cleanup();
         this.bm.cleanup(); // cleanup the block model
+        this.backdrop.cleanup(); // cleanup the backdrop
     }
 
     /**
-     * Represents a scrollable backdrop that is rendered behind everything in an area. These are loaded from node-files.
-     * See the constructor for more details on the how to format a backdrop node. Note that a backdrop must be given a
-     * camera to follow by calling useCam() or it will not render at all
+     * Defines functionality that a backdrop should have in order to be used by the area
      */
-    private static class BackDrop extends GameObject {
+    public interface BackDrop {
 
         /**
-         * Members
-         */
-        private final int areaWidth, areaHeight;  // the width and height of the area to consider for scrolling
-        private Camera cam;                       // the camera to follow and use for scrolling calculations
-        private float texAr;                      // the aspect ratio of the texture if the backdrop is textured
-        private float viewScale = 1f;             /* how much of the width/height of the texture to show depending on
-                                                     aspect ratios. See the constructor for more info on view scale */
-        private float zoomFactor;                 /* how much camera zoom affects view scale. See the constructor for
-                                                     more info on zoom factor */
-        private boolean isTextured;               // whether or not the backdrop is actually textured or not
-        private boolean scroll = true;            // whether or not the backdrop should scroll its texture or not
-
-        /**
-         * Constructs the backdrop by compiling information from a given node. If the value of the root node starts with
-         * the statements 'from' or 'resfrom', the next statement will be assumed to be a different path at which to
-         * find the backdrop info. This is useful for reusing the same backdrop in multiple settings. 'from' assumes the
-         * following path is relative to the Ambulare data folder (in the user's home folder) while 'resfrom' assumes
-         * the following path is relative to Ambulares's resource path. Note that these kinds of statements cannot be
-         * chained together. A backdrop node can have the following children:
-         * <p>
-         * - color [optional][default: 1f 1f 1f 1f]: specifies what color to assign to the backdrop
-         * <p>
-         * - texture_path [optional][default: no texture]: specifies the path to look for the backdrop texture in
-         * <p>
-         * - resource_relative [optional][default: true]: specifies whether the given texture path is relative to
-         * Ambulare's resource path. If this is false, the given path must be relative to Ambulare's data folder (in
-         * the user's home folder)
-         * <p>
-         * - blend_mode [optional][default: none]: specifies how to blend color and texture. The options are: (1) none -
-         * no blending will occur. The backdrop will appear as its texture if it has one, or its color if there is no
-         * texture. (2) multiplicative - the components of the backdrop color and the components of the texture will be
-         * multiplied to create a final color. (3) averaged - the components of the backdrop color and the components of
-         * the texture will be averaged to create a final color
-         * <p>
-         * - scroll [optional][default: true]: specifies whether to scroll the background according to view_scale and
-         * zoom_factor. If false, the largest possible portion of the texture centered on the middle of the image will
-         * be used at all times. Backdrops without texture cannot scroll
-         * <p>
-         * - view_scale [optional][default: 1f]: If the backdrop has a texture, this specifies how much of the
-         * width/height of the backdrop to show at once. This will apply to both width and height, but it directly
-         * determines how much of either width or height will be shown. For example, a scale of 1f which will show the
-         * entire width or height of the texture at all times depending on the ratio of the texture's aspect ratio to
-         * the window's aspect ratio. If the texture is proportionally wider than the window and scale is set to 1f, the
-         * entire height of the backdrop will always be seen but will be scrolled horizontally as the player moves. It
-         * follows logically that lower scales will make scroll speed quicker. View scales must be within the interval
-         * of (0f, 1f]
-         * <p>
-         * - zoom_factor [optional][default: 0f]: If the backdrop has a texture, this specifies how much camera zoom
-         * affects the zoom on the backdrop. Note that whatever the value, this will not allow the texture to be zoomed
-         * out so much that it would wrap or repeat and break the visual. Zoom factors cannot be negative
-         * <p>
-         * Note that, if any of the info above is improperly formatted, a message saying as much will be logged. As
-         * such, when designing backdrops to be loaded into the game, the logs should be checked often to make sure the
-         * loading process is unfolding correctly
+         * This gives the backdrop a reference to the camera used for rendering the area. This is called as soon as the
+         * game world gives the area a reference to the camera
          *
-         * @param info       the node to create the backdrop from
-         * @param areaWidth  how wide the area for scrolling should be. Note that this will assume the area's x-axis
-         *                   space is [0f, areaWidth]
-         * @param areaHeight how tall the area for scrolling should be. Note that this will assume the area's y-axis
-         *                   space is [0f, areaHeight]
+         * @param cam the camera used for rendering the area
          */
-        public BackDrop(Node info, int areaWidth, int areaHeight) {
-            super(Model.getStdGridRect(1, 1), null); // start with no material and a default square model
-
-            // load from elsewhere if from or resfrom statement used
-            String value = info.getValue(); // get value
-            if (value != null) { // if there is a value
-                // check for a from statement
-                if (value.length() >= 4 && value.substring(0, 4).toUpperCase().equals("FROM"))
-                    // update info with node at the given path in the from statement
-                    info = Node.fileToNode(info.getValue().substring(5), true);
-                    // check for a resfrom statement
-                else if (value.length() >= 7 && value.substring(0, 7).toUpperCase().equals("RESFROM"))
-                    // update info with node at the given path in the from statement
-                    info = Node.resToNode(info.getValue().substring(8));
-                if (info == null) // if the new info is null, then throw an exception stating the path is invalid
-                    Utils.handleException(new Exception(Utils.getImproperFormatErrorLine("(res)from statement",
-                            "BackDrop", "invalid path in (res)from statement: " + value,
-                            false)), "gameobject.gameworld.Area.BackDrop", "BackDrop(Node, int, int)", true);
-            }
-
-            // relevant variables to hold loaded information
-            float[] color = new float[] {1f, 1f, 1f, 1f}; // holds the material color
-            String texPath = null; // holds the path to the material texture
-            boolean texResPath = true; // holds whether a given texture path is resource-relative
-            Material.BlendMode bm = Material.BlendMode.NONE; // holds the material's blend mode
-
-            // parse node
-            try { // wrap entire parsing in a try-catch to make sure all issues are caught and logged
-                for (Node c : info.getChildren()) { // go through each child
-                    String n = c.getName().toLowerCase(); // get the name of the child in lowercase
-                    if (n.equals("color")) { // color
-                        color = Utils.strToColor(c.getValue()); // try to convert to a float array of color components
-                        if (color == null) // if conversion was unsuccessful
-                            Utils.log(Utils.getImproperFormatErrorLine("color", "BackDrop",
-                                    "must be four valid floating point numbers separated by spaces",
-                                    true), "gameobject.gameworld.Area.BackDrop",
-                                    "BackDrop(Node, int, int)", false); // log as much
-                    } else if (n.equals("texture_path")) texPath = c.getValue(); // texture path
-                        // resource relative texture path flag
-                    else if (n.equals("resource_relative")) texResPath = Boolean.parseBoolean(c.getValue());
-                    else if (n.equals("blend_mode")) { // blend mode
-                        try { // try to convert to a material's blend mode
-                            bm = Material.BlendMode.valueOf(c.getValue().toUpperCase());
-                        } catch (Exception e) { // if conversion was unsuccessful, log as much
-                            Utils.log(Utils.getImproperFormatErrorLine("blend_mode", "BackDrop",
-                                    "must be either: none, multiplicative, or averaged", true),
-                                    "gameobject.gameworld.Area.BackDrop", "Area(Node, int, int)",
-                                    false);
-                        }
-                    } else if (n.equals("scroll")) this.scroll = Boolean.parseBoolean(c.getValue()); // scroll
-                    else if (n.equals("view_scale")) { // view scale
-                        try {
-                            this.viewScale = Float.parseFloat(c.getValue()); // try to convert to a float
-                        } catch (Exception e) { // if conversion was unsuccessful, log as much
-                            Utils.log(Utils.getImproperFormatErrorLine("view_scale", "BackDrop",
-                                    "must be a proper floating pointer number", true),
-                                    "gameobject.gameworld.Area.BackDrop", "BackDrop(Node, int, int)",
-                                    false);
-                        }
-                        if (this.viewScale <= 0f || this.viewScale >= 1f) { // if not in correct range, log as much
-                            Utils.log(Utils.getImproperFormatErrorLine("view_scale", "BackDrop",
-                                    "must be within the range (0f, 1f]", true),
-                                    "gameobject.gameworld.Area.BackDrop", "BackDrop(Node, int, int)",
-                                    false);
-                            this.viewScale = 1f; // and return to default
-                        }
-                    } else if (n.equals("zoom_factor")) { // zoom factor
-                        try {
-                            this.zoomFactor = Float.parseFloat(c.getValue()); // try to convert to a float
-                        } catch (Exception e) { // if conversion was unsuccessful
-                            Utils.log(Utils.getImproperFormatErrorLine("zoom_factor", "BackDrop",
-                                    "must be a proper floating pointer number greater than or equal to 0f",
-                                    true), "gameobject.gameworld.Area.BackDrop",
-                                    "BackDrop(Node, int, int)", false); // log as much
-                        }
-                        if (this.zoomFactor < 0f) { // if zoom factor is negative
-                            Utils.log(Utils.getImproperFormatErrorLine("zoom_factor", "BackDrop",
-                                    "must be a proper floating pointer number greater than or equal to 0f",
-                                    true), "gameobject.gameworld.Area.BackDrop",
-                                    "BackDrop(Node, int, int)", false); // log as much
-                            this.zoomFactor = 1f; // and return to default
-                        }
-                    } else // if unrecognized child is found
-                        Utils.log("Unrecognized child given for backdrop:\n" + c + "Ignoring.",
-                                "gameobject.gameworld.Area.BackDrop", "BackDrop(Node, int, int)",
-                                false); // log it
-                }
-            } catch (Exception e) { // if any strange exceptions occur
-                Utils.handleException(new Exception(Utils.getImproperFormatErrorLine("BackDrop",
-                        "BackDrop", e.getMessage(), false)), "gameobject.gameworld.Area.BackDrop",
-                        "BackDrop(Node, int, int)", true); // log and crash
-            }
-
-            // create the correct material for the backdrop
-            this.material = new Material(texPath == null ? null : new Texture(texPath, texResPath), color, bm);
-            if (this.material.isTextured()) this.texAr = (float) this.material.getTexture().getWidth() /
-                    (float) this.material.getTexture().getHeight(); // save texture aspect ratio if textured
-            this.resized(); // scale to the appropriate size to fit the window
-            this.areaWidth = areaWidth; // save area width as member
-            this.areaHeight = areaHeight; // save area height as member
-            this.isTextured = this.material.isTextured(); // save textured flag
-        }
+        void useCam(Camera cam);
 
         /**
-         * Reacts to window resizing by resizing the backdrop to fit the window perfectly and updating the texture
-         * coordinates
-         */
-        public void resized() {
-            // resize the backdrop to fit the window perfectly
-            this.setScale(2f * (Global.ar > 1f ? Global.ar : 1), 2f / (Global.ar < 1f ? Global.ar : 1));
-            if (this.cam != null) this.updateTexCoords(); // if there's a camera, update the texture coordinates
-        }
-
-        /**
-         * Renders the backdrop if it has been given a camera to follow
+         * Backdrops should render whatever components they need to here, using the given world shader program
          *
-         * @param sp the shader program to use to render the game object
+         * @param sp the world shader program
          */
-        @Override
-        public void render(ShaderProgram sp) {
-            if (this.cam != null) { // only render if a camera has been given
-                sp.setUniform("useLights", 0); // disable light usage for backdrop
-                sp.setUniform("camZoom", 1f); // set camera zoom to 1 to render backdrop
-                super.render(sp); // render
-                sp.setUniform("camZoom", cam.getZoom()); // return the zoom to the correct camera zoom
-                sp.setUniform("useLights", 1); // turn light usage back on
-            } else // if a render attempt was made without a camera being given first
-                Utils.log("Attempted to render a backdrop without providing a camera to follow",
-                        "gameobject.gameworld.Area.BackDrop", "render(ShaderProgram)", false); // log
-        }
+        void render(ShaderProgram sp);
 
         /**
-         * Tells the backdrop which camera to follow. This must be called before a backdrop will render
-         *
-         * @param cam the camera the backdrop should follow
+         * Backdrops should respond appropriately to window resizes in this method. This is called whenever the area is
+         * told about a window resize
          */
-        public void useCam(Camera cam) {
-            this.cam = cam; // save the camera reference
-            this.setPos(cam.getX(), cam.getY()); // move to the camera position
-            this.updateTexCoords(); // update the texture coordinates
-        }
+        void resized();
 
         /**
-         * Updates the backdrop by following the camera and changing the scroll if textured
-         *
-         * @param interval the amount of time to account for
+         * Backdrops should cleanup any components that need cleaned up here
          */
-        @Override
-        public void update(float interval) {
-            if (this.cam != null) { // if a camera has been given
-                this.setPos(cam.getX(), cam.getY()); // follow it
-                // if the backdrop is textured, make sure the correct texture coordinates are being used for scrolling
-                if (this.isTextured && this.scroll) this.updateTexCoords();
-            }
-            super.update(interval); // update other game object properties
-        }
-
-        /**
-         * Updates the texture coordinates of the backdrop's model depending on the followed camera's position to
-         * simulate scrolling
-         */
-        private void updateTexCoords() {
-
-            // calculate how far the camera is in proportion to the area width and height
-            float xProp = scroll ? Math.max(0f, Math.min(1f, this.getX() / (float) this.areaWidth)) : 0.5f;
-            float yProp = scroll ? Math.max(0f, Math.min(1f, 1f - this.getY() / (float) this.areaHeight)) : 0.5f;
-
-            // calculate the width and height of the view depending on the ratio of aspect ratios
-            float viewWidth = 1f, viewHeight = 1f;
-            if (Global.ar > texAr) { // screen is wider than backdrop in proportion to height
-                viewHeight = texAr / Global.ar; // apply ratio of ratios on view height
-            } else { // backdrop is wider than screen in proportion to height
-                viewWidth = Global.ar / texAr; // apply ratio of ratios on view width
-            }
-
-            if (scroll) {
-
-                // calculate max scaling that can occur before more than entire image is shown for either width or height
-                float maxScale = (1f / viewWidth); // max scaling for width
-                maxScale = Math.min(maxScale, 1f / viewHeight); // max scaling for width and height
-
-                // apply zoom factor
-                float lz = (1f - cam.getLinearZoom(1.15f)) - 0.5f; // get the linear zoom of the camera
-                float vs = Math.abs(Math.min(maxScale, this.viewScale + (lz * zoomFactor))); // get scaling from zoom factor
-                viewWidth *= vs; // apply zoom factor to view width
-                viewHeight *= vs; // apply zoom factor to view height
-            }
-
-            // calculate final texture coordinates
-            float lx = xProp * (1 - viewWidth); // calculate left x tex coordinate
-            float ly = yProp * (1 - viewHeight); // calculate lower y tex coordinate
-            this.model.useTexCoords(new float[]{ // compile info into finalized texture coordinate float array
-                    lx, ly + viewHeight, // top left
-                    lx, ly, // bottom left
-                    lx + viewWidth, ly, // bottom right
-                    lx + viewWidth, ly + viewHeight // top right
-            });
-        }
+        void cleanup();
     }
 }

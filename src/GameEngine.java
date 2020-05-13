@@ -21,9 +21,10 @@ public class GameEngine {
     /**
      * Members
      */
-    private static boolean reportingFPS = false; // whether or not FPS is being reported
+    private static boolean debugging;            // whether or not the engine is reporting debugging info to the logic
+    private double[] debug;                      // info about debugging. See loop() for more info
     private final Window window;                 // the window being used
-    private final Timer timer;                   // timer used for timekeeping and accurate FPS reporting and looping
+    private final Timer timer;                   // timer used for accurate debugging and loop
     private GameLogic logic;                     // the logic the engine should follow
     private float logicTransitionTime;           // a timer for logic transitions
 
@@ -95,70 +96,106 @@ public class GameEngine {
         float elapsedTime; // how much time has passed since last loop
         float accumulator = 0f; // how much time is unaccounted for
         float interval = 1f / Global.TARGET_UPS; // how much time there should be between updates
-        float[] fpsInfo = new float[]{0.0f, 0.0f, 0.0f}; // FPS info to be used for FPS recording
+        debug = new double[12]; /* debug information array where indices 0-9 are used by the updateDebugMetrics() method
+            and indices 10-11 are used for timestamps to calculate update and render times, respectively */
+        debug[1] = Double.POSITIVE_INFINITY; // initialize lowest FPS to infinity for proper worst calculations
 
         // game loop
         while (!this.window.shouldClose()) { // while the Window shouldn't close
 
             // timekeeping
             elapsedTime = this.timer.getElapsedTime(true); // get elapsed time since last loop
-            if (GameEngine.reportingFPS) reportFPS(elapsedTime, fpsInfo); // record FPS if enabled
+            if (GameEngine.debugging) { // if debugging is enabled
+                debug[0] += elapsedTime; // update the accumulator
+                updateDebugMetrics(1 / elapsedTime, debug, 0); // update FPS metrics
+            }
             accumulator += elapsedTime; // add elapsed time to the accumulator for time unaccounted for
 
             // four phases of loop
             this.window.pollEvents(); // gather input by polling for GLFW window events
+            // if debugging, record time in milliseconds before update
+            if (GameEngine.debugging) debug[10] = (float) Timer.getTimeMilliseconds();
             while (accumulator >= interval) { // while there is a sufficient amount of unaccounted for time
                 this.update(interval); /* doing multiple updates for the same smaller interval is preferable to doing
                     one large update with a huge interval because such large updates can be game-breaking, especially
-                    when it comes to things like collision. */
+                    when it comes to things like collision */
                 accumulator -= interval; // account for the time for the update
+            }
+            if (GameEngine.debugging) { // if debugging, calculate update time and report it to logic
+                debug[11] = (float) Timer.getTimeMilliseconds(); // get time after update/before render
+                // update debugging metrics with update time
+                this.updateDebugMetrics(debug[11] - debug[10], debug, 1);
             }
             this.render();  /* render outside of the above loop because, as opposed to updating, outdated renders are
                 useless wastes of GPU power */
+            if (GameEngine.debugging) // if debugging, update debugging metrics with render time
+                this.updateDebugMetrics(Timer.getTimeMilliseconds() - debug[11], debug, 2);
             // attempt to manually sync loop unless the window has vertical sync enabled
             if (!this.window.usesVSync()) this.sync(1 / (float) Global.TARGET_FPS);
         }
     }
 
     /**
-     * Records and reports average frames-per-second measurements
+     * Updates debugging metrics by keeping track of an average and a worst for each value. If the globally set amount
+     * of time between reports has passed, information is reported to the logic. This information takes the form of an
+     * array of strings where each string contains the average and worst values for three debugging metrics in the
+     * following order: FPS, update time, and render time. The worst values are maintained over a period of calls to
+     * this method where type is not -1. That is, to reset the worst values, call this method with type set to -1
      *
-     * @param elapsedTime the amount of time since the last game loop
-     * @param fpsInfo     info about the FPS report, laid out as:
-     *                    fpsInfo[0] - accumulator - how much time since last FPS report
-     *                    fpsInfo[1] - current sum of FPSes since last report
-     *                    fpsInfo[2] - amount of FPS values that have been added to the sum at index 1
-     *                    this info is useful to provide average FPS calculations over an entire second instead of
-     *                    constant instantaneous ones
+     * @param val       the value of the new debugging calculation
+     * @param debugInfo the debug info array where index 0 should be an accumulator of time updated outside of this
+     *                  method, and following index 0 should be nine untouched indices used for calculations. Anything
+     *                  outside of indices 0-9 will not be touched by the method
+     * @param type      the type of reported metric where 0 is FPS, 1 is update time, and 2 is render time. Additionally, -1
+     *                  can be given to signify that the worst metrics should be reset. If an invalid value is given, the
+     *                  occurrence will be logged and ignored
      */
-    private void reportFPS(float elapsedTime, float[] fpsInfo) {
-        fpsInfo[0] += elapsedTime; // keep time between reports
-        fpsInfo[1] += (1 / elapsedTime); // add to sum of FPSs
-        fpsInfo[2] += 1; // keep track of how many FPS values are in sum
-        if (fpsInfo[0] > Global.TIME_BETWEEN_FPS_REPORTS) { // if sufficient amount of time since last report
-            this.logic.reportFPS(fpsInfo[1] / fpsInfo[2]); // calculate and tell logic the FPS
-            Utils.log("Average FPS of last second: " + (fpsInfo[1] / fpsInfo[2]), "GameEngine",
-                    "FPSRecord()", false); // log fps
-            fpsInfo[0] = fpsInfo[1] = fpsInfo[2] = 0.0f; // reset FPS info array
+    private void updateDebugMetrics(double val, double[] debugInfo, int type) {
+        if (type == -1) { // if the call was to reset the worst values
+            for (int i = 0; i < 3; i++) debugInfo[1 + i * 3] = i == 0 ? Double.POSITIVE_INFINITY : 0f; // reset worsts
+            return; // and return
+        }
+        if (type > 2 || type < 0) { // if an invalid type was given
+            Utils.log("Invalid debugging info metric type given: " + type + ". Ignoring.", "GameEngine.java",
+                    "updateDebugMetrics(double, double[], int)", false); // log the occurrence
+            return; // and reeturn
+        }
+        int i = 1 + (type * 3); // calculate starting index in debug info array for info for the given metric type
+        if ((i == 1 && val < debugInfo[i]) || (i > 1 && val > debugInfo[i])) debugInfo[i] = val; // record new max/min
+        debugInfo[i + 1] += val; // update sum of metrics
+        debugInfo[i + 2] += 1; // update count of values included in sum
+        if (debugInfo[0] > Global.TIME_BETWEEN_METRIC_REPORTS) { // if a new report is due
+            debugInfo[0] = 0; // reset the accumulator
+            String[] info = new String[3]; // create info array
+            for (int j = 0; j < info.length; j++) { // for each metric
+                // compile a string containing the average and worst measures with two decimal places
+                info[j] = String.format("%.2f", debugInfo[(2 + (j * 3))] / debugInfo[(3 + (j * 3))])
+                        + (j > 0 ? " ms " : " ") + "(worst: " + String.format("%.2f", debugInfo[1 + (j * 3)]) + ")";
+                // reset the corresponding metric's values in the debug info array
+                debugInfo[2 + (j * 3)] = debugInfo[3 + (j * 3)] = 0;
+            }
+            this.logic.reportDebugInfo(info); // report the info to the logic
         }
     }
 
     /**
      * Phase 1 of loop: responding to input (this is called asynchronously though)
      * Occurs when keyboard events occur in the GLFW window (pressing, releasing, repeating). It will call the
-     * logic's keyboard input method and allow it to handle the input accordingly, as well as checking if the FPS
+     * logic's keyboard input method and allow it to handle the input accordingly, as well as checking if the debug
      * toggle button was pressed and reacting accordingly
      *
      * @param key    the key
      * @param action the action of the key (GLFW_PRESS, GLFW_RELEASE, GLFW_REPEAT)
      */
     private void keyboardInput(int key, int action) {
-        if (key == Global.FPS_REPORTING_TOGGLE_KEY && action == GLFW_RELEASE) { // if FPS report toggling key,
-            GameEngine.reportingFPS = !GameEngine.reportingFPS; // toggle static flag
-            if (!GameEngine.reportingFPS) logic.reportFPS(null); // if toggled off, tell logic reporting has stopped
-        } else if (key == Global.POLYGON_MODE_TOGGLE_KEY && action == GLFW_RELEASE) { // if polygon toggle key pressed
+        if (key == Global.DEBUG_TOGGLE_KEY && action == GLFW_RELEASE) { // if debug info toggling key,
+            GameEngine.debugging = !GameEngine.debugging; // toggle static flag
+            if (!GameEngine.debugging) { // if debugging was turned off,
+                logic.reportDebugInfo(null); // tell logic that debug reporting has ended for now
+                if (debug != null) this.updateDebugMetrics(0, this.debug, -1); // reset worst metrics
+            }
+        } else if (key == Global.POLYGON_MODE_TOGGLE_KEY && action == GLFW_RELEASE) // if polygon toggle key pressed
             Global.togglePolygonMode(); // toggle the polygon mode
-        }
         logic.keyboardInput(key, action); // notify logic of input
     }
 
@@ -234,7 +271,7 @@ public class GameEngine {
      */
     private void sync(float interval) {
         double loopEnd = this.timer.getTimestamp() + interval; // calculate time when the current loop should end
-        while (this.timer.getTime() < loopEnd) { // while there is leftover time for this loop
+        while (Timer.getTimeSeconds() < loopEnd) { // while there is leftover time for this loop
             try {
                 Thread.sleep(1);
             } // sleep

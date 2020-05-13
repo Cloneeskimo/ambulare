@@ -454,6 +454,7 @@ public class PhysicsEngine {
 
         /**
          * Calculates if the given point is within the axis-aligned bounding box
+         *
          * @param x the x of the point to check
          * @param y the y of the point to check
          * @return whether the given point is within the axis-aligned bounding box
@@ -466,6 +467,7 @@ public class PhysicsEngine {
         /**
          * Multiplies the width and height of the axis-aligned bounding box by the given factor, essentially shrinking
          * or expanding it
+         *
          * @param factor the factor to scale by
          */
         public void scale(float factor) {

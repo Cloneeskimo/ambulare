@@ -147,6 +147,7 @@ public class MenuLogic extends GameLogic {
      */
     @Override
     public void initOthers(Window window) {
+        super.initOthers(window); // initialize debug info through base game logic class
         this.window = window; // save window reference
         Texture titleTexture = new Texture("/textures/ui/title.png", true); // create the title texture
         float[] titleModelCoords = titleTexture.getModelCoords(128); // get the corresponding model coords
@@ -187,6 +188,7 @@ public class MenuLogic extends GameLogic {
         this.cam.setPos((float) Math.random() * (float) this.roc.getGameWorld().getArea().getBlockMap().length,
                 (float) this.roc.getGameWorld().getArea().getBlockMap()[0].length / 2);
         this.cam.setVX(0.5f); // make camera slowly scroll to the right
+        this.cam.setZoom(0.15f); // zoom out a little
         this.maxCamX = this.roc.getGameWorld().getArea().getBlockMap().length; // don't allow cam past area
         glfwSetScrollCallback(this.window.getHandle(), (x, y, s) -> {
         }); // disable mouse scroll wheel zooming

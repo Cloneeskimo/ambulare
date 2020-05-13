@@ -117,10 +117,10 @@ public class Font {
 
         // calculate texture coordinates
         float texCoords[] = new float[]{
-                (float) col / charsPerRow, (float) row / charsPerCol + fracCol, // top left
-                (float) col / charsPerRow, (float) row / charsPerCol, // bottom left
-                (float) col / charsPerRow + fracRow, (float) row / charsPerCol, // bottom right
-                (float) col / charsPerRow + fracRow, (float) row / charsPerCol + fracCol // top right
+                (float) col / charsPerRow, (float) row / charsPerCol, // top left
+                (float) col / charsPerRow, (float) row / charsPerCol + fracCol, // bottom left
+                (float) col / charsPerRow + fracRow, (float) row / charsPerCol + fracCol, // bottom right
+                (float) col / charsPerRow + fracRow, (float) row / charsPerCol // top right
         };
 
         // account for cutoff then return

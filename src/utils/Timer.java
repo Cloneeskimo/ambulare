@@ -21,14 +21,21 @@ public class Timer {
      * Initializes the timer
      */
     public void init() {
-        timestamp = getTime(); // start timestamp at current time
+        timestamp = getTimeSeconds(); // start timestamp at current time
     }
 
     /**
      * @return the current time in seconds
      */
-    public static double getTime() {
+    public static double getTimeSeconds() {
         return System.nanoTime() / 1000_000_000.0; // convert ns to s
+    }
+
+    /**
+     * @return the current time in milliseconds
+     */
+    public static double getTimeMilliseconds() {
+        return (double) System.nanoTime() / 1_000_000.0; // convert ns to ms
     }
 
     /**
@@ -39,13 +46,13 @@ public class Timer {
     }
 
     /**
-     * Calculates the elapsed time since the last timestamp
+     * Calculates the elapsed time since the last timestamp (in seconds)
      *
      * @param mark whether to overwrite the timestamp with the current time
      * @return the amount of elapsed time since the timestamp in seconds
      */
     public float getElapsedTime(boolean mark) {
-        double time = getTime(); // get current time
+        double time = getTimeSeconds(); // get current time
         float et = (float) (time - this.timestamp); // get elapsed time
         if (mark) this.timestamp = time; // record new time if param set to true
         return et; // return calculated elapsed time

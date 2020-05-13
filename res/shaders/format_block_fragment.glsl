@@ -19,7 +19,7 @@
 /*
  * Constants
  */
-const int MAX_OVERLAYS = 5; // the maximum amount of overlays that can be added to a block texture
+const int MAX_OVERLAYS = 4; // the maximum amount of overlays that can be added to a block texture
 
 /*
  * Uniforms

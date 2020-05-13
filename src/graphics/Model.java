@@ -60,21 +60,22 @@ public class Model {
         float frameWidth = (float) 1 / (float) of; // calculate width of one frame
         float frac = (float) i / (float) of; // calculates how horizontally far this frame is in texture
         if (!flip) return new float[]{ // create un-flipped texture coordinates array if flip flag is false
-                frac, 1.0f, // top left
-                frac, 0.0f, // bottom left
-                frac + frameWidth, 0.0f, // bottom right
-                frac + frameWidth, 1.0f // top right
+                frac, 0.0f, // top left
+                frac, 1.0f, // bottom left
+                frac + frameWidth, 1.0f, // bottom right
+                frac + frameWidth, 0.0f // top right
         };
         return new float[]{ // created flipped texture coordinates array if flip flag is true
-                frac + frameWidth, 1.0f, // top left
-                frac + frameWidth, 0.0f, // bottom left
-                frac, 0.0f, // bottom right
-                frac, 1.0f // top right
+                frac + frameWidth, 0.0f, // top left
+                frac + frameWidth, 1.0f, // bottom left
+                frac, 1.0f, // bottom right
+                frac, 0.0f // top right
         };
     }
 
     /**
-     * Returns the model coordinates appropriate for a rectangular model with the given width/height in grid cells
+     * Returns the model coordinates appropriate for a rectangular model with the given width/height in grid cells.
+     * Model coordinates are based on the system where increasing x leads to the right and increasing y leads upwards
      *
      * @param w the width of the rectangular model in cells
      * @param h the height of the rectangular model in cells
@@ -83,22 +84,25 @@ public class Model {
      */
     public static float[] getGridRectModelCoords(int w, int h) {
         return new float[]{
-                -(float) w / 2, -(float) h / 2, // bottom left
                 -(float) w / 2, (float) h / 2, // top left
-                (float) w / 2, (float) h / 2, // top right
-                (float) w / 2, -(float) h / 2  // bottom right
+                -(float) w / 2, -(float) h / 2, // bottom left
+                (float) w / 2, -(float) h / 2, // bottom right
+                (float) w / 2, (float) h / 2  // top right
         };
     }
 
     /**
+     * Texture coordinates, as opposed to model coordinates, are based on a system where increasing y leads downwards
+     * towards the bottom of the image. Thus, the y of texture coordinates are usually opposite what may be intuitive
+     *
      * @return the standard rectangle texture coordinates
      */
     public static float[] getStdRectTexCoords() {
         return new float[]{
-                0.0f, 1.0f,
-                0.0f, 0.0f,
-                1.0f, 0.0f,
-                1.0f, 1.0f
+                0.0f, 0.0f, // top left
+                0.0f, 1.0f, // bottom left
+                1.0f, 1.0f, // bottom right
+                1.0f, 0.0f  // top right
         };
     }
 
@@ -106,8 +110,8 @@ public class Model {
      * @return the standard rectangle indices
      */
     public static int[] getStdRectIdx() {
-        return new int[]{0, 1, 3,   // first triangle  - bottom left, top left, bottom right
-                3, 1, 2}; // second triangle - bottom right, top left, top right
+        return new int[]{0, 1, 3,   // first triangle  - top left, bottom left, top right
+                3, 1, 2}; // second triangle - top right, bottom left, bottom right
     }
 
     /**
@@ -173,8 +177,8 @@ public class Model {
         this.ids = new int[4]; // initialize ID array
 
         // create buffers, generation VAO
-        FloatBuffer fb = null; // buffer to use for loading float data into VBOs
-        IntBuffer ib = null; // buffer to use for loading integer data into VBOs
+        FloatBuffer fb; // buffer to use for loading float data into VBOs
+        IntBuffer ib; // buffer to use for loading integer data into VBOs
         this.ids[0] = glGenVertexArrays(); // generate the vertex array object
         glBindVertexArray(this.ids[0]); // bind the vertex array object
 
@@ -411,7 +415,7 @@ public class Model {
     public FittingBox getFittingBox() {
         if (isRectangular(this)) { // if rectangular
             float[] corners = new float[this.modelCoords.length]; // create corners array
-            for (int i = 0; i < corners.length; i += 2) { // fill it with model coords
+            for (int i = 0; i < corners.length; i += 2) { // fill it with model coordinates
                 corners[i] = modelCoords[i]; // copy x
                 corners[i + 1] = modelCoords[i + 1]; // copy y
             }
@@ -420,7 +424,7 @@ public class Model {
             float w2 = this.getWidth() / 2; // calculate half of width of fitting box
             float h2 = this.getHeight() / 2; // calculate half of height of fitting box
             // create un-rotated fitting box that fits all points
-            return new FittingBox(new float[]{-w2, -h2, -w2, h2, w2, h2, w2, -h2}, 0f, 0f, 0f);
+            return new FittingBox(new float[]{-w2, h2, -w2, -h2, w2, -h2, w2, h2}, 0f, 0f, 0f);
         }
     }
 

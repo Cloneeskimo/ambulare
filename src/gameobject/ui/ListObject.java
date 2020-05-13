@@ -73,6 +73,27 @@ public class ListObject extends GameObject implements MouseInputEngine.MouseInte
     }
 
     /**
+     * Updates the list and the list items
+     */
+    @Override
+    public void update(float interval) {
+        super.update(interval); // update background game object
+        // update game object list items
+        for (ListItem li : this.items) if (li instanceof GameObject) ((GameObject) li).update(interval);
+    }
+
+    /**
+     * Renders the list and the list items
+     *
+     * @param sp the shader program to use to render the list object
+     */
+    @Override
+    public void render(ShaderProgram sp) {
+        super.render(sp); // render the list background first
+        if (this.visible) for (ListItem li : this.items) li.render(sp); // then render each list item
+    }
+
+    /**
      * Reacts to list movement by re-positioning and re-sizing the list and its items appropriately
      */
     @Override
@@ -153,17 +174,6 @@ public class ListObject extends GameObject implements MouseInputEngine.MouseInte
             this.setY(this.posAnim.getFinalY()); // make sure at the correct ending y
             this.posAnim = null; // delete the animation
         }
-    }
-
-    /**
-     * Renders the list and the list items
-     *
-     * @param sp the shader program to use to render the list object
-     */
-    @Override
-    public void render(ShaderProgram sp) {
-        super.render(sp); // render the list background first
-        for (ListItem li : this.items) li.render(sp); // then render each list item
     }
 
     /**

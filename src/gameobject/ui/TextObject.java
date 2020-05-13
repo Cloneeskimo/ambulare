@@ -100,8 +100,8 @@ public class TextObject extends GameObject {
             modelCoords[s + 4] = modelCoords[s + 6] = x; // bottom right and top right x
 
             // model coordinates y
-            modelCoords[s + 1] = modelCoords[s + 7] = (-DEFAULT_SIZE / 2); // top left and top right y
-            modelCoords[s + 3] = modelCoords[s + 5] = (DEFAULT_SIZE / 2); // bottom left and bottom right y
+            modelCoords[s + 1] = modelCoords[s + 7] = (DEFAULT_SIZE / 2); // top left and top right y
+            modelCoords[s + 3] = modelCoords[s + 5] = (-DEFAULT_SIZE / 2); // bottom left and bottom right y
 
             // indices
             s = i * 6;

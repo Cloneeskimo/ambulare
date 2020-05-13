@@ -46,9 +46,9 @@ public class GameWorld {
         this.initSP(); // initialize shader program
         this.cam = new Camera(); // create the camera
         this.area = startingArea; // save the starting area as a member
+        this.area.useCam(this.cam); // give area a reference to the camera
         float ssr = area.getStartingSunRotation(); // get the starting sun rotation from the area
         this.dnc = new DayNightCycle(ssr == -1 ? 0f : ssr, area.getSunSpeed()); // initialize day/night cycle
-        this.area.useCam(this.cam); // give the camera to the area to use for rendering
         PhysicsEngine.giveBlockMap(this.area.getBlockMap()); // give the area's block map to the physics engine
         // register GLFW window scroll callback for camera zoom
         glfwSetScrollCallback(windowHandle, (w, x, y) -> { // when the user scrolls
@@ -74,7 +74,8 @@ public class GameWorld {
         sp.registerUniform("camY"); // register camera y uniform
         sp.registerUniform("camZoom"); // register camera zoom uniform
         sp.registerUniform("sunPresence"); // register sun presence uniform
-        sp.registerUniform("useLights"); // register sun presence uniform
+        sp.registerUniform("useDNC"); // register day/night cycle usage uniform
+        sp.registerUniform("useLights"); // register light usage uniform
         sp.registerLightArrayUniform(); // register light array uniform
     }
 

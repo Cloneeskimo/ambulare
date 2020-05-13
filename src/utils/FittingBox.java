@@ -18,16 +18,16 @@ public class FittingBox {
     /**
      * Members
      */
-    private float[] corners; // contains the four corner vertices in clockwise order, starting from the bottom left
+    private float[] corners; // four corner vertices in counter-clockwise order, starting from the top left
     private float r;         // how rotated (in radians) the fitting box is
     private float cx, cy;    // the center point of the fitting box (should be perfectly centered within the corners)
 
     /**
      * Constructor
      *
-     * @param corners the four corners of the fitting box, x before y, in the following order: bottom left, top left,
-     *                top right, then bottom right. These points should be rotated already. That is, passing a
-     *                non-zero value to r will not cause the fitting box to rotate the points
+     * @param corners the four corners of the fitting box, x before y, in the following order: top left, bottom left,
+     *                bottom right, then top right. These points should be rotated already. That is, passing a non-zero
+     *                value to r will not cause the fitting box to rotate the points
      * @param r       how rotated the fitting box is
      * @param cx      the center point x
      * @param cy      the center point y
@@ -35,7 +35,7 @@ public class FittingBox {
     public FittingBox(float[] corners, float r, float cx, float cy) {
         if (corners.length != 8) // if invalid amount of corners
             Utils.handleException(new Exception("Invalid corners given for FittingBox. Length should be 8, is " +
-                    "actually " + corners.length), "FittingBox", "FittingBox(float[], float, float, float)",
+                            "actually " + corners.length), "FittingBox", "FittingBox(float[], float, float, float)",
                     true); // throw exception
         this.corners = corners;
         this.r = r;
@@ -55,14 +55,14 @@ public class FittingBox {
         Pair<Float>[] rps = new Pair[4];
         for (int i = 0; i < 4; i++) { // for each corner
             if (this.r != 0) rps[i] = Utils.rotatePoint(this.cx, this.cy, this.corners[i * 2], this.corners[i * 2 + 1],
-                    -this.r); // un-rotate the corner
+                    -this.r); // un-rotate the corners
             else rps[i] = new Pair(this.corners[i * 2], this.corners[i * 2 + 1]); // don't do rot calc if not rotated
         }
         Pair<Float> rp = Utils.rotatePoint(this.cx, this.cy, x, y, -this.r); // and then rotate the point
-        return (rps[0].x < rp.x && rps[0].y < rp.y && // check bottom left
-                rps[1].x < rp.x && rps[1].y > rp.y && // check top left
-                rps[2].x > rp.x && rps[2].y > rp.y && // check top right
-                rps[3].x > rp.x && rps[3].y < rp.y);  // check bottom right
+        return (rps[0].x < rp.x && rps[0].y > rp.y && // check top left
+                rps[1].x < rp.x && rps[1].y < rp.y && // check bottom left
+                rps[2].x > rp.x && rps[2].y < rp.y && // check bottom right
+                rps[3].x > rp.x && rps[3].y > rp.y);  // check top right
     }
 
     /**

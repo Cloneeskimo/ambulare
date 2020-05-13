@@ -1,6 +1,7 @@
 package utils;
 
 import org.lwjgl.BufferUtils;
+import org.lwjgl.opengl.GL32;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -13,6 +14,19 @@ import java.util.List;
 import java.util.Scanner;
 
 import static org.lwjgl.BufferUtils.createByteBuffer;
+import static org.lwjgl.opengl.GL11.GL_NEAREST;
+import static org.lwjgl.opengl.GL11.GL_RGBA;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_MAG_FILTER;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_MIN_FILTER;
+import static org.lwjgl.opengl.GL11.GL_UNSIGNED_BYTE;
+import static org.lwjgl.opengl.GL11.glBindTexture;
+import static org.lwjgl.opengl.GL11.glDrawBuffer;
+import static org.lwjgl.opengl.GL11.glGenTextures;
+import static org.lwjgl.opengl.GL11.glTexImage2D;
+import static org.lwjgl.opengl.GL11.glTexParameteri;
+import static org.lwjgl.opengl.GL30.*;
+import static org.lwjgl.opengl.GL30.GL_COLOR_ATTACHMENT0;
 
 /*
  * Utils.java
@@ -202,6 +216,35 @@ public class Utils {
         }
         buffer.flip(); // flip the result
         return buffer; // and return the final buffer
+    }
+
+    /**
+     * Creates a frame buffer object and a texture attachment with the given width and height
+     *
+     * @param w the width to give the texture attachment
+     * @param h the height to give the texture attachment
+     * @return a length two integer array where [0] is the FBO ID and [1] is the texture attachment's texture ID
+     */
+    public static int[] createFBOWithTextureAttachment(int w, int h) {
+
+        // create frame buffer object to draw textures to
+        int fboID = glGenFramebuffers(); // generate frame buffer object
+        glBindFramebuffer(GL_FRAMEBUFFER, fboID); // bind the frame buffer object
+        glDrawBuffer(GL_COLOR_ATTACHMENT0); // enable drawing in color attachment zero
+
+        // create texture attachment for the frame buffer object
+        int texID = glGenTextures(); // generate texture
+        glBindTexture(GL_TEXTURE_2D, texID); // bind texture
+        // create an empty texture with the given size
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, (ByteBuffer) null);
+        // these parameters make the pixels of the texture crystal clear
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        GL32.glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texID, 0); // attach texture to FBO
+        glBindTexture(GL_TEXTURE_2D, 0); // unbind texture
+
+        // return the fbo and the texture attachment
+        return new int[]{fboID, texID};
     }
 
     /**

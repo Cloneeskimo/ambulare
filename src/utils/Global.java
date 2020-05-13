@@ -23,10 +23,10 @@ public class Global {
     /**
      * Static Data
      */
-    public static final String VERSION = "com98"; // the version of the game
+    public static final String VERSION = "com99"; // the version of the game
     public static final String WINDOW_TITLE = "Ambulare " + VERSION; // the window title
-    public static final float TIME_BETWEEN_FPS_REPORTS = 1f; // time between FPS reports when reports are enabled
-    public static final int FPS_REPORTING_TOGGLE_KEY = GLFW_KEY_1; // the key to toggle FPS reporting in the engine
+    public static final float TIME_BETWEEN_METRIC_REPORTS = 0.25f; // time between debug metric reports/average calc
+    public static final int DEBUG_TOGGLE_KEY = GLFW_KEY_1; // the key to toggle debug reporting in the engine
     public static final int POLYGON_MODE_TOGGLE_KEY = GLFW_KEY_2; // the key to toggle between fill/line polygon modes
     public static final int TARGET_FPS = 60; // the target frames per second when vertical sync is off
     public static final int TARGET_UPS = 60; // the target updates per second regardless of vertical sync

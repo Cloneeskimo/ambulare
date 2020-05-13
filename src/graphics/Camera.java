@@ -35,9 +35,9 @@ public class Camera {
     private float x, y, vx, vy;                      // position and velocity
     private float zoom, vz, az;                      // zoom, zoom velocity, zoom acceleration
     private GameObject following;                    // a game object to follow, if assigned
-    public final static float DEFAULT_ZOOM = 0.2f;   // default zoom
+    public final static float DEFAULT_ZOOM = 0.3f;   // default zoom
     public final static float MIN_ZOOM = 0.15f;      // minimum zoom
-    public final static float MAX_ZOOM = 0.9f;       // maximum zoom
+    public final static float MAX_ZOOM = 0.6f;       // maximum zoom
 
     /**
      * Constructs the camera with a specified zoom
@@ -96,7 +96,7 @@ public class Camera {
      * @param o the game object to follow. If null, won't follow anything
      */
     public void follow(GameObject o) {
-        this.following = o;
+        this.following = o; // save reference to followed object as member
     }
 
     /**
@@ -110,6 +110,7 @@ public class Camera {
 
     /**
      * Change the zoom using an aesthetic zoom based on treating the given value as a zoom acceleration
+     *
      * @param za the zoom acceleration
      */
     public void aestheticZoom(float za) {
@@ -147,7 +148,7 @@ public class Camera {
     public PhysicsEngine.AABB getView() {
         // get the width/height of the bounding box based off zoom and aspect ratio
         Pair<Float> size = Transformation.deaspect(new Pair<>(2 / this.zoom, 2 / this.zoom), Global.ar);
-        return new PhysicsEngine.AABB(this.x,this.y, size.x, size.y); // create and return bounding box
+        return new PhysicsEngine.AABB(this.x, this.y, size.x, size.y); // create and return bounding box
     }
 
     /**

@@ -8,7 +8,8 @@
 
 /*
  * These shaders are used to color world-based objects that do react to lighting. These shaders will take into
- * consideration the object's material, the status of a day/night cycle, and a set of lights (if useLights is 1)
+ * consideration the object's material, the status of a day/night cycle (if useDNC is 1), and a set of lights (if
+ * useLights is 1)
  */
 
 // specify GLSL version
@@ -18,6 +19,7 @@
  * Constants
  */
 const int MAX_LIGHTS = 32; // the maximum amount of lights the shader will accept
+const float DARKNESS_FACTOR = 7; // how much to divide color by in order to simulate a lack of light
 
 /*
  * A struct that defines properties of a light to use when shading nearby objects
@@ -33,16 +35,15 @@ struct Light {
 };
 
 /*
- * Uniformss
+ * Uniforms
  */
 uniform sampler2D texSampler;     // texture sampler - bound to the material's texture
 uniform vec4 color;               // color - bound to the material's color
 uniform int isTextured;           // flag representing whether the material is textured or not
 uniform int blend;                /* defines how to blend a material's color and texture if there are both. 0 - just use
                                      the texture; 1 - multiply color and texture; 2 - average color and texture */
-uniform int useLights;            /* flag for applying lights - this becomes false sometimes when rendering foreground
-                                     objects or other objects that lighting should not be applied to where 1 denotes
-                                     that lights should be used and 0 denotes that lights should not be used */
+uniform int useDNC;               // flag specifying if the day/night cycle lighting should be applied
+uniform int useLights;            // flag specifying if individual lights should be applied
 uniform float sunPresence;        // how present the sun currently is as a from 0 (not present) to 1 (fully present)
 uniform Light lights[MAX_LIGHTS]; /* the list of lights to consider. To denote that there is no light at index, simply
                                      don't set the uniform */
@@ -62,8 +63,16 @@ vec4 getBaseColor() {
         vec4 texColor = texture(texSampler, fTexCoords); // get texture sampled color
         if (blend == 1) texColor = texColor * color; // if blend mode multiplicative, multiply color and texture
         else if (blend == 2) texColor = (texColor + color) / 2; // if blend mode averaged, average color and texture
-        return vec4(texColor.xyz / 4, texColor.w); // set final color to calculated texture color (blended or not)
-    } else return vec4(color.xyz / 4, color.w); // if not textured, use base color of material
+        return texColor; // set final color to calculated texture color (blended or not)
+    } else return color; // if not textured, use base color of material
+}
+
+/**
+ * Apples the darkness factor to a color to simulate a lack of light
+ * @param c the color to apply the darkness factor to
+ */
+vec4 applyDarknessFactor(vec4 c) {
+    return vec4(c.xyz / DARKNESS_FACTOR, c.w); // apply darkness to rgb values
 }
 
 /*
@@ -72,8 +81,8 @@ vec4 getBaseColor() {
  */
 vec4 applyDayNight(vec4 color) {
     vec3 c = color.xyz * (1 + 3 * sunPresence); // apply brightness from sun
-    vec3 sunlight = vec3(1.1, 0.9, 0.75); // use a orange-ish red color for sunlight
-    vec3 moonlight = vec3(0.6, 0.6, 1.1); // use a blue-ish gray color for moonlight
+    vec3 sunlight = vec3(1.3, 1.3, 1); // use a orange-ish red color for sunlight
+    vec3 moonlight = vec3(1, 1, 1.3); // use a blue-ish gray color for moonlight
     // apply sunlight and/or moonlight depending on sun position and return final color
     return vec4((c * sunlight * (sunPresence) + c * moonlight * (1 - sunPresence)), color.w);
 }
@@ -82,8 +91,7 @@ vec4 applyDayNight(vec4 color) {
  * Applies lights from the lights array to the given color
  * @param color the color to apply the lights to
  */
-vec4 applyLights(vec4 color) {
-    vec3 baseColor = (4 * color.xyz / (1 + 3 * sunPresence)); // get base color before sun was added
+vec4 applyLights(vec4 color, vec3 baseColor) {
     for (int i = 0; i < MAX_LIGHTS; i++) { // go through each light
         if (lights[i].reach > 0) { // if that light exists
             float d = distance(worldPos, vec2(lights[i].x, lights[i].y)); // get the distance to the light
@@ -104,7 +112,9 @@ vec4 applyLights(vec4 color) {
  * Main Function
  */
 void main() {
-    vec4 color = getBaseColor(); // get base color based on material
-    color = applyDayNight(color); // apply day/night cycle coloring
-    fragColor = (useLights == 1) ? applyLights(color) : color; // apply lighting if lighting flag is true
+    vec4 base = getBaseColor(); // get base color based on material
+    vec4 lightless = applyDarknessFactor(base); // apply darkness factor to the color
+    vec4 c = (useDNC == 1) ? applyDayNight(lightless) : lightless; // apply day/night cycle coloring
+    c = (useLights == 1) ? applyLights(c, base.xyz) : c; // apply lighting if lighting flag is true
+    fragColor = c; // set final color
 }

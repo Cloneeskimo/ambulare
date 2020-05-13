@@ -1,10 +1,18 @@
 package logic;
 
+import gameobject.GameObject;
 import gameobject.ROC;
 import gameobject.ui.TextObject;
+import graphics.Material;
+import graphics.Model;
+import graphics.ShaderProgram;
 import graphics.Window;
 import utils.Global;
 import utils.Node;
+import utils.Utils;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /*
  * GameLogic.java
@@ -29,8 +37,7 @@ public abstract class GameLogic {
      */
     public static LogicChange logicChange = null; /* info about log change. See class info above and
                                                      GameLogic.LogicChange */
-    private static final int TAG_FPSS = -1;       // ROC tag for fps static text
-    private static final int TAG_FPSC = -2;       // ROC tag for fps counter text
+    private static final int TAG_DEBUG_INFO = -9; // ROC tag for the debugging info text objects
 
     /**
      * Members
@@ -40,10 +47,7 @@ public abstract class GameLogic {
                                                  the logic change. This may be null if no transfer data was given */
     protected boolean renderROC = true;       /* extending classes can disable ROC rendering if they want to render in
                                                  some other manner that does not involve an ROC */
-    private boolean FPSItemsAdded = false;    /* flag representing whether the FPS HUD items have been added. It is
-                                                 possible they are not added if extending classes override
-                                                 initOtherItems() without calling super so this is necessary to ensure
-                                                 that no text updates are called on TextObjects that do not exist */
+    private DebugInfo debugInfo;              // debugging info text objects to display when the engine gives info
 
     /**
      * Gives the game logic transfer data to use when initializing
@@ -69,22 +73,17 @@ public abstract class GameLogic {
 
     /**
      * Extending classes should initialize any game objects to be placed in the ROC or any additional members here
-     * In order for FPS reporting to still occur in the HUD, extending classes should call this as super
+     * In order for debug info to properly display in the HUD, this super method should be called
      *
      * @param window the window
      */
     protected void initOthers(Window window) {
-        TextObject FPSStatic = new TextObject(Global.FONT, "FPS: "); // separate from FPS count for efficiency
-        TextObject FPSCount = new TextObject(Global.FONT, ""); // create actual FPS count object
-        FPSStatic.setScale(0.6f, 0.6f); // scale FPS counter static text
-        FPSCount.setScale(0.6f, 0.6f); // scale actual FPS count text
-        FPSStatic.setVisibility(false); // invisible to start
-        FPSCount.setVisibility(false); // invisible to start
-        this.roc.addStaticObject(FPSStatic, TAG_FPSS, false, new ROC.PositionSettings(-1f, 1f,
-                true, 0.02f)); // add static FPS text to ROC as a static object
-        this.roc.addStaticObject(FPSCount, TAG_FPSC, false, new ROC.PositionSettings(FPSStatic, FPSStatic,
-                1f, 0f, 0f)); // add actual FPS text to ROC as a static object
-        this.FPSItemsAdded = true; // save that these FPS items have been added
+        // create debug info
+        this.debugInfo = new DebugInfo(0.01f, new Material(new float[]{0f, 0f, 0f, 0.4f}));
+        this.debugInfo.setVisibility(false); // don't make visible until engine reports debugging data
+        this.debugInfo.setScale(0.45f, 0.45f); // make small
+        this.roc.addStaticObject(debugInfo, TAG_DEBUG_INFO, false, new ROC.PositionSettings(-1f, 1f,
+                true, 0.05f)); // add debug info text to ROC
     }
 
     /**
@@ -149,24 +148,15 @@ public abstract class GameLogic {
     }
 
     /**
-     * This is called by the engine when there is an FPS to report while recording FPS, or when FPS reporting has been
-     * toggled off
-     * Extending classes can override this to change logic behavior when FPS is reported, but functionality of the
-     * default FPS displaying ROC text objects will no longer work correctly if this is not called as super
+     * This is called by the engine when there is new debugging information. The game logic passes this along to a game
+     * object called DebugInfo which aggregates text objects that display this info in the logic's HUD
      *
-     * @param FPS the FPS to report, or null if FPS reporting is toggled off
+     * @param info the new debugging information, where each index is as outlined in the Engine.updateDebugMetrics()
      */
-    public void reportFPS(Float FPS) {
-        if (this.FPSItemsAdded) { // only modify the FPS displaying items if they were actually added
-            if (FPS == null) { // if FPS reporting toggled off
-                this.roc.getStaticGameObject(TAG_FPSS).setVisibility(false); // hide FPS static text
-                this.roc.getStaticGameObject(TAG_FPSC).setVisibility(false); // hide FPS counter text
-            } else { // otherwise
-                this.roc.getStaticGameObject(TAG_FPSS).setVisibility(true); // show FPS static text
-                this.roc.getStaticGameObject(TAG_FPSC).setVisibility(true); // show FPS counter text
-                ((TextObject) this.roc.getStaticGameObject(TAG_FPSC)).setText(Float.toString(FPS)); // update with new FPS
-                this.roc.ensurePlacement(TAG_FPSC); // ensure text placement
-            }
+    public void reportDebugInfo(String info[]) {
+        if (this.debugInfo != null) {
+            this.debugInfo.updateInfo(info); // pass info to debug info object
+            this.roc.ensurePlacement(TAG_DEBUG_INFO); // ensure its position
         }
     }
 
@@ -232,6 +222,172 @@ public abstract class GameLogic {
          */
         public float getTransitionTime() {
             return this.transition;
+        }
+    }
+
+    /**
+     * An game object that serves as an aggregation of text objects which display debug information as passed through
+     * from the engine. Like ListObjects, DebugInfos cannot be rotated
+     */
+    public static class DebugInfo extends GameObject {
+
+        /**
+         * Members
+         */
+        private TextObject[] info; // text objects to display debugging information
+        float padding;             // padding between text and around the edges
+
+        /**
+         * Constructor
+         *
+         * @param padding    the amount of padding to place between the text objects and around the edges of the object
+         * @param background the material to render as a background to the debug info text objects
+         */
+        public DebugInfo(float padding, Material background) {
+            super(Model.getStdGridRect(1, 1), background); // call super with square model and background mat.
+            this.info = new TextObject[6]; // create array for info
+            // separate counters from the static text to improve updating the text's efficiency
+            // create FPS objects
+            this.info[0] = new TextObject(Global.FONT, "FPS: ");
+            this.info[1] = new TextObject(Global.FONT, "N/A");
+            // create update time objects
+            this.info[2] = new TextObject(Global.FONT, "Update: ");
+            this.info[3] = new TextObject(Global.FONT, "N/A");
+            // create render time objects
+            this.info[4] = new TextObject(Global.FONT, "Render: ");
+            this.info[5] = new TextObject(Global.FONT, "N/A");
+            this.padding = padding; // save padding as member
+            this.position(); // position everything
+        }
+
+        /**
+         * Updates the debug info object's model and positions all of the contained text objects
+         */
+        private void position() {
+            // calculate width and height
+            float w = 0f;
+            float h = 0f;
+            for (int i = 0; i < this.info.length; i += 2) { // for each debug metric
+                float rowWidth = this.info[i].getWidth() + this.info[i + 1].getWidth(); // get that metric row's width
+                if (rowWidth > w) w = rowWidth; // if its wider than the current max width, record it as new width
+                h += this.info[i].getHeight(); // keep running total of row heights
+            }
+            h += 4 * padding; // account for padding between rows and above/below object
+            w += 2 * padding; // account for padding to left and right of object
+            this.model.setScale(w, h); // scale object to correctly fit all text objects
+            float x = this.getX() - (w / 2f) + padding; // the left-most x of the object, as a starting point for text
+            float y = this.getY() + h / 2f - padding; // the top-most y of the object, to be updated for placement
+            for (int i = 0; i < this.info.length; i += 2) { // for each item
+                float h2 = this.info[i].getHeight() / 2f; // calculate its half-height
+                float w2 = this.info[i].getWidth() / 2f; // calculate its half-width
+                y -= h2; // update y based on half height
+                this.info[i].setPos(x + w2, y); // set the static text object's position
+                // set the actual counter's position next to the static object
+                this.info[i + 1].setPos(this.info[i].getX() + w2 + this.info[i + 1].getWidth() / 2f, y);
+                // update y for the next object
+                y -= (h2 + padding);
+            }
+        }
+
+        /**
+         * Updates the debug info object's text objects based on the given debugging info
+         *
+         * @param info the debugging info, formatted as specified by GameEngine.updateDebugMetrics(). If null, this
+         *             object will make itself invisible since reporting has stopped
+         */
+        public void updateInfo(String[] info) {
+            if (info == null) { // if null
+                this.visible = false; // make self invisible
+                return; // and return
+            }
+            // if this was invisible and actual values were given, make self visible again
+            if (!this.visible) this.visible = true;
+            // update the text objects with the info
+            for (int i = 0; i < info.length; i++) this.info[1 + (i * 2)].setText(info[i]);
+            this.position(); // re-position
+        }
+
+        /**
+         * Renders the background and the text objects
+         *
+         * @param sp the shader program to use to render the game object
+         */
+        @Override
+        public void render(ShaderProgram sp) {
+            super.render(sp); // call super's render to render background
+            if (this.visible) for (TextObject to : this.info) to.render(sp); // render the text objects
+        }
+
+        /**
+         * Updates positional animations by excluding rotation
+         *
+         * @param interval the amount of time, in seconds, to account for
+         */
+        @Override
+        protected void updatePosAnim(float interval) {
+            this.posAnim.update(interval); // update animation
+            this.setX(this.posAnim.getX()); // set x position
+            this.setY(this.posAnim.getY()); // set y position
+            if (this.posAnim.finished()) { // if animation is over
+                this.setX(this.posAnim.getFinalX()); // make sure at the correct ending x
+                this.setY(this.posAnim.getFinalY()); // make sure at the correct ending y
+                this.posAnim = null; // delete the animation
+            }
+        }
+
+        /**
+         * Responds to movement by re-positioning the text objects
+         */
+        @Override
+        protected void onMove() {
+            this.position(); // position text objects
+        }
+
+        /**
+         * Responds to horizontal scaling by horizontally scaling the containing text objects and re-positioning
+         *
+         * @param x the x scaling factor to use
+         */
+        @Override
+        public void setXScale(float x) {
+            for (TextObject to : this.info) to.setXScale(x); // scale containing text objects
+            this.position(); // position text objects
+        }
+
+        /**
+         * Responds to vertical scaling by vertically scaling the containing text objects and re-positioning
+         *
+         * @param y the y scaling factor to use
+         */
+        @Override
+        public void setYScale(float y) {
+            for (TextObject to : this.info) to.setYScale(y); // scale containing text objects
+            this.position(); // position text objects
+        }
+
+        /**
+         * Responds to scaling by scaling the containing text objects and re-positioning
+         *
+         * @param x the x scaling factor to use
+         * @param y the y scaling factor to use
+         */
+        @Override
+        public void setScale(float x, float y) {
+            // scale containing text objects
+            for (TextObject to : this.info) to.setXScale(x);
+            for (TextObject to : this.info) to.setYScale(y);
+            this.position(); // position text objects
+        }
+
+        /**
+         * Responds to attempts to rotate by logging and ignoring the occurrence
+         *
+         * @param r the new rotation value in radians
+         */
+        @Override
+        public void setRotRad(float r) {
+            Utils.log("Attempted to rotate a debug info. Ignoring.", "logic.GameLogic.DebugInfo",
+                    "setRotRad(float)", false); // log and ignore the attempt to rotate
         }
     }
 }

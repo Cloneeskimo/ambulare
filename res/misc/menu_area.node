@@ -7,9 +7,12 @@ area:
     light_foreground: true
 
     # specify the backdrop details
-    backdrop:
+    backdrop: material_backdrop
     {
-        texture_path: /textures/backdrop.png
+        material:
+        {
+            texture_path: /textures/backdrop.png
+        }
     }
 
     # provide a key mapping from characters in the layout to blocks
