@@ -48,7 +48,7 @@ public class GameWorld {
         this.area = startingArea; // save the starting area as a member
         this.area.useCam(this.cam); // give area a reference to the camera
         float ssr = area.getStartingSunRotation(); // get the starting sun rotation from the area
-        this.dnc = new DayNightCycle(ssr == -1 ? 0f : ssr, area.getSunSpeed()); // initialize day/night cycle
+        this.dnc = new DayNightCycle(ssr < 0 ? 0f : ssr, area.getSunSpeed()); // initialize day/night cycle
         PhysicsEngine.giveBlockMap(this.area.getBlockMap()); // give the area's block map to the physics engine
         // register GLFW window scroll callback for camera zoom
         glfwSetScrollCallback(windowHandle, (w, x, y) -> { // when the user scrolls
@@ -61,7 +61,8 @@ public class GameWorld {
      */
     private void initSP() {
         // create the shader program with the appropriate source files
-        this.sp = new ShaderProgram("/shaders/world_vertex.glsl", "/shaders/world_fragment.glsl");
+        this.sp = new ShaderProgram(new Utils.Path("/shaders/world_vertex.glsl", true),
+                new Utils.Path("/shaders/world_fragment.glsl", true));
         sp.registerUniform("ar"); // register aspect ratio uniform
         sp.registerUniform("arAction"); // register aspect ratio action uniform
         sp.registerUniform("x"); // register object x uniform
@@ -126,7 +127,7 @@ public class GameWorld {
     public WorldObject getWorldObject(int i) {
         if (i < 0 || i >= this.objects.size()) // if the given index is invalid
             Utils.handleException(new Exception("Unable to get world object at index: " + i + "; out of bounds"),
-                    "gameobject.gameworld.GameWorld", "getObject(i)", true); // crash
+                    this.getClass(), "getWorldObject", true); // crash
         return this.objects.get(i); // otherwise return the corresponding world object
     }
 

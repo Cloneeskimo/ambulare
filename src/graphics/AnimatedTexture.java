@@ -1,5 +1,7 @@
 package graphics;
 
+import utils.Utils;
+
 import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -63,13 +65,12 @@ public class AnimatedTexture extends Texture {
      * Constructs the animated texture by creating a texture at the given path and with the given animated properties
      *
      * @param path      the path to the image
-     * @param resPath   whether the given path is resource-relative
      * @param frames    the total amount of frames
      * @param frameTime the amount of time (in seconds) to give each frame
      * @param randStart whether to start the animation at a random time
      */
-    public AnimatedTexture(String path, boolean resPath, int frames, float frameTime, boolean randStart) {
-        super(path, resPath);
+    public AnimatedTexture(Utils.Path path, int frames, float frameTime, boolean randStart) {
+        super(path);
         this.frames = frames;
         this.frameTime = frameTime;
         this.frame = randStart ? ((int) (Math.random() * frames)) : 0; // calc starting frame

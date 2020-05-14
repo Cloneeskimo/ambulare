@@ -22,6 +22,7 @@ import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static java.sql.Types.NULL;
 import static org.lwjgl.glfw.GLFW.*;
@@ -149,7 +150,8 @@ public class MenuLogic extends GameLogic {
     public void initOthers(Window window) {
         super.initOthers(window); // initialize debug info through base game logic class
         this.window = window; // save window reference
-        Texture titleTexture = new Texture("/textures/ui/title.png", true); // create the title texture
+        // create the title texture
+        Texture titleTexture = new Texture(new Utils.Path("/textures/ui/title.png", true));
         float[] titleModelCoords = titleTexture.getModelCoords(128); // get the corresponding model coords
         title = new GameObject(new Model(titleModelCoords, Model.getStdRectTexCoords(), Model.getStdRectIdx()),
                 new Material(titleTexture)); // create title object
@@ -166,7 +168,8 @@ public class MenuLogic extends GameLogic {
      */
     private void initSP() {
         // create the shader program using the HUD shaders
-        sp = new ShaderProgram("/shaders/hud_vertex.glsl", "/shaders/hud_fragment.glsl");
+        sp = new ShaderProgram(new Utils.Path("/shaders/hud_vertex.glsl", true),
+                new Utils.Path("/shaders/hud_fragment.glsl", true));
         sp.registerUniform("ar"); // register aspect ratio uniform
         sp.registerUniform("arAction"); // register aspect ratio action uniform
         sp.registerUniform("x"); // register object x uniform
@@ -182,7 +185,9 @@ public class MenuLogic extends GameLogic {
      */
     private void initMenuArea() {
         // tell the ROC to use a game world with the menu area
-        this.roc.useGameWorld(this.window.getHandle(), new Area(Node.resToNode("/misc/menu_area.node"), this.window));
+        this.roc.useGameWorld(this.window.getHandle(),
+                new Area(Node.pathContentsToNode(new Utils.Path("/misc/menu_area.node", true)),
+                        this.window));
         this.cam = this.roc.getGameWorld().getCam(); // save camera handle to make sure it stays within bounds
         // place camera at a random x within the area and at the vertical center of the area
         this.cam.setPos((float) Math.random() * (float) this.roc.getGameWorld().getArea().getBlockMap().length,
@@ -270,7 +275,7 @@ public class MenuLogic extends GameLogic {
                 return new ROC.PositionSettings(null, settings, 0f, -1f, 0.1f);
             default: // if any other UI element is given
                 Utils.handleException(new Exception("Invalid main menu UI ROC tag given: '" + tag + "'. No default " +
-                                "main menu position exists for such a tag."), "logic.MenuLogic", "getMainMenuUIPosition(int)",
+                                "main menu position exists for such a tag."), this.getClass(), "getMainMenuUIPosition",
                         true); // crash as there are no other main menu UI elementss
         }
         return null; // this is here to make the compiler be quiet
@@ -290,12 +295,11 @@ public class MenuLogic extends GameLogic {
                 sli.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { // when clicked,
                     /* perform a check to make sure the starting area is valid before continuing to create a new game
                        with the selected story */
-                    Node startingArea = s.isResRelative() ? (Node.resToNode(s.getAbsStartingAreaPath()))
-                            : Node.fileToNode(s.getAbsStartingAreaPath(), false); // get starting area
+                    Node startingArea = Node.pathContentsToNode(s.getStartingAreaPath()); // get starting area
                     if (startingArea == null) // if there is no starting area node-file at the provided path
-                        Utils.handleException(new Exception(Utils.getImproperFormatErrorLine("starting_area",
-                                "Story", s.getStartingAreaPath() + " is an invalid path",
-                                false)), "logic.MenuLogic", "createNewGameUI()", true); // crash
+                        Utils.handleException(new Exception(NodeLoader.getMessage("starting_area", null,
+                                s.getStartingAreaPath() + " is an invalid path", false)),
+                                this.getClass(), "createNewGameUI", true); // crash
                     else { // otherwise
                         toTransfer = new Node(); // instantiate the transfer data node to world logic
                         toTransfer.addChild(s.toNode()); // add story to transfer data
@@ -311,7 +315,8 @@ public class MenuLogic extends GameLogic {
             ListTextButton openStoryFolder = new ListTextButton(Global.FONT, "(open stories folder)");
             openStoryFolder.setScale(0.4f, 0.4f); // scale the button down by a little over half
             openStoryFolder.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { // when clicked
-                Utils.openNativeFileExplorer(Utils.getDataDir() + "/stories/"); // open stories dir in data dir
+                // open stories dir in data dir
+                Utils.openNativeFileExplorer(new Utils.Path("/stories/", false));
             });
             listItems.add(openStoryFolder); // add open story folder button to the list items list
 
@@ -572,7 +577,7 @@ public class MenuLogic extends GameLogic {
 
             default: // UNRECOGNIZED PHASE
                 Utils.handleException(new Exception("Unrecognized menu logic phase: '" + this.phase + "'"),
-                        "logic.MenuLogic", "updateByPhase(float)", true); // crash for unrecognized phases
+                        this.getClass(), "updateByPhase", true); // crash for unrecognized phases
         }
     }
 

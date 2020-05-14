@@ -13,6 +13,24 @@ package utils;
 public class Pair<T> {
 
     /**
+     * Converts a given string to an integer pair. The string should be two floats separated by a space. For example,
+     * "5 6" is a valid input while "5f 10A" is not
+     *
+     * @param s the string to convert to a float pair
+     * @return the converted pair or null if the string was formatted incorrecetly
+     */
+    public static Pair<Integer> strToIntegerPair(String s) {
+        String[] components = s.split(" "); // split by spaces
+        if (components.length != 2) return null; // if incorrect length, return null
+        try { // try to create a float pair from tokens
+            return new Pair<>(Integer.parseInt(components[0]), Integer.parseInt(components[1]));
+        } catch (Exception e) { // if exception occurs
+            Utils.handleException(e, Utils.class, "strToIntegerPair", false); // log exception but don't crash
+            return null; // and return null
+        }
+    }
+
+    /**
      * Members
      */
     public T x, y; // the two values

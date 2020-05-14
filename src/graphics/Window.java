@@ -55,7 +55,7 @@ public class Window {
 
         // setup error callback and initialize GLFW
         GLFWErrorCallback.createPrint(System.err).set(); // set error callback. by default, prints errors to System.err
-        if (!glfwInit()) Utils.handleException(new Exception("Unable to initialize GLFW"), "graphics.Window", "init()",
+        if (!glfwInit()) Utils.handleException(new Exception("Unable to initialize GLFW"), this.getClass(), "init",
                 true); // throw exception if cannot initialize GLFW
 
         // set window hints
@@ -76,7 +76,7 @@ public class Window {
         this.handle = glfwCreateWindow(this.w, this.h, this.title, NULL, NULL); // create window with specified config
         glfwSetWindowSize(this.handle, this.w, this.h); // make sure it is the correct size
         if (this.handle == NULL) Utils.handleException(new Exception("Failed to create the GLFW window"),
-                "graphics.Window", "init()", true); // throw exception if cannot create window
+                this.getClass(), "init", true); // throw exception if cannot create window
         int[] fbw = new int[1]; // create array to get frame buffer width
         int[] fbh = new int[1]; // create array to get frame buffer height
         glfwGetFramebufferSize(this.handle, fbw, fbh); // get frame buffer size
@@ -110,7 +110,7 @@ public class Window {
         glClearColor(0f, 0f, 0f, 0f); // set clear color
 
         // log successful window initialization
-        Utils.log("Window initialized", "graphics.Window", "init()", false);
+        Utils.log("Window initialized", this.getClass(), "init", false);
     }
 
     /**
@@ -132,7 +132,7 @@ public class Window {
      */
     public void close() {
         glfwSetWindowShouldClose(this.handle, true); // close the window
-        Utils.log("Received close command", "graphics.Window", "close()", false); // log close
+        Utils.log("Received close command", this.getClass(), "close", false); // log close
     }
 
     /**

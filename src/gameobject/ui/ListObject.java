@@ -155,8 +155,8 @@ public class ListObject extends GameObject implements MouseInputEngine.MouseInte
      */
     @Override
     public void setRotRad(float r) {
-        Utils.log("Attempted to rotate a list object. Ignoring.", "gameobject.ui.ListObject",
-                "setRotRad(float)", false); // log and ignore the attempt to rotate
+        Utils.log("Attempted to rotate a list object. Ignoring.", this.getClass(), "setRotRad",
+                false); // log and ignore the attempt to rotate
     }
 
     /**

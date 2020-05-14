@@ -41,27 +41,26 @@ public class ShaderProgram {
     /**
      * Constructor
      *
-     * @param vShaderPath the resource-relative path to the vertex shader code
-     * @param fShaderPath the resource-relative path to the fragment shader code
+     * @param vShaderPath the path to the vertex shader code
+     * @param fShaderPath the path to the fragment shader code
      */
-    public ShaderProgram(String vShaderPath, String fShaderPath) {
+    public ShaderProgram(Utils.Path vShaderPath, Utils.Path fShaderPath) {
         this.progID = glCreateProgram(); // create GLSL program
         this.uniforms = new HashMap<>(); // initialize uniform map
         if (this.progID == 0) Utils.handleException(new Exception("Unable to create GLSL program"),
-                "graphics.ShaderProgram", "ShaderProgram(String, String)",
-                true); // throw exception if cannot create program
+                this.getClass(), "ShaderProgram", true); // throw exception if cannot create program
         this.processShaders(vShaderPath, fShaderPath); // process shaders
     }
 
     /**
      * Processes the GLSL shaders by loading the code, compiling the code, then linking.
      *
-     * @param vShaderPath the resource-relative path to the vertex shader
-     * @param fShaderPath the resource-relative path to the fragment shader
+     * @param vShaderPath the path to the vertex shader
+     * @param fShaderPath the path to the fragment shader
      */
-    private void processShaders(String vShaderPath, String fShaderPath) {
-        String vShaderCode = Utils.resToString(vShaderPath); // read vertex shader code
-        String fShaderCode = Utils.resToString(fShaderPath); // read fragment shader code
+    private void processShaders(Utils.Path vShaderPath, Utils.Path fShaderPath) {
+        String vShaderCode = Utils.pathContentsToString(vShaderPath); // read vertex shader code
+        String fShaderCode = Utils.pathContentsToString(fShaderPath); // read fragment shader code
         this.vShaderID = processShader(vShaderCode, GL_VERTEX_SHADER); // process vertex shader
         this.fShaderID = processShader(fShaderCode, GL_FRAGMENT_SHADER); // process fragment shader
         this.link(); // link shaders
@@ -79,13 +78,12 @@ public class ShaderProgram {
         int id = glCreateShader(type); // create shader
         if (id == 0) // if fail
             Utils.handleException(new Exception("Unable to create shader of type " + type + " with code: " + code),
-                    "graphics.ShaderProgram", "processShader(String, int)", true); // throw exception
+                    this.getClass(), "processShader", true); // throw exception
         glShaderSource(id, code); // give shader the code
         glCompileShader(id); // compile shader
         if (glGetShaderi(id, GL_COMPILE_STATUS) == 0) // if fail
             Utils.handleException(new Exception("Unable to compile shader of type " + type + ": " +
-                            glGetShaderInfoLog(id, 1024)), "graphics.ShaderProgram", "processShader(String, int)",
-                    true); // throw exception
+                    glGetShaderInfoLog(id, 1024)), this.getClass(), "processShader", true); // crash
         glAttachShader(this.progID, id); // attach to main program
         return id; // return id
     }
@@ -97,7 +95,7 @@ public class ShaderProgram {
         glLinkProgram(this.progID); // link program
         if (glGetProgrami(this.progID, GL_LINK_STATUS) == 0) // if fail
             Utils.handleException(new Exception("Unable to link shaders: " + glGetProgramInfoLog(this.progID,
-                    1024)), "graphics.ShaderProgram", "link()", true); // throw exception
+                    1024)), this.getClass(), "link", true); // throw exception
         glDetachShader(this.progID, this.vShaderID); // detach vertex shader
         glDetachShader(this.progID, this.fShaderID); // detach fragment shader
     }
@@ -110,8 +108,8 @@ public class ShaderProgram {
     public void registerUniform(String name) {
         int loc = glGetUniformLocation(this.progID, name); // get location
         if (loc < 0) // if fail
-            Utils.handleException(new Exception("Unable to find uniform with name '" + name + "'"),
-                    "graphics.ShaderProgram", "registerUniform(String)", true); // throw exception
+            Utils.handleException(new Exception("Unable to find uniform with name '" + name + "'"), this.getClass(),
+                    "registerUniform", true); // throw exception
         this.uniforms.put(name, loc); // save location
     }
 
@@ -138,7 +136,7 @@ public class ShaderProgram {
         try {
             glUniform1f(this.uniforms.get(name), v); // try to set uniform
         } catch (Exception e) { // if exception
-            Utils.handleException(e, "graphics.ShaderProgram", "setUniform(String, float)", true); // handle exception
+            Utils.handleException(e, this.getClass(), "setUniform", true); // handle exception
         }
     }
 
@@ -152,7 +150,7 @@ public class ShaderProgram {
         try {
             glUniform1i(this.uniforms.get(name), v); // try to set uniform
         } catch (Exception e) { // if exception
-            Utils.handleException(e, "graphics.ShaderProgram", "setUniform(String, int)", true); // handle exception
+            Utils.handleException(e, this.getClass(), "setUniform", true); // handle exception
         }
     }
 
@@ -169,7 +167,7 @@ public class ShaderProgram {
         try {
             glUniform4f(this.uniforms.get(name), x, y, z, a); // try to set uniform
         } catch (Exception e) { // if exception
-            Utils.handleException(e, "graphics.ShaderProgram", "setUniform(String, float, float, float, float)",
+            Utils.handleException(e, this.getClass(), "setUniform",
                     true); // handle exception
         }
     }
@@ -186,7 +184,7 @@ public class ShaderProgram {
     public void putInLightArrayUniform(LightSource light, float x, float y) {
         if (this.lightNo >= MAX_LIGHTS) // if too many lights are being rendered, throw an exception
             Utils.handleException(new Exception("Maximum amount of renderable lights exceeded: " + MAX_LIGHTS),
-                    "graphics.ShaderProgram", "setLightUniform(String, LightSource, float, float)", true);
+                    this.getClass(), "setLightUniform", true);
         try {
             String name = "lights[" + this.lightNo + "]"; // get the proper name for the light in the lights array
             this.lightNo++; // iterate the lights array iterator
@@ -198,7 +196,7 @@ public class ShaderProgram {
             glUniform1f(this.uniforms.get(name + ".y"), y); // set the light's y position
         } catch (Exception e) { // if exception
             // handle exception
-            Utils.handleException(e, "graphics.ShaderProgram", "setUniform(String, LightSource, float,float)", true);
+            Utils.handleException(e, this.getClass(), "setUniform", true);
         }
     }
 

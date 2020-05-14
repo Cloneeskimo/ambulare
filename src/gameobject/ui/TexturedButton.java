@@ -5,6 +5,7 @@ import graphics.MSAT;
 import graphics.Material;
 import graphics.Model;
 import utils.MouseInputEngine;
+import utils.Utils;
 
 /*
  * TexturedButton.java
@@ -28,18 +29,18 @@ public class TexturedButton extends GameObject implements MouseInputEngine.Mouse
      * Constructs the textured button with animation within texture states state
      *
      * @param model         the model to use for textured button
-     * @param texResPath    the resource-relative path to the texture. The texture should have its frames in the
-     *                      following order: default frames, then hover frames, then pressed frames
+     * @param texturePath   the path to the texture. The texture should have its frames in the following order: default
+     *                      frames, then hover frames, then pressed frames
      * @param defaultFrames how many frames in the texture correspond to the default state
      * @param hoverFrames   how many frames in the texture correspond to the hover state
      * @param pressedFrames how many frames in the texture correspond to the pressed state
      * @param frameTime     how much time (in seconds) to show a frame
      */
-    public TexturedButton(Model model, String texResPath, int defaultFrames, int hoverFrames, int pressedFrames,
+    public TexturedButton(Model model, Utils.Path texturePath, int defaultFrames, int hoverFrames, int pressedFrames,
                           float frameTime) {
         super(model, null);
         // create material using a multi-state animated texture
-        this.material = new Material(new MSAT(texResPath, true, new MSAT.MSATState[]{
+        this.material = new Material(new MSAT(texturePath, new MSAT.MSATState[]{
                 new MSAT.MSATState(defaultFrames, frameTime),
                 new MSAT.MSATState(hoverFrames, frameTime),
                 new MSAT.MSATState(pressedFrames, frameTime)}));
@@ -51,12 +52,12 @@ public class TexturedButton extends GameObject implements MouseInputEngine.Mouse
      * change when the mouse state changes however). This constructor basically assumes that the texture at the given
      * path has one frame for each mouse interactivity state
      *
-     * @param model      the model to use for textured button
-     * @param texResPath the resource-relative path to the texture. The texture should have its frames in the
-     *                   following order: default frame, then the hover frame, then the pressed frame
+     * @param model       the model to use for textured button
+     * @param texturePath the path to the texture. The texture should have its frames in the following order: default
+     *                    frames, then hover frames, then pressed frames
      */
-    public TexturedButton(Model model, String texResPath) {
-        this(model, texResPath, 1, 1, 1, 0);
+    public TexturedButton(Model model, Utils.Path texturePath) {
+        this(model, texturePath, 1, 1, 1, 0);
     }
 
     /**

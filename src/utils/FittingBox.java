@@ -35,8 +35,7 @@ public class FittingBox {
     public FittingBox(float[] corners, float r, float cx, float cy) {
         if (corners.length != 8) // if invalid amount of corners
             Utils.handleException(new Exception("Invalid corners given for FittingBox. Length should be 8, is " +
-                            "actually " + corners.length), "FittingBox", "FittingBox(float[], float, float, float)",
-                    true); // throw exception
+                    "actually " + corners.length), this.getClass(), "FittingBox", true); // throw exception
         this.corners = corners;
         this.r = r;
         this.cx = cx;

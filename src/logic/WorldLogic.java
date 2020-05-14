@@ -51,7 +51,7 @@ public class WorldLogic extends GameLogic {
         this.window = window; // save reference to window
         if (this.transferData == null) { // if no transfer data was given
             Utils.handleException(new Exception("world logic initiated without transfer data. Transfer data is needed" +
-                    "to create an area for the game world"), "logic.WorldLogic", "initOthers(Window)", true); // crash
+                    "to create an area for the game world"), this.getClass(), "initOthers", true); // crash
         }
         this.initStoryAndArea(); // initialize the story and the area
         this.initWorldObjects(); // initialize world objects
@@ -64,8 +64,7 @@ public class WorldLogic extends GameLogic {
      */
     private void initStoryAndArea() {
         this.story = new Story(transferData.getChild("story")); // create story from transfer data node
-        Node startingArea = story.isResRelative() ? (Node.resToNode(story.getAbsStartingAreaPath()))
-                : Node.fileToNode(story.getAbsStartingAreaPath(), false); // get starting area node
+        Node startingArea = Node.pathContentsToNode(this.story.getStartingAreaPath()); // get starting area node
         this.roc.useGameWorld(window.getHandle(), new Area(startingArea, this.window)); // create game world with area
     }
 
@@ -75,17 +74,18 @@ public class WorldLogic extends GameLogic {
     private void initWorldObjects() {
         // create player entity
         Sound[] playerStepSounds = new Sound[]{
-                new Sound("/sounds/step1.ogg", true),
-                new Sound("/sounds/step2.ogg", true),
-                new Sound("/sounds/step3.ogg", true),
-                new Sound("/sounds/step4.ogg", true)
+                new Sound(new Utils.Path("/sounds/step1.ogg", true)),
+                new Sound(new Utils.Path("/sounds/step2.ogg", true)),
+                new Sound(new Utils.Path("/sounds/step3.ogg", true)),
+                new Sound(new Utils.Path("/sounds/step4.ogg", true))
         };
         player = new Entity(this.transferData.getChild("name").getValue(), Model.getStdGridRect(1, 2),
-                new LightSourceMaterial(new MSAT("/textures/entity/player.png", true, new MSAT.MSATState[]{
-                        new MSAT.MSATState(2, 0.5f),
-                        new MSAT.MSATState(1, 1f),
-                        new MSAT.MSATState(12, 0.035f)
-                }), new LightSource(new float[]{1f, 1f, 1f, 1f}, 5f, 1.5f)), playerStepSounds);
+                new LightSourceMaterial(new MSAT(new Utils.Path("/textures/entity/player.png", true),
+                        new MSAT.MSATState[]{
+                                new MSAT.MSATState(2, 0.5f),
+                                new MSAT.MSATState(1, 1f),
+                                new MSAT.MSATState(12, 0.035f)
+                        }), new LightSource(new float[]{1f, 1f, 1f, 1f}, 5f, 1.5f)), playerStepSounds);
         // lower player bounding width slightly to fit better and appear more aesthetically
         player.setBoundingWidth(0.9f);
         player.setBoundingHeight(0.9f);

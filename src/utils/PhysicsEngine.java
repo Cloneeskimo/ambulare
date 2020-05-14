@@ -365,6 +365,7 @@ public class PhysicsEngine {
      */
     public static void giveBlockMap(boolean[][] blockMap) {
         PhysicsEngine.blockMap = blockMap;
+        Utils.log("Received block map", PhysicsEngine.class, "giveBlockMap", false); // log
     }
 
     /**

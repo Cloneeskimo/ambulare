@@ -1,7 +1,10 @@
 block info:
 {
     # specify the texture path for block
-    texture_path: /textures/blocks/gray_brick/dark_gray_brick_background.png
+    texture_paths:
+    {
+        resource_path: /textures/blocks/gray_brick/dark_gray_brick_background.png
+    }
 
     # specify no cut radius
     cut_radius: 0f

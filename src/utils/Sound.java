@@ -27,13 +27,12 @@ public class Sound {
     /**
      * Constructor
      *
-     * @param path        the path to the sound file (should be in .ogg format)
-     * @param resRelative whether the given path is resource-relative
+     * @param path the path to the sound file (should be in .ogg format)
      */
-    public Sound(String path, boolean resRelative) {
+    public Sound(Utils.Path path) {
         this.bufferID = alGenBuffers(); // generate the openAL sound buffer
         try (STBVorbisInfo info = STBVorbisInfo.malloc()) { // allocate space for the vorbis info
-            ShortBuffer pcm = readVorbis(path, resRelative, 32 * 1024, info); // read the vorbis
+            ShortBuffer pcm = readVorbis(path, 32 * 1024, info); // read the vorbis
             alBufferData(this.bufferID, info.channels() == 1 ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16, pcm,
                     info.sample_rate()); // put the sound data into the openAL buffer
         }
@@ -74,20 +73,19 @@ public class Sound {
     /**
      * Reads the sound vorbix and creates the pulse-code modulation
      *
-     * @param path        the path to the sound find (should be in .ogg format)
-     * @param resRelative whether the given path is resource-relative or not
-     * @param bufferSize  the initial size to use for the vorbis buffer size
-     * @param info        the vorbis info
+     * @param path       the path to the sound file (should be in .ogg format)
+     * @param bufferSize the initial size to use for the vorbis buffer size
+     * @param info       the vorbis info
      * @return a short buffer containing the pulse-code modulation
      */
-    private ShortBuffer readVorbis(String path, boolean resRelative, int bufferSize, STBVorbisInfo info) {
+    private ShortBuffer readVorbis(Utils.Path path, int bufferSize, STBVorbisInfo info) {
         MemoryStack stack = MemoryStack.stackPush(); // push a stack to memory to story error information
-        ByteBuffer vorbis = Utils.fileToByteBuffer(path, resRelative, bufferSize); // read audio file into byte buffer
+        ByteBuffer vorbis = Utils.pathContentsToByteBuffer(path, bufferSize); // read audio file into byte buffer
         IntBuffer error = stack.mallocInt(1); // allocate an int for an error code
         long dec = stb_vorbis_open_memory(vorbis, error, null); // open ogg vorbis file
         // if opening failed, crash program
         if (dec == NULL) Utils.handleException(new Exception("Failed to open Ogg Vorbis file. Error code: " +
-                error.get(0)), "utils.Sound", "readVorbis(String, boolean, int, STBVorbisInfo", true);
+                error.get(0)), this.getClass(), "readVorbis", true);
         stb_vorbis_get_info(dec, info); // get the vorbis info
         int channels = info.channels(); // get the amount of audio channels
         int length = stb_vorbis_stream_length_in_samples(dec); // get the length of the vorbis in samples

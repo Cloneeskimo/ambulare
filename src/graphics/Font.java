@@ -1,6 +1,7 @@
 package graphics;
 
 import utils.Node;
+import utils.NodeLoader;
 import utils.Utils;
 
 import java.util.HashMap;
@@ -31,48 +32,53 @@ public class Font {
      * Members
      */
     private Map<Character, Integer> charCutoffs; // map from ASCII characters to the amount of horizontal cutoff
-    private Texture sheet;                       // font sheet
+    private Texture sheet;                       // the font sheet texture
     private int charsPerRow, charsPerCol;        // amount of characters per row and column of the font sheet
     private int stdCharCutoff;                   // standard cutoff for a character if none specified
     private char startingChar;                   // the first character of the font sheet (top left)
 
     /**
-     * Constructs the area by compiling information from a given node about the font sheet texture at the given
-     * resource-relative path. An font node can have the following children:
+     * Constructs the font by creating a font sheet texture at the given path and then constructing the font information
+     * from the given node. A font info node can have the following children:
      * <p>
      * - chars_per_row [required]: how many characters there are per row in the font sheet
      * <p>
      * - chars_per_col [required]: how many characters there are per column in the font sheet
      * <p>
-     * - starting_char [required]: the first character in the font sheet (at the top-left)
+     * - starting_char [required][0, 255]: the first character in the font sheet (at the top-left)
      * <p>
-     * - char_cutoffs: how much horizontal cutoff to apply to each character to avoid empty space. This child should
-     * then contain children for (1) each character with a unique cutoff where the name is the character (except for
-     * colon (':') where the name should be 'colon' to avoid being confused with a node-file separator, and the number
-     * symbol ('#') where the name should be 'number' to avoid being confused with a node-file comment), and the value
-     * is the amount of pixels to cut off, and (2) a child named 'standard' to define a standard cutoff for characters
-     * not otherwise listed
-     * <p>
-     * Note that, if any of the info above is improperly formatted, a message saying as much will be logged. As
-     * such, when designing fonts to be loaded into the game, the logs should be checked often to make sure the
-     * loading process is unfolding correctly
+     * - char_cutoffs [optional][default: 0][0, INFINITY]: how much horizontal cutoff to apply to each character to
+     * avoid empty space (on pixels). This child should then contain children for (1) each character with a unique
+     * cutoff where the name is the character (except for colon (':') where the name should be 'colon' to avoid being
+     * confused with a node-file separator, and the number symbol ('#') where the name should be 'number' to avoid being
+     * confused with a node-file comment), and the value is the amount of pixels to cut off, and (2) a child named
+     * 'standard' to define a standard cutoff for characters not otherwise listed
      *
-     * @param sheetResPath the resource-relative path to the font sheet. Correctly formatted font sheets can start at
-     *                     any character, but they may NOT skip characters, and the sheet must be a perfect grid where
-     *                     each cell is the same size
-     * @param info         the node containing the information about the font
+     * @param sheetPath the path to the font sheet. Correctly formatted font sheets can start at any character, but they
+     *                  may NOT skip characters, and the sheet must be a perfect grid where each cell is the same size
+     * @param data      the node containing the information about the font
      */
-    public Font(String sheetResPath, Node info) {
-        this.sheet = new Texture(sheetResPath, true); // load sheet
-        try { // try to parse node-file infos
-            this.charsPerRow = Integer.parseInt(info.getChild("chars_per_row").getValue()); // parse characters per row
-            this.charsPerCol = Integer.parseInt(info.getChild("chars_per_col").getValue()); // parse characters per col
-            this.startingChar = (char) Integer.parseInt(info.getChild("starting_char").getValue()); // parse start char
-            this.processCharCutoffs(info.getChild("char_cutoffs")); // parse character cutoffs
-        } catch (Exception e) { // if exception
-            Utils.handleException(new Exception(Utils.getImproperFormatErrorLine("Font", "Font",
-                    e.getMessage(), false)), "graphics.Font", "Font(String, String)", true); // crash
-        }
+    public Font(Utils.Path sheetPath, Node data) {
+
+        /*
+         * Load font information using node loader
+         */
+        this.sheet = new Texture(sheetPath); // load sheet
+        Map<String, Object> font = NodeLoader.loadFromNode("Font", data, new NodeLoader.LoadItem[]{
+                new NodeLoader.LoadItem<>("chars_per_row", null, Integer.class).makeRequired(),
+                new NodeLoader.LoadItem<>("chars_per_col", null, Integer.class).makeRequired(),
+                new NodeLoader.LoadItem<>("starting_char", null, Integer.class).makeRequired()
+                        .setUpperBound(255),
+                new NodeLoader.LoadItem<>("char_cutoffs", new Node("char_cutoffs"), Node.class)
+        });
+
+        /*
+         * Apply loaded information
+         */
+        this.charsPerRow = (Integer) font.get("chars_per_row"); // save characters per row as member
+        this.charsPerCol = (Integer) font.get("chars_per_col"); // save characters per column as member
+        this.startingChar = (char) (int) font.get("starting_char"); // save starting character as member
+        this.processCharCutoffs((Node) font.get("char_cutoffs")); // process cutoffs
     }
 
     /**
@@ -106,7 +112,7 @@ public class Font {
     public float[] getCharTexCoords(char c, boolean cutoff) {
         if (c < this.startingChar) // if character is before the starting character
             Utils.handleException(new Exception("Invalid character '" + c + "' when starting character is '" +
-                    this.startingChar + "'"), "Font", "getCharTexCoords(char, boolean)", true); // throw error
+                    this.startingChar + "'"), this.getClass(), "getCharTexCoords", true); // crash
 
         // make necessary row/column calculations
         int loc = (c - this.startingChar); // the location of the character in the font sheet (where loc 0 is top left)

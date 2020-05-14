@@ -46,9 +46,9 @@ public class Material {
             else { // if an invalid color array is given, just log it
                 if (this.texture == null) // if there is no texture either, throw an exception
                     Utils.handleException(new Exception("Material with no texture given an invalid color: " + color),
-                            "graphics.Material", "Material(Texture, float[], boolean)", true);
-                Utils.log("Invalid color array given: " + color + ", assuming colorless", "graphics.Material",
-                        "Material(Texture, float[], BlendMode)", false); // if texture, ignore color
+                            this.getClass(), "Material", true);
+                Utils.log("Invalid color array given: " + color + ", assuming colorless", this.getClass(),
+                        "Material", false); // if texture, ignore color
             }
         }
     }

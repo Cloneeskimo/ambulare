@@ -4,6 +4,7 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL32;
 
 import java.io.*;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -42,13 +43,147 @@ import static org.lwjgl.opengl.GL30.GL_COLOR_ATTACHMENT0;
 public class Utils {
 
     /**
-     * Opens the given path in the native operating system's file explorer if it exists. This will not work for
-     * resource-relative paths
-     *
-     * @param filePath the path to open
+     * Describes a path in the file system using a string representing the path and a flag representing its relativity.
+     * For the most part, all paths that are passed along through the program are either 1) resource-relative, meaning
+     * they are relative to the java program's resources directory, or 2) relative to the data directory which is a
+     * directory outside of the program that is established in getDataDir()
      */
-    public static void openNativeFileExplorer(String filePath) {
-        File file = new File(filePath); // create a file at that path
+    public static class Path {
+
+        /**
+         * Members
+         */
+        private String path;         // the string representing the path
+        private boolean resRelative; // whether the path is resource-relative (true) or relative to the data dir (false)
+
+        /**
+         * Constructs the path using the given path and resource-relativity flag
+         *
+         * @param path        the string representing the path
+         * @param resRelative whether the path is resource-relative (true) or relative to the data dir (false)
+         */
+        public Path(String path, boolean resRelative) {
+            this.path = path; // save path as member
+            this.resRelative = resRelative; // save resource-relativity flag as member
+        }
+
+        /**
+         * Constructs the path using the given node
+         *
+         * @param n the node to construct the path from where the name of the node represents the relativity and the
+         *          value is the relative path. If the name contains the string (non-case sensitive) "res", the path
+         *          will be considered resource-relative. Otherwise, it will be considered to be relative to the data
+         *          directory
+         */
+        public Path(Node n) {
+            this.path = n.getValue(); // save path as value of node
+            this.resRelative = n.getName().toLowerCase().contains("res"); // determine relativity as described above
+        }
+
+        /**
+         * Adds the given string to the path's string representation and returns the result as a new path
+         *
+         * @param s the string to add to the path's string representation
+         * @return the resulting path
+         */
+        public Path add(String s) {
+            return new Path(this.path + s, this.resRelative); // add given string and return as new path
+        }
+
+        /**
+         * @return the file corresponding to the path or null if the path is resource-relative
+         */
+        public File getFile() {
+            if (this.resRelative) return null; // if resource-relative, return null
+            return new File(Utils.getDataDir() + this.path); // otherwise create and return file
+        }
+
+        /**
+         * @return the input stream corresponding to the path
+         */
+        public InputStream getStream() {
+            // if relative to the data directory, return null
+            try { // try to get the resource as a stream and return it
+                if (!this.resRelative) return new FileInputStream(this.getFile());
+                return Class.forName(Utils.class.getName()).getResourceAsStream(this.path);
+            } catch (Exception e) { // if an exception occurs
+                Utils.handleException(new Exception("Unable to get path '" + this.path + "' input stream for reason: "
+                        + e.getMessage()), this.getClass(), "getStream()", true); // crash
+            }
+            return null;
+        }
+
+        /**
+         * @return whether the file at the path exists
+         */
+        public boolean exists() {
+            // if resource relative, try to create a stream and return whether successful
+            if (this.resRelative) return (this.getStream() != null);
+                // if relative to the data directory, create file and return whether it exists
+            else return (this.getFile().exists());
+        }
+
+        /**
+         * @return this path's path string
+         */
+        public String getPath() {
+            return this.path;
+        }
+
+        /**
+         * @return whether the path is resource-relative
+         */
+        public boolean isResRelative() {
+            return this.resRelative;
+        }
+
+        /**
+         * Converts the path to a node by formatting it the same way that the path constructor that takes a node would
+         * except
+         *
+         * @return the path converted to a node
+         */
+        public Node toNode() {
+            return new Node(this.resRelative ? "resource_path" : "path", this.path); // convert to node and return
+        }
+
+        /**
+         * Converts the path to a string representing the path's absolute path
+         *
+         * @return the string representing the path's absolute path
+         */
+        @Override
+        public String toString() {
+            String base = this.resRelative ? "<res>" : getDataDir(); // get base
+            return base + this.path; // add path and return
+        }
+
+        /**
+         * Checks the path for equality with another path by checking the relativity and string path representations
+         * of each
+         *
+         * @param obj the other object to check for equality with
+         * @return whether the given path is considered equal to the one
+         */
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof Path) { // if the given object is a path, check its relativity and string path rep.
+                return (this.resRelative == ((Path) obj).resRelative && this.path.equals(((Path) obj).path));
+            } else return false; // otherwise return inequal
+        }
+    }
+
+    /**
+     * Opens the given path in the native operating system's file explorer if it exists. This will not work for
+     * resource-relative paths and any attempts will be logged
+     *
+     * @param path the path to open
+     */
+    public static void openNativeFileExplorer(Path path) {
+        // if the path is resource-relative, log
+        if (path.isResRelative()) Utils.log("Attempted to open native file explorer at a resource-relative path: "
+                + path, Utils.class, "openNativeFileExplorer", true);
+        File file = path.getFile(); // get the file at the path
         if (file.exists()) { // if the path exists
             try { // try to open a native file explorer at that path
                 String os = System.getProperty("os.name").toLowerCase(); // get the operating system
@@ -57,63 +192,18 @@ public class Utils {
                             file.getAbsolutePath()}); // open using windows
                 } else if (os.contains("nux") || os.contains("nix") || os.contains("mac")) // if linux or mac
                     Runtime.getRuntime().exec(new String[]{"/usr/bin/open", file.getAbsolutePath()}); // open with linux
-            } catch (Exception e) { // if an exception occurs, log and ignoree
-                Utils.log("Unable to open path: " + filePath + " in native file explorer for reason: " +
-                        e.getMessage(), "utils.Utils", "openNativeFileExplorer(String)", false);
+            } catch (Exception e) { // if an exception occurs, log and ignore
+                Utils.log("Unable to open path: " + path + " in native file explorer for reason: " +
+                        e.getMessage(), Utils.class, "openNativeFileExplorer", false);
             }
         } else // if the file doesn't exist
-            Utils.log("Unable to open path: " + file + " in native file exploreer for reason: non-existent",
-                    "utils.Utils", "openNativeFileExplorer(String)", false); // log and ignore
+            Utils.log("Unable to open path: " + path + " in native file explorer for reason: non-existent",
+                    Utils.class, "openNativeFileExplorer", false); // log and ignore
     }
 
     /**
-     * Determines if a file with the given path exists
-     *
-     * @param path    the path to check
-     * @param resPath whether the path is resource-relative or not. If not, the data directory will not get
-     *                automatically prepended to the path
-     * @return whether the path exists or not
-     */
-    public static boolean fileExists(String path, boolean resPath) {
-        if (resPath) { // if resource-relative path
-            try { // try to open the resource as a stream. If it's null, the file doesn't exist
-                return (Class.forName(Utils.class.getName()).getResourceAsStream(path) != null);
-            } catch (Exception e) {
-                Utils.handleException(e, "utils.Utils", "fileXists(String, boolean)", true);
-            }
-        } else { // if not resource-relative
-            File file = new File(path); // create the corresponding file
-            return file.exists(); // and check if it exists
-        }
-        return false;
-    }
-
-    /**
-     * Parses the the given path to separate its directory, name, and extension
-     *
-     * @param resPath whether the file is resource-relative or not
-     * @param file    the path of the file
-     * @return a length three array containing [0] the directory (including the last '/') (or null if not in a
-     * directory), [1] the name of the file excluding the slash and extension, [2] the extension of the file
-     * including the '.' (or null if no extension), [3] 'true' if the file is resource-relative or 'false' otherwise
-     */
-    public static String[] getFileInfoForPath(boolean resPath, String file) {
-        String dir = null, name = file, ext = null;
-        for (int i = file.length() - 1; i >= 0; i--) { // loop through file starting at the end
-            if (file.charAt(i) == '.') { // if we see a dot
-                ext = file.substring(i); // save extension
-                name = file = file.substring(0, i);
-            } else if (file.charAt(i) == '/') { // if we see a slash
-                dir = file.substring(0, i + 1); // save directory
-                name = file.substring(i + 1); // save name
-                break; // break from loop - don't need to continue anymore
-            }
-        }
-        return new String[]{dir, name, ext, resPath ? "true" : "false"};
-    }
-
-    /**
-     * @return the directory of the folder where all game data should be stored. This won't include a slash at the end
+     * @return the directory of the folder where all game data should be stored as an absolute path. This won't include
+     * a slash at the end
      */
     public static String getDataDir() {
         // use user.home plus Ambulare folder. Usually user.home is the folder containing the documents folder
@@ -124,82 +214,62 @@ public class Utils {
      * Ensures that a directory exists. This will not consider anything after the last slash to avoid turning
      * what should be normal files into directories themselves (unless there are no slashes)
      *
-     * @param directory       the directory to ensure
-     * @param dataDirRelative whether the given directory is relative to the data directory (see getDataDir())
+     * @param path the path to ensure directories at. If the path is resource-relative, the program will crash
      */
-    public static void ensureDirs(String directory, boolean dataDirRelative) {
-        for (int i = directory.length() - 1; i >= 0; i--) { // loop through directory starting at the end
-            if (directory.charAt(i) == '/') { // if we see a slash
-                directory = directory.substring(0, i); // remove everything after the slash
+    public static void ensureDirs(Path path) {
+        if (path.resRelative) Utils.handleException(new Exception("Attempted to ensure directories in a resource-" +
+                "relative path: " + path), Utils.class, "ensureDirs", true); // if resource-relative path, crash
+        String p = path.getPath(); // get the path
+        for (int i = p.length() - 1; i >= 0; i--) { // loop through directory starting at the end
+            if (p.charAt(i) == '/') { // if we see a slash
+                p = p.substring(0, i); // remove everything after the slash
                 break; // break from loop - only remove stuff after last slash
             }
         }
-        File dir = new File((dataDirRelative ? getDataDir() : "") + directory); // create file object
+        File dir = new File(getDataDir() + p); // make a file at the directory
         dir.mkdirs(); // attempt to create necessary directories
     }
 
     /**
-     * Loads a resource into a single string
+     * Converts the contents of a file at the given path to a string
      *
-     * @param resPath the resource-relative path of the file
-     * @return the loaded resource as a string
+     * @param path the path
+     * @return the file contents converted to a string
      */
-    public static String resToString(String resPath) {
-        String result = "";
-        try (InputStream in = Class.forName(Utils.class.getName()).getResourceAsStream(resPath); // try to open resource
-             Scanner scanner = new Scanner(in, "UTF-8")) { // try to then use a scanner to read it
-            result = scanner.useDelimiter("\\A").next(); // read results into single string
-        } catch (Exception e) {
-            handleException(e, "utils.Utils", "resToString(String)", true);
-        }
-        return result;
+    public static String pathContentsToString(Path path) {
+        Scanner s = new Scanner(path.getStream(), "UTF-8"); // create a stream
+        return s.useDelimiter("\\A").next(); // compile contents to a string and return
     }
 
     /**
-     * Loads a resource into a list of strings
+     * Converts the contents of a file at the given path to a string list
      *
-     * @param resPath the resource-relative path of the file
-     * @return the loaded resource as a list of strings
+     * @param path the path
+     * @return the file contents converted to a string list
      */
-    public static List<String> resToStringList(String resPath) {
+    public static List<String> pathContentsToStringList(Path path) {
         List<String> file = new ArrayList<>(); // create empty ArrayList
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(Class.forName(Utils.class.getName())
-                .getResourceAsStream(resPath)))) { // attempt to open resource
-            String line; // variable to store a single line
+        // create buffered reader from path stream
+        BufferedReader in = new BufferedReader(new InputStreamReader(path.getStream()));
+        String line; // maintain a variable holding each line
+        try {
             while ((line = in.readLine()) != null) file.add(line); // read each line until eof
-        } catch (Exception e) { // if there is an exception
-            handleException(new Exception("Could not load resource: " + resPath + " for reason: " + e.getMessage()),
-                    "utils.Utils", "resToStringList(String)", true); // handle it
+        } catch (Exception e) { // if an exception occurs
+            Utils.handleException(new Exception("Encountered a problem while reading contents of file at path: " +
+                    path + ": " + e.getMessage()), Utils.class, "pathContentsToStringList", true); // crash
         }
-        return file;
+        return file; // return resulting list of stings
     }
 
     /**
-     * Converts a file to a byte buffer
+     * Converts the contents of a file at the given path to a byte buffer
      *
-     * @param path        the path to the file to convert
-     * @param resRelative whether the path is resource-relative or not
-     * @param bufferSize  the initial buffer size to use
-     * @return the byte buffer containing the file data
+     * @param path       the path
+     * @param bufferSize the initial size of the buffer (will be increased if necessary)
+     * @return the file contents converted to a byte buffer
      */
-    public static ByteBuffer fileToByteBuffer(String path, boolean resRelative, int bufferSize) {
-        InputStream is = null; // create null input stream
-        if (resRelative) is = Utils.class.getResourceAsStream(path); // for resources, get resource as stream
-        else { // for non-resources
-            try { // try to convert the corresponding file to an input stream
-                is = new FileInputStream(new File(path));
-            } catch (Exception e) { // if an exception occurs while trying to convert file to an input stream
-                Utils.handleException(new Exception("Could not convert file at path: '" + path + "' to a file input" +
-                                "stream for reason: " + e.getMessage()), "utils.Utils",
-                        "fileToByteBuffer(String, boolean, int)", true); // crash the program
-            }
-        }
-        if (is == null) { // if the input stream is null
-            Utils.handleException(new Exception("Could not convert load file at " + (resRelative ? "resource-relative "
-                            : "") + "path: '" + path + " - no such file exists."), "utils.Utils",
-                    "fileToByteBuffer(String, boolean, int)", true); // crash the program
-
-        }
+    public static ByteBuffer pathContentsToByteBuffer(Path path, int bufferSize) {
+        InputStream is = path.getStream(); // get stream
         ReadableByteChannel rbc = Channels.newChannel(is); // create a readable byte channel using the input stream
         ByteBuffer buffer = createByteBuffer(bufferSize); // create a buffer with the given starting size
         try { // try to read bytes from the RBC into the byte buffer
@@ -211,11 +281,24 @@ public class Utils {
             }
         } catch (Exception e) { // if an exception occurs
             Utils.handleException(new Exception("Unable to read from readable byte channel from file at path: '" +
-                            path + "' for reason: " + e.getMessage()), "utils.Utils", "fileToByteBuffer(String, boolean, int)",
-                    true); // crash the program
+                    path + "' for reason: " + e.getMessage()), Utils.class, "fileToByteBuffer", true); // crash
         }
         buffer.flip(); // flip the result
         return buffer; // and return the final buffer
+    }
+
+    /**
+     * Resizes a byte buffer to the new given capacity
+     *
+     * @param buffer      the buffer to resize
+     * @param newCapacity the new size to give the buffer
+     * @return the resized buffer
+     */
+    public static ByteBuffer resizeBuffer(ByteBuffer buffer, int newCapacity) {
+        ByteBuffer newBuffer = BufferUtils.createByteBuffer(newCapacity); // create new byte buffer with given capacity
+        buffer.flip(); // flip original buffer
+        newBuffer.put(buffer); // put original buffer data into new buffer data
+        return newBuffer; // return new buffer
     }
 
     /**
@@ -294,25 +377,11 @@ public class Utils {
                 color[i] = Float.parseFloat(components[i]);
             } // parse each as a float
             catch (Exception e) {
-                Utils.handleException(e, "utils.Utils", "strToColor(String)", false); // log exception but don't crash
+                Utils.handleException(e, Utils.class, "strToColor", false); // log exception but don't crash
                 return null; // and return null
             }
         }
         return color; // return color
-    }
-
-    /**
-     * Resizes a byte buffer to the new given capacity
-     *
-     * @param buffer      the buffer to resize
-     * @param newCapacity the new size to give the buffer
-     * @return the resized buffer
-     */
-    public static ByteBuffer resizeBuffer(ByteBuffer buffer, int newCapacity) {
-        ByteBuffer newBuffer = BufferUtils.createByteBuffer(newCapacity); // create new byte buffer with given capacity
-        buffer.flip(); // flip original buffer
-        newBuffer.put(buffer); // put original buffer data into new buffer data
-        return newBuffer; // return new buffer
     }
 
     /**
@@ -326,7 +395,7 @@ public class Utils {
      * @param method the method from which the exception originates
      * @param fatal  whether to exit the program after handling the exception
      */
-    public static void handleException(Exception e, String src, String method, boolean fatal) {
+    public static void handleException(Exception e, Class src, String method, boolean fatal) {
         StringWriter sw = new StringWriter(); // create StringWriter to store exception stack trace
         e.printStackTrace(new PrintWriter(sw)); // print stack trace to StringWriter
         log(e.getMessage() + "\n" + sw, src, method, fatal); // log exception message and stack trace
@@ -342,7 +411,7 @@ public class Utils {
      * @param fatal  whether or not the program is going to exit after handling the event. Note that setting this to
      *               true does not quit the program. The method calling this method needs to quit after logging
      */
-    public static void log(String info, String src, String method, boolean fatal) {
+    public static void log(String info, Class src, String method, boolean fatal) {
 
         //get and format log line intro
         String lli = getLogLineIntro(fatal, src, method); // get log line intro
@@ -355,32 +424,17 @@ public class Utils {
 
         //print to console and attempt to print to log file
         System.out.println(lli + info);
-        String fileName = getLogFileName(); // get name of log file
-        ensureDirs(fileName, false); // make sure appropriate directories exist
+        Path lfp = getLogFilePath(); // get path to the log file to use
+        ensureDirs(lfp); // make sure appropriate directories exist
         PrintWriter out;
         try {
-            out = new PrintWriter(new FileOutputStream(new File(fileName), true)); // try to open file
+            out = new PrintWriter(new FileOutputStream(lfp.getFile(), true)); // try to open file
             out.println(lli + info);
             out.close();
         } catch (Exception e) {
             e.printStackTrace(); /* just print corresponding exception and hope for the best because attempting to
                 handle this exception using Utils.handleException() would likely cause an infinite loop */
         }
-    }
-
-    /**
-     * Returns an error line to describe improper formatting of something
-     *
-     * @param object   the improperly formatted object
-     * @param loading  what is trying to be created/loaded using said formatting
-     * @param message  what is wrong with the formatting
-     * @param ignoring whether the error will be ignored
-     * @return a compiled and standardized string describing the issue
-     */
-    public static String getImproperFormatErrorLine(String object, String loading, String message, boolean ignoring) {
-        String msg = "Improperly formatted " + object + " found while loading " + loading + ": " + message
-                + (ignoring ? ". Ignoring" : ""); // compile string
-        return msg; // and return
     }
 
     /**
@@ -391,19 +445,18 @@ public class Utils {
      * @param method the method from which the event originates
      * @return the created log line into
      */
-    private static String getLogLineIntro(boolean fatal, String src, String method) {
+    private static String getLogLineIntro(boolean fatal, Class src, String method) {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss"); // create date/time formatter
         return "[" + dtf.format(LocalDateTime.now()) + "][" + (fatal ? "FATAL" : "INFO") +
-                "][" + src + "][" + method + "]: "; // compile important info into one line and return
+                "][" + src.toString().substring(6) + "][" + method + "]: "; // compile important info and return
     }
 
     /**
-     * Creates an appropriate log file name/directory based on the date
-     *
-     * @return the appropriate file name/directory for a log file at the given date and time
+     * @return an appropriate life file path based on the date
      */
-    private static String getLogFileName() {
+    private static Path getLogFilePath() {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MM-dd-yy"); // create date/time formatter
-        return getDataDir() + "/logs/ " + dtf.format(LocalDateTime.now()) + ".txt"; // compile file name and return
+        // create and return path using date
+        return new Path("/logs/ " + dtf.format(LocalDateTime.now()) + ".txt", false);
     }
 }

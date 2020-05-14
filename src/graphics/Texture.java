@@ -53,8 +53,8 @@ public class Texture {
                                     boolean corners) {
 
         // create the aggregation shader program
-        ShaderProgram sp = new ShaderProgram("/shaders/aggregate_vertex.glsl",
-                "/shaders/aggregate_fragment.glsl");
+        ShaderProgram sp = new ShaderProgram(new Utils.Path("/shaders/aggregate_vertex.glsl", true),
+                new Utils.Path("/shaders/aggregate_fragment.glsl", true));
         sp.registerUniform("texSampler"); // register the texture sampler uniform
         sp.registerUniform("color"); // register the material color uniform
         sp.registerUniform("isTextured"); // register the texture flag uniform
@@ -114,10 +114,9 @@ public class Texture {
     /**
      * Constructor
      *
-     * @param path        the path to the image
-     * @param resRelative whether the given path is resource-relative
+     * @param path the path to the image
      */
-    public Texture(String path, boolean resRelative) {
+    public Texture(Utils.Path path) {
 
         // create buffers to hold texture info
         ByteBuffer buf = null; // create buffer for texture data
@@ -128,12 +127,11 @@ public class Texture {
 
         // attempt to load texture
         try {
-            ByteBuffer buff = Utils.fileToByteBuffer(path, resRelative, 1024); // convert image to byte buffer
+            ByteBuffer buff = Utils.pathContentsToByteBuffer(path, 1024); // convert image to byte buffer
             buf = stbi_load_from_memory(buff, w, h, channels, 4); // load image into texture buffer
         } catch (Exception e) { // if exception
-            Utils.handleException(new Exception("Unable to load texture with " + (resRelative ? ("resource-relative ") :
-                            "") + "path '" + path + "' for reason: " + e.getMessage()), "graphics.Texture",
-                    "Texture(String)", true); // throw exception if unable to load texture
+            Utils.handleException(new Exception("Unable to load texture at '" + path + "' for reason: " +
+                    e.getMessage()), this.getClass(), "Texture", true); // throw exception if unable to load
         }
 
         // save info, create texture, cleanup

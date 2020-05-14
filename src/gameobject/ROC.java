@@ -72,7 +72,8 @@ public class ROC {
      */
     protected void initSP() {
         // create the static object shader program using the HUD shaders
-        this.sp = new ShaderProgram("/shaders/hud_vertex.glsl", "/shaders/hud_fragment.glsl");
+        this.sp = new ShaderProgram(new Utils.Path("/shaders/hud_vertex.glsl", true),
+                new Utils.Path("/shaders/hud_fragment.glsl", true));
         sp.registerUniform("ar"); // register aspect ratio uniform
         sp.registerUniform("arAction"); // register aspect ratio action uniform
         sp.registerUniform("x"); // register object x uniform
@@ -232,8 +233,7 @@ public class ROC {
     public void addToWorld(WorldObject wo) {
         if (this.gameWorld == null) { // if game world hasn't been instantiated
             Utils.log("Attempted to add an object to a ROC's game world withouth calling useGameWorld() first." +
-                            "Ignoring request", "gameobject.gameworld.GameWorld", "addToWorld(WorldObject)",
-                    false); // log occurrence
+                    "Ignoring request", this.getClass(), "addToWorld", false); // log occurrence
             return; // and return without crashing
         }
         Texture t = wo.getMaterial().getTexture(); // get the texture of the object's material
@@ -277,7 +277,7 @@ public class ROC {
     private StaticObject getStaticObject(int tag) {
         StaticObject so = this.staticObjects.get(tag); // try to retrieve the static object
         if (so == null) Utils.handleException(new Exception("No static object found for tag '" + tag + "'"),
-                "gameobjects.ROC", "getStaticObject(String)", true); // crash program if the static object is null
+                this.getClass(), "getStaticObject", true); // crash program if the static object is null
         return so; // return the static object
     }
 

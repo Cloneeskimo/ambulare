@@ -35,7 +35,7 @@ public class GameEngine {
      */
     public GameEngine(GameLogic logic) {
         int w = -1, h = -1; // if there is no saved window data, use -1 to denote default width and height
-        Node wd = Node.fileToNode("wd.node", true); // try to load window data
+        Node wd = Node.pathContentsToNode(new Utils.Path("/wd.node", false)); // try to load window data
         if (wd != null) { // if window data was found
             w = Integer.parseInt(wd.getChild("width").getValue()); // use saved width of window
             h = Integer.parseInt(wd.getChild("height").getValue()); // ues saved height of window
@@ -156,8 +156,8 @@ public class GameEngine {
             return; // and return
         }
         if (type > 2 || type < 0) { // if an invalid type was given
-            Utils.log("Invalid debugging info metric type given: " + type + ". Ignoring.", "GameEngine.java",
-                    "updateDebugMetrics(double, double[], int)", false); // log the occurrence
+            Utils.log("Invalid debugging info metric type given: " + type + ". Ignoring.", this.getClass(),
+                    "updateDebugMetrics", false); // log the occurrence
             return; // and reeturn
         }
         int i = 1 + (type * 3); // calculate starting index in debug info array for info for the given metric type
@@ -276,7 +276,7 @@ public class GameEngine {
                 Thread.sleep(1);
             } // sleep
             catch (Exception e) {
-                Utils.handleException(e, "GameEngine", "sync(float)", true);
+                Utils.handleException(e, this.getClass(), "sync", true);
             } // handle exceptions
         }
     }
@@ -288,7 +288,7 @@ public class GameEngine {
         Node wd = new Node("window data"); // create a node to hold window data
         wd.addChild("width", Integer.toString(window.getWidth())); // add window width
         wd.addChild("height", Integer.toString(window.getHeight())); // add window height
-        Node.nodeToFile(wd, "/wd.node", true); // and save node
+        Node.nodeToFile(wd, new Utils.Path("/wd.node", false)); // and save node
         this.logic.cleanup(); // tell logic to cleanup
         SoundManager.cleanup(); // cleanup the sound manager
     }

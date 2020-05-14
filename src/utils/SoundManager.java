@@ -29,12 +29,12 @@ public abstract class SoundManager {
         device = alcOpenDevice((ByteBuffer) null); // open the sound device
         ALCCapabilities c = ALC.createCapabilities(device); // create the openAL capabilities
         context = alcCreateContext(device, (IntBuffer) null); // create the openAL context
-        if (context == NULL) Utils.handleException(new Exception("Unable to create an AL context"),
-                "utils.SoundManager", "init()", true); // if no context could be created, crash
+        if (context == NULL) Utils.handleException(new Exception("Unable to create an AL context"), SoundManager.class,
+                "init", true); // if no context could be created, crash
         alcMakeContextCurrent(context); // make the created context the current context
         AL.createCapabilities(c); // create capabilities
         // log successful creation of sound manager
-        Utils.log("SoundManager initialized", "utils.SoundManager", "init()", false);
+        Utils.log("SoundManager initialized", SoundManager.class, "init", false);
     }
 
     /**
@@ -44,6 +44,6 @@ public abstract class SoundManager {
         alcDestroyContext(context); // destroy the AL context
         alcCloseDevice(device); // close the AL device
         // log successful cleanup of sound manager
-        Utils.log("SoundManager cleaned up", "utils.SoundManager", "cleanup()", false);
+        Utils.log("SoundManager cleaned up", SoundManager.class, "cleanup", false);
     }
 }

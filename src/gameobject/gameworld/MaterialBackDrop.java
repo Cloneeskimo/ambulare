@@ -3,14 +3,12 @@ package gameobject.gameworld;
 import graphics.*;
 import utils.Global;
 import utils.Node;
+import utils.NodeLoader;
 import utils.Utils;
 
-/*
- * BlockBackDrop.java
- * Ambulare
- * Jacob Oaks
- * 5/12/2020
- */
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /*
  * MaterialBackDrop.java
@@ -43,92 +41,82 @@ public class MaterialBackDrop implements Area.BackDrop {
     private boolean textured;       // a flag denoting if the material is textured
 
     /**
-     * Constructs the material backdrop by compiling information from a given node. If the value of the root node starts
-     * with the statements 'from' or 'resfrom', the next statement will be assumed to be a different path at which to
-     * find the material backdrop node-file. This is useful for reusing the same material backdrop in many settings.
-     * 'from' assumes the following path is relative to the Ambulare data folder (in the user's home folder) while
-     * 'resfrom' assumes the following path is relative to the Ambulares's resource path. Note that these kinds of
-     * statements cannot be chained together. A material backdrop node can have the following children:
+     * Constructs the material backdrop by compiling information from a given node. Material backdrops can use (res)from
+     * statements. See utils.NodeLoader for more information on (res)from statements. A material backdrop node can have
+     * the following children:
      * <p>
-     * material [optional][default: white]: a block info node defining the material to use for the backdrop material.
-     * This node should be formatted as a proper block info node. This material cannot be animated. See
-     * gameobject.gameworld.Block.BlockInfo for more info on how to format a block info node
+     * - texture_paths [optional][default: no texture]: specifies what paths to look for textures at. This node
+     * itself should have one or more children nodes formatted as path nodes. If more than one texture path is
+     * specified, a random one will be chosen when the material backdrop is created. See utils.Utils.Path for more
+     * information on path nodes
+     * <p>
+     * - color [optional][default: 1f 1f 1f 1f]: specifies what color to use for the material backdrop
+     * <p>
+     * - blend_mode [optional][default: none]: specifies how to blend color and texture. The options are: (1) 'none' -
+     * no blending will occur. The appearance will simple be the texture if there is one, or the color if there is no
+     * texture. (2) 'multiplicative' - the components of the color and the components of the texture will be multiplied
+     * to create a final color. (3) 'averaged' - the components of the color and the components of the texture will be
+     * averaged to create a final color
      * <p>
      * scrolls [optional][default: true]: a flag specifying whether the background should scroll if textured
      * <p>
-     * view_scale [optional][default: 1f]: how much of the material's texture's smaller component (width or height) to
-     * display if scrolling is enabled (1f if disabled) and the material is textured. This value must be within 0.1f and
-     * 1f
-     * <p>
-     * Note that, if any of the info above is improperly formatted, a message saying as much will be logged. As
-     * such, when designing material backdrops to be loaded into the game, the logs should be checked often to make sure
-     * the loading process is unfolding correctly
+     * view_scale [optional][default: 1f][0.01f, 1f]: how much of the material's texture's smaller component (width or
+     * height) to display if scrolling is enabled (1f if disabled) and the material is textured
      *
-     * @param info the node to use to construct the material backdrop
+     * @param data the node to use to construct the material backdrop
      * @param bmw  the width of the area's block map
      * @param bmh  the height of the area's block map
      */
-    public MaterialBackDrop(Node info, int bmw, int bmh) {
+    public MaterialBackDrop(Node data, int bmw, int bmh) {
 
-        // load from elsewhere if from or resfrom statement used
-        String value = info.getValue(); // get value
-        if (value != null) { // if there is a value
-            // check for a from statement
-            if (value.length() >= 4 && value.substring(0, 4).toUpperCase().equals("FROM"))
-                // update info with node at the given path in the from statement
-                info = Node.fileToNode(info.getValue().substring(5), true);
-                // check for a resfrom statement
-            else if (value.length() >= 7 && value.substring(0, 7).toUpperCase().equals("RESFROM"))
-                // update info with node at the given path in the from statement
-                info = Node.resToNode(info.getValue().substring(8));
-            if (info == null) // if the new info is null
-                Utils.handleException(new Exception(Utils.getImproperFormatErrorLine("(res)from statement",
-                        "MaterialBackDrop", "invalid path in (res)from statement: " + value,
-                        false)), "gameobject.gameworld.MaterialBackDrop", "MaterialBackDrop(Node, int, int)",
-                        true); // throw an exception stating the path is invalid
-        }
+        /*
+         * Load material backdrop information using node loader
+         */
+        List<Utils.Path> texturePaths = new ArrayList<>();
+        data = NodeLoader.checkForFromStatement("MaterialBackDrop", data);
+        Map<String, Object> materialBackDrop = NodeLoader.loadFromNode("MaterialBackDrop", data,
+                new NodeLoader.LoadItem[]{
+                        new NodeLoader.LoadItem<>("texture_paths", null, Node.class)
+                                .useTest((v, sb) -> {
+                            boolean issue = false;
+                            for (Node child : ((Node) v).getChildren()) {
+                                Utils.Path p = new Utils.Path(child);
+                                if (!p.exists()) {
+                                    sb.append("Texture at path does not exist: '").append(p).append('\n');
+                                    issue = true;
+                                } else texturePaths.add(p);
+                            }
+                            return !issue;
+                        }),
+                        new NodeLoader.LoadItem<>("color", "1f 1f 1f 1f", String.class)
+                                .useTest((v, sb) -> {
+                            float[] c = Utils.strToColor(v);
+                            if (c == null) {
+                                sb.append("Must be four valid rgba float values separated by a space");
+                                sb.append("\nFor example: '1f 0f 1f 0.5' for a half-transparent purple");
+                                return false;
+                            }
+                            return true;
+                        }),
+                        new NodeLoader.LoadItem<>("blend_mode", "none", String.class)
+                                .setAllowedValues(new String[]{"none", "multiplicative", "averaged"}),
+                        new NodeLoader.LoadItem<>("scrolls", true, Boolean.class),
+                        new NodeLoader.LoadItem<>("view_scale", 1f, Float.class)
+                                .setLowerBound(0.01f).setUpperBound(1f)
+                });
 
-        // load information from node
-        try {
-            for (Node c : info.getChildren()) { // loop through children
-                String n = c.getName().toLowerCase(); // get child name in lowercase
-                if (n.equals("material")) { // material
-                    Block.BlockInfo bi = new Block.BlockInfo(c); // create block info from node to use to make material
-                    Texture t = bi.texPaths.size() > 0 ? new Texture(bi.texPaths.get((int) (Math.random() *
-                            bi.texPaths.size())), bi.texResPath) : null; // create texture if the material is textured
-                    this.mat = new Material(t, bi.color, bi.bm); // create material from block info
-                } else if (n.equals("scrolls")) { // scrolls flag
-                    this.scrolls = Boolean.parseBoolean(c.getValue()); // convert to boolean flag
-                } else if (n.equals("view_scale")) { // view scale
-                    try {
-                        this.viewScale = Float.parseFloat(c.getValue()); // try to convert to a float
-                    } catch (Exception e) { // if conversion was unsuccessful
-                        Utils.log(Utils.getImproperFormatErrorLine("view_scale", "MaterialBackDrop",
-                                "must be a proper floating pointer number between 0.1f and 1f", true),
-                                "gameobject.gameworld.MaterialBackDrop", "MaterialBackDrop(Node, int, int)",
-                                false); // log as much
-                    }
-                    if (this.viewScale < 0.1f || this.viewScale >= 1f) { // if not in correct range, log as much
-                        Utils.log(Utils.getImproperFormatErrorLine("view_scale", "MaterialBackDrop",
-                                "must be a proper floating pointer number between 0.1f and 1f", true),
-                                "gameobject.gameworld.MaterialBackDrop", "MaterialBackDrop(Node, int, int)",
-                                false); // log as much
-                        this.viewScale = 1f; // and reset to default
-                    }
-                } else // if an unrecognized child appears
-                    Utils.log("Unrecognized child given for material backdrop info:\n" + c + "Ignoring.",
-                            "gameobject.gameworld.MaterialBackDrop", "MaterialBackDrop(Node, int, int)",
-                            false); // log and ignore
-            }
-        } catch (Exception e) { // if any strange exceptions occur
-            Utils.handleException(new Exception(Utils.getImproperFormatErrorLine("MaterialBackDrop",
-                    "MaterialBackDrop", e.getMessage(), false)),
-                    "gameobject.gameworld.MaterialBackDrop", "MaterialBackDrop(Node, int, int)", true); // log and crash
-        }
 
-        // finalize loading process
-        if (this.mat == null) // if no material was specified
-            this.mat = new Material(Global.getThemeColor(Global.ThemeColor.WHITE)); // use a white background
+        /*
+         * Apply loaded information
+         */
+        String colorData = (String) materialBackDrop.get("color"); // get color data
+        // create the color to use for the material
+        float[] color = colorData == null ? Global.getThemeColor(Global.ThemeColor.WHITE) : Utils.strToColor(colorData);
+        Texture t = texturePaths.size() > 0 ? new Texture(texturePaths.get((int) (Math.random() * texturePaths.size())))
+                : null; // create texture to use for the material
+        // create the material to use for the backdrop
+        this.mat = new Material(t, color, Material.BlendMode.valueOf(((String) materialBackDrop.get("blend_mode"))
+                .toUpperCase()));
         this.bmw = bmw; // save block map width as member
         this.bmh = bmh; // save block map height as member
         this.mod = Model.getStdGridRect(2, 2); // create model
@@ -164,9 +152,9 @@ public class MaterialBackDrop implements Area.BackDrop {
      * @param sp the world shader program
      */
     public void render(ShaderProgram sp) {
-        if (this.cam == null) { // if an attempt to render was made before a camera was given, log
-            Utils.log("Attempted to render material back drop without providing a camera first",
-                    "gameobject.gameworld.MaterialBackDrop", "render(ShaderProgram)", false);
+        if (this.cam == null) { // if an attempt to render was made before a camera was given
+            Utils.log("Attempted to render material back drop without providing a camera first", this.getClass(),
+                    "render", false); // log and ignore
             return; // and return without rendering
         }
         if (this.scrolls) this.updateTexCoords(); // if this scrolls, updating the texture coordinates

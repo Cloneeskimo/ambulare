@@ -23,7 +23,7 @@ public class Global {
     /**
      * Static Data
      */
-    public static final String VERSION = "com99"; // the version of the game
+    public static final String VERSION = "com100"; // the version of the game
     public static final String WINDOW_TITLE = "Ambulare " + VERSION; // the window title
     public static final float TIME_BETWEEN_METRIC_REPORTS = 0.25f; // time between debug metric reports/average calc
     public static final int DEBUG_TOGGLE_KEY = GLFW_KEY_1; // the key to toggle debug reporting in the engine
@@ -43,10 +43,11 @@ public class Global {
      */
     public static void init() {
         // log game version
-        Utils.log("Ambulare Version: " + VERSION, "utils.Global", "init()", false);
+        Utils.log("Ambulare Version: " + VERSION, Global.class, "init", false);
         // initialize the global font
-        Global.FONT = new Font("/textures/ui/font.png", Node.resToNode("/misc/font.node"));
-        Utils.log("Global font initialized", "utils.Global", "init()", false); // log
+        Global.FONT = new Font(new Utils.Path("/textures/ui/font.png", true),
+                Node.pathContentsToNode(new Utils.Path("/misc/font.node", true)));
+        Utils.log("Global font initialized", Global.class, "init", false); // log
     }
 
     /**

@@ -386,8 +386,8 @@ public abstract class GameLogic {
          */
         @Override
         public void setRotRad(float r) {
-            Utils.log("Attempted to rotate a debug info. Ignoring.", "logic.GameLogic.DebugInfo",
-                    "setRotRad(float)", false); // log and ignore the attempt to rotate
+            Utils.log("Attempted to rotate a debug info. Ignoring.", this.getClass(), "setRotRad",
+                    false); // log and ignore the attempt to rotate
         }
     }
 }

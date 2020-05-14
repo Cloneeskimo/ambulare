@@ -33,8 +33,11 @@ area:
         # weeds
         w:
         {
-            texture_path: /textures/decor/foliage/weeds.png
-            texture_path: /textures/decor/foliage/weeds2.png
+            texture_paths:
+            {
+                resource_path: /textures/decor/foliage/weeds.png
+                resource_path: /textures/decor/foliage/weeds2.png
+            }
             pin: below
             x_random_interval: 0.4f
             y_offset: -0.09f

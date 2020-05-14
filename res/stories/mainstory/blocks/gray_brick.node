@@ -1,11 +1,18 @@
 block info:
 {
     # specify the texture path for block
-    texture_path: /textures/blocks/gray_brick/dark_gray_brick_worn-1.png
-    texture_path: /textures/blocks/gray_brick/dark_gray_brick_worn-2.png
+    texture_paths:
+    {
+        resource_path: /textures/blocks/gray_brick/dark_gray_brick_worn-1.png
+        resource_path: /textures/blocks/gray_brick/dark_gray_brick_worn-2.png
+    }
 
     # specify a base path to overlay textures to use for corners/edges
-    overlay_path: /textures/blocks/gray_brick/dark_gray_brick
+    overlay_info:
+    {
+        resource_path: /textures/blocks/gray_brick/dark_gray_brick
+        extension: .png
+    }
 
     # specify no cut radius
     cut_radius: 0f

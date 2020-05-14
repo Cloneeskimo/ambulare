@@ -12,6 +12,7 @@ import utils.*;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /*
  * Story.java
@@ -47,27 +48,27 @@ public class Story {
         try { // wrap in a try-catch to make sure any issues are logged
 
             // get data directory relative stories
-            Utils.ensureDirs("/stories/", true); // make sure stories directory exists
-            File dir = new File(Utils.getDataDir() + "/stories"); // create a file at the stories directory
-            for (File f : dir.listFiles()) { // for all files within the stories directory
-                if (f.isDirectory()) { // if that file itself iss a directory
-                    String infoPath = f.getAbsolutePath() + "/story_info.node"; // represent the path of the story info
-                    if (Utils.fileExists(infoPath, false)) // if the story info file exists
-                        stories.add(new Story(Node.fileToNode(infoPath, false), f.getAbsolutePath(),
-                                false)); // attempt to create the story and add it to the lists
+            Utils.Path p = new Utils.Path("/stories/", false); // create path for stories directory
+            Utils.ensureDirs(p); // make sure stories directory exists
+            for (File f : p.getFile().listFiles()) { // for all files within the stories directory
+                if (f.isDirectory()) { // if that file itself is a directory
+                    Utils.Path sp = p.add(f.getName() + "/story_info.node"); // create path to story info node-file
+                    if (sp.exists()) // if the story info file exists, attempt to create the story and add it to list
+                        stories.add(new Story(Node.pathContentsToNode(sp), p));
                 }
             }
 
-            // get resource-relative stories
-            Node resStories = Node.resToNode("/stories/stories.node"); // read the stories list node-file
+            // get resource-relative stories node
+            Node resStories = Node.pathContentsToNode(new Utils.Path("/stories/stories.node", true));
             for (Node n : resStories.getChildren()) { // for each child in the stories list
-                String infoPath = n.getValue() + "/story_info.node"; // represent the path of the story info
-                if (Utils.fileExists(infoPath, true)) // if the story info file exists
-                    stories.add(new Story(Node.resToNode(infoPath), n.getValue(), true)); // create and add
+                p = new Utils.Path(n.getValue(), true); // create new path to resource-relative story folder
+                Utils.Path sp = p.add("/story_info.node"); // create path to story info node-file
+                if (sp.exists()) // if the story info file exists
+                    stories.add(new Story(Node.pathContentsToNode(sp), p)); // create and add
             }
         } catch (Exception e) { // if an exception occurs
             Utils.handleException(new Exception("Unable to load stories list: " + e.getMessage()),
-                    "story.Story", "getStories()", true); // crash
+                    Story.class, "getStories", true); // crash
         }
         return stories; // return the compiled list of stories
     }
@@ -76,11 +77,11 @@ public class Story {
      * Members
      */
     private Pair<Integer> startingPos;   // the starting position the player should be placed at in the starting area
-    private String name = "Unnamed";     // the name of the story
-    private String author = "Anonymous"; // the author/creator of the story
-    private String path;                 // the path to the story's folder
-    private String startingAreaPath;     // the path to the story's starting area (relative to the story's folder path)
-    private boolean resRelative;         // whether the story's folder path is resource-relative or not
+    private Utils.Path folderPath;       // the path to the story's folder
+    private Utils.Path startingAreaPath; // the path to the story's starting area
+    private String startingArea;         // the path to the story's starting area relative to the story folder
+    private String name;                 // the name of the story
+    private String author;               // the author/creator of the story
 
     /**
      * Constructs the story using a story_info.node node-file and the given story folder path and resource relativity
@@ -94,66 +95,48 @@ public class Story {
      * - name [optional][default: Unnamed]: the name of the story
      * <p>
      * - author [optional][default: Anonymous]: the author/creator of the story
-     * <p>
-     * Note that, if any of the info above is improperly formatted, a message saying as much will be logged. As
-     * such, when designing stories to be loaded into the game, the logs should be checked often to make sure the
-     * loading process is unfolding correctly
      *
-     * @param node        the story_info.node node containing the information to create the story from
-     * @param path        the path to the story's folder
-     * @param resRelative whether the path to the story's folder is resource-relative
+     * @param data       the story_info.node node containing the information to create the story from
+     * @param folderPath the path to the story's folder
      */
-    public Story(Node node, String path, boolean resRelative) {
-        this.path = path; // save story folder path as member
-        this.resRelative = resRelative; // save resource relativity flag as member
+    public Story(Node data, Utils.Path folderPath) {
+        this.folderPath = folderPath; // save story folder path as member
 
-        // load starting area and position
-        Node startingArea = node.getChild("starting_area"); // load starting area
-        if (startingArea == null) // if no starting area given
-            Utils.handleException(new Exception(Utils.getImproperFormatErrorLine(
-                    "starting_area", "Story", "a starting area path is required",
-                    false)), "story.Story", "Story(Node, String, boolean)", true); // crash
-        else this.startingAreaPath = startingArea.getValue(); // otherwise save the starting area path
-        Node startingPos = node.getChild("starting_position"); // load starting position
-        if (startingPos == null) // if no starting position given
-            Utils.handleException(new Exception(Utils.getImproperFormatErrorLine(
-                    "starting_position", "Story", "a starting position is required",
-                    false)), "story.Story", "Story(Node, String, boolean)", true); // crash
-        else { // otherwise
-            String[] tokens = startingPos.getValue().split(" "); // split position into two tokens
-            if (tokens.length < 2) // if there are not two tokens (improperly formatted)
-                Utils.handleException(new Exception(Utils.getImproperFormatErrorLine(
-                        "starting_position", "Story", "a starting position should be formatted" +
-                                "as twoo integers separated by a space (ex: 4 6)", false)), "story.Story",
-                        "Story(Node, String, boolean)", true); // crash
-            else { // otherwise, try to convert to an integer pair
-                try {
-                    this.startingPos = new Pair<>(Integer.parseInt(tokens[0]), Integer.parseInt(tokens[1]));
-                } catch (Exception e) { // if an exception occurs during conversion
-                    Utils.handleException(new Exception(Utils.getImproperFormatErrorLine(
-                            "starting_position", "Story", "a starting position should be " +
-                                    "formatted as two integers separated by a space (ex: 4 6)", false)),
-                            "story.Story", "Story(Node, String, boolean)", true); // crash
-                }
-            }
-        }
+        /*
+         * Load story information using node loader
+         */
+        Map<String, Object> story = NodeLoader.loadFromNode("Story", data, new NodeLoader.LoadItem[]{
+                new NodeLoader.LoadItem<>("starting_position", null, String.class).makeRequired()
+                        .useTest((v, sb) -> {
+                    this.startingPos = Pair.strToIntegerPair((String) v);
+                    if (this.startingPos == null) {
+                        sb.append("Must be two valid integers separated by a space");
+                        sb.append("\nFor example: '5 6'");
+                        return false;
+                    }
+                    return true;
+                }),
+                new NodeLoader.LoadItem<>("starting_area", null, String.class)
+                        .makeRequired()
+                        .makeValueSensitive()
+                        .useTest((v, sb) -> {
+                    this.startingArea = (String) v;
+                    this.startingAreaPath = this.folderPath.add((String) v);
+                    if (!this.startingAreaPath.exists()) {
+                        sb.append("Starting area path '" + this.startingAreaPath + "' does not exist");
+                        return false;
+                    }
+                    return true;
+                }),
+                new NodeLoader.LoadItem<>("name", "Unnamed", String.class).makeValueSensitive(),
+                new NodeLoader.LoadItem<>("author", "Anonymous", String.class).makeValueSensitive()
+        });
 
-        // load other children
-        try {
-            for (Node c : node.getChildren()) { // for each child
-                String n = c.getName().toLowerCase(); // get its name in lowercase
-                if (n.equals("name")) this.name = c.getValue(); // if name -> save story name as member
-                else if (n.equals("author")) this.author = c.getValue(); // if author -> save author as member
-                else if (!n.equals("starting_area") && !n.equals("starting_pos") && !n.equals("path") &&
-                        !n.equals("resource_relative") && !n.equals("starting_position")) // if unrecognized child found
-                    Utils.log("Unrecognized child given for story_info.node info:\n" + c + "Ignoring.",
-                            "story.Story", "Story(Node, String, boolean)", false); // log and ignore
-            }
-        } catch (Exception e) {// if any strange exceptions occur
-            Utils.handleException(new Exception(Utils.getImproperFormatErrorLine("Story", "Story",
-                    e.getMessage(), false)), "story.Story", "Story(Node, String, boolean)", true); // log/crash
-
-        }
+        /*
+         * Apply loaded information
+         */
+        this.name = (String) story.get("name"); // save name as member
+        this.author = (String) story.get("author"); // save author as member
     }
 
     /**
@@ -165,22 +148,16 @@ public class Story {
      * @param node the node to load the information from as described above
      */
     public Story(Node node) {
-        this(node, node.getChild("path").getValue(),
-                Boolean.parseBoolean(node.getChild("resource_relative").getValue())); // call other constructor
+        this(node, node.getChild("resource_path") != null
+                ? new Utils.Path(node.getChild("resource_path"))
+                : new Utils.Path(node.getChild("path"))); // call other constructor
     }
 
     /**
-     * @return the story's starting area's path, relative to the story folder
+     * @return the story's starting area's path
      */
-    public String getStartingAreaPath() {
+    public Utils.Path getStartingAreaPath() {
         return this.startingAreaPath;
-    }
-
-    /**
-     * @return the story's starting area's path as an absolute path
-     */
-    public String getAbsStartingAreaPath() {
-        return this.path + this.startingAreaPath; // concatenate starting area path with story folder path
     }
 
     /**
@@ -200,8 +177,8 @@ public class Story {
     /**
      * @return the story folder's path
      */
-    public String getPath() {
-        return this.path;
+    public Utils.Path getFolderPath() {
+        return this.folderPath;
     }
 
     /**
@@ -209,13 +186,6 @@ public class Story {
      */
     public Pair<Integer> getStartingPos() {
         return this.startingPos;
-    }
-
-    /**
-     * @return whether the story's folder path is resource-relative
-     */
-    public boolean isResRelative() {
-        return this.resRelative;
     }
 
     /**
@@ -228,11 +198,10 @@ public class Story {
         Node node = new Node("story"); // create story node
         node.addChild("name", this.name); // save name
         node.addChild("author", this.author); // save author/creator
-        node.addChild("path", this.path); // save story folder path
-        node.addChild("starting_area", this.startingAreaPath); // save starting area path
+        node.addChild(this.folderPath.toNode()); // save story folder path
+        node.addChild("starting_area", this.startingArea); // save starting area story folder path
         // save starting position
         node.addChild("starting_position", +this.startingPos.x + " " + this.startingPos.y);
-        node.addChild("resource_relative", Boolean.toString(this.resRelative)); // save resource relativity
         return node; // return created nodes
     }
 
@@ -266,8 +235,7 @@ public class Story {
             this.name.setScale(0.8f, 0.8f); // scale story name down a little bit
             this.author = new TextObject(Global.FONT, "author: " + story.getAuthor()); // create author text object
             this.author.setScale(0.4f, 0.4f); // scale author down by a little over half
-            this.path = new TextObject(Global.FONT, "path: " + (story.isResRelative() ? "<res>" : "") +
-                    story.getPath()); // create path text object with story path
+            this.path = new TextObject(Global.FONT, "path: " + story.getFolderPath()); // create path text object
             this.path.setScale(0.3f, 0.3f); // scale path down by about one third
             this.position(); // position the text objects in the story list item
         }

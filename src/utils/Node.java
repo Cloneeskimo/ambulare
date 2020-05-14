@@ -126,7 +126,7 @@ public class Node {
     public Node getChild(int index) {
         if (index > this.children.size() || index < 0) { // check for invalid index
             Utils.handleException(new Exception("Unable to access index " + index + " in child array of size " +
-                    this.children.size()), "utils.Node", "getChild(int)", true); // throw exception if invalid index
+                    this.children.size()), this.getClass(), "getChild", true); // throw exception if invalid index
         }
         return this.children.get(index); // return appropriate child otherwise
     }
@@ -139,8 +139,8 @@ public class Node {
      */
     public Node getChild(String name) {
         for (Node child : this.children) if (child.getName().equals(name)) return child; // look for matching name
-        Utils.log("Couldn't find child with name '" + name + "', returning null", "utils.Node",
-                "getChild(String)", false); // log failure but don't throw exception
+        Utils.log("Couldn't find child with name '" + name + "', returning null", this.getClass(),
+                "getChild", false); // log failure but don't throw exception
         return null; // return null if can't find
     }
 
@@ -152,8 +152,8 @@ public class Node {
      */
     public Node needChild(String name) {
         for (Node child : this.children) if (child.getName().equals(name)) return child; // look for matching name
-        Utils.handleException(new Exception("Unable to find child with name " + name), "utils.Node",
-                "needChild(String)", true); // throw exception if can't find
+        Utils.handleException(new Exception("Unable to find child with name " + name), this.getClass(), "needChild",
+                true); // throw exception if can't find
         return null; // here just to make compiler be quiet
     }
 
@@ -204,39 +204,15 @@ public class Node {
     /**
      * Converts a resource node-file to a node (if the node-file is properly formatted)
      *
-     * @param resPath the resource-relative path to the node-file
+     * @param path the path to the node-file
      * @return the created node
      */
-    public static Node resToNode(String resPath) {
-        List<String> data = Utils.resToStringList(resPath); // read resource
+    public static Node pathContentsToNode(Utils.Path path) {
+        List<String> data = Utils.pathContentsToStringList(path); // read resource
         trimData(data); // trim away comments and empty lines
         Node node = new Node(); // create root node
         parseNode(node, data, 0, 0); // parse read data from node-file into root node
         return node; // return parsed node
-    }
-
-    /**
-     * Converts a node-file at the given path to a node (if the node-file is properly formatted)
-     *
-     * @param path            the path to the node-file
-     * @param dataDirRelative whether the given path is relative to the data directory
-     * @return the created node or null if there is no node-file at the given path
-     */
-    public static Node fileToNode(String path, boolean dataDirRelative) {
-        try { // try to open and read file
-            BufferedReader in = new BufferedReader(new FileReader((dataDirRelative ? Utils.getDataDir()
-                    + "/" : "") + path)); // open file
-            List<String> data = new ArrayList<>(); // create empty String list
-            while (in.ready()) data.add(in.readLine()); // read and add file line-by-line
-            trimData(data); // trim away comments and empty lines
-            Node node = new Node(); // create root node
-            parseNode(node, data, 0, 0); // parse read data into root node
-            return node; // return read node
-        } catch (Exception e) { // if exception
-            Utils.log("Unable to load node at path: " + path + ". Returning null", "utils.Node",
-                    "fileToNode(String, boolean)", false);
-            return null; // return null
-        }
     }
 
     /**
@@ -265,21 +241,25 @@ public class Node {
     }
 
     /**
-     * Converts a given node to a node-file to be placed at the given path
+     * Converts a given node to a node-file to be placed at the given path. This will only for for paths that are
+     * relative to the data directory
      *
-     * @param node            the node to convert to a node-file
-     * @param path            the path to place the node-file
-     * @param dataDirRelative whether the given path is relative to the data directory
+     * @param node the node to convert to a node-file
+     * @param path the path to place the node-file
      */
-    public static void nodeToFile(Node node, String path, boolean dataDirRelative) {
+    public static void nodeToFile(Node node, Utils.Path path) {
         try { // try to open and read file
-            Utils.ensureDirs(path, dataDirRelative); // ensure directories exist
-            PrintWriter out = new PrintWriter(new File((dataDirRelative ? Utils.getDataDir() + "/" : "") +
-                    path)); // open node-file
+            if (path.isResRelative()) { // if the given path is resource-relative, log and ignore
+                Utils.log("Attempted to write the following node:\n" + node + "To the resource-relative path: "
+                        + path + ". Ignoring", Node.class, "nodeToFile", false);
+                return; // and return
+            }
+            Utils.ensureDirs(path); // ensure directories exist
+            PrintWriter out = new PrintWriter(path.getFile()); // open node-file
             layoutNode(out, node, new StringBuilder()); // recursively layout node to node-file
             out.close(); // close file
         } catch (Exception e) { // if exception
-            Utils.handleException(e, "Node", "nodeToFile(Node, String, boolean)", true); // handle exception
+            Utils.handleException(e, Node.class, "nodeToFile", true); // handle exception
         }
     }
 
@@ -304,7 +284,7 @@ public class Node {
         // throw error if no divider found
         if (dividerLocation == -1) { // if no divider found
             Utils.handleException(new Exception("Unable to find divider in line " + i + " of given utils.Node data"),
-                    "utils.Node", "parseNode(utils.Node, List<String>, int, int", true); // throw exception
+                    Node.class, "parseNode", true); // throw exception
         }
 
         // create node and set name if there is one
@@ -333,8 +313,7 @@ public class Node {
                     curr.addChild(child); // add child
                     if ((i + 1) > data.size())  // if unexpected file stop
                         Utils.handleException(new Exception("Unexpected file stop at line " + i +
-                                        " of given utils.Node data"), "utils.Node",
-                                "parseNode(utils.Node, List<String>, int, int", true); // throw exception
+                                " of given utils.Node data"), Node.class, "parseNode", true); // throw exception
                     i += 1; // iterate i
                 }
             }
@@ -366,7 +345,7 @@ public class Node {
                 out.write(indentString + "}\n"); // print child ending brace
             }
         } catch (Exception e) { // if exception
-            Utils.handleException(e, "utils.Node", "layoutNode(Writer, utils.Node, StringBuilder)", true); // handle
+            Utils.handleException(e, Node.class, "layoutNode", true); // handle
         }
     }
 

@@ -5,6 +5,7 @@ import org.lwjgl.opengl.GL32;
 import utils.*;
 
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,8 +32,8 @@ public abstract class Block {
     /**
      * Static Data
      */
-    private static final String NO_TEXTURE = "NONE"; /* used to denote that a block info is not textured while loading
-        blocks and making sure the minimum amount of materials are used. See loadLayoutBlocks() for more info */
+    private static final int NO_TEXTURE = -1;              // used to denote that a block info is not textured
+    private static final int MAX_OVERLAYS = 4;             // the max amount of overlays to be applied to block texture
 
     /**
      * Renders the set of blocks corresponding to the given set of block positions very efficiently using the given
@@ -89,14 +90,12 @@ public abstract class Block {
             lists are hashed based off of their contained values rather than their references. The order of objects that
             are entered into this map is as follows:
             [0] - [BlockInfo]: block information
-            [1] - [String]: texture path (or NO_TEXTURE if the block info is not textured). This requires a separate
+            [1] - [Utils.Path]: texture path (or NO_TEXTURE if the block info is not textured). This requires a separate
             field because some block information specifies multiple textures to be randomized over
             [2] - [Connectivity]: the connectivity of the block in question
-            [3] - [List<Boolean>]: the cut flags of the block in question
-            */
+            [3] - [List<Boolean>]: the cut flags of the block in question */
 
-        /* calculate block map width and height. This will be calculated as the largest width and height of a row/column
-           across all provided layers */
+        // calculate block map width and height
         int bmw = 0, bmh = 0; // initialize width and height to zero
         if (background != null) { // if a background was specified
             List<Node> rows = background.getChildren(); // get the rows of the background
@@ -127,13 +126,21 @@ public abstract class Block {
             loadLayoutLayerBlocks(mm, blocks[2], foreground, k, ats, bmw, bmh, sp, m); // load foreground
         for (BlockInfo bi : k.values()) bi.cleanup(); // cleanup block info overlay textures
         endBlockFormatting(sp, w); // end block formatting
+
+        // log block loading metrics
+        int totalBlocks = 0; // create variable to store block count
+        // go through each block layer
+        for (Map<Material, List<Pair<Integer>>> block : blocks)
+            for (List<Pair<Integer>> bs : block.values()) totalBlocks += bs.size(); // and count the total blocks
+        Utils.log("Finished loading block layout with:\n" + mm.values().size() + " resulting material instances\n"
+                + totalBlocks + " total blocks", Block.class, "loadLayoutBlocks", false); // log metrics
         return blockMap; // return the middleground block map to use for collision
     }
 
     /**
      * Loads a single layout layer of blocks
      *
-     * @param mm     the material map to draw from and populate. See loadLayoutBlocks() for more information on that
+     * @param mm     the material map to draw from and populate. See loadLayoutBlocks() for more information
      * @param blocks the material to block maps to populate
      * @param layout the layout node from the area node-file to read from
      * @param key    the parsed character to block info key
@@ -173,9 +180,9 @@ public abstract class Block {
                     // create the material map key list to see if a corresponding material already exists
                     List<Object> mmKey = new ArrayList<>(); // start as empty list
                     mmKey.add(bi); // add block info to list
-                    // if there are textures, choose a random one to use
-                    if (bi.texPaths.size() > 0) mmKey.add(bi.texPaths.get((int) (Math.random() * bi.texPaths.size())));
-                    else mmKey.add(NO_TEXTURE); // otherwise use the no texture string to denote a lack of textures
+                    if (bi.texturePaths.size() > 0) mmKey.add(bi.texturePaths.get((int) (Math.random() *
+                            bi.texturePaths.size()))); // if there are textures, choose a random one to use
+                    else mmKey.add(NO_TEXTURE); // otherwise use the no texture flag to denote a lack of textures
                     List<Boolean> cut = new ArrayList<>(); // create boolean list to store cut flags
                     Connectivity c = getConnectivity(x, y, blockMap, bi.overlayTextures, cut); // get connectivity
                     mmKey.add(c); // add connectivity to the map
@@ -185,19 +192,20 @@ public abstract class Block {
                     Material m = mm.get(mmKey); // get the material
                     if (m == null) { // if the material doesn't exist, need to create it
                         // if there is no texture, create the material using just the block info's color
-                        if (bi.texPaths.size() < 1) m = new Material(bi.color);
-                            // otherwise create the material using the formatted texture
-                        else {
-                            Texture base = bi.animated() ? new AnimatedTexture((String) mmKey.get(1), bi.texResPath,
-                                    bi.animFrames, bi.frameTime, true) : new Texture((String) mmKey.get(1),
-                                    bi.texResPath);
+                        if (bi.texturePaths.size() < 1) m = new Material(bi.color);
+                        else { // otherwise create the material using a formatted texture
+                            Texture base = new Texture((Utils.Path) mmKey.get(1)); // get base texture
+                            // apply animation if the texture is animated
+                            if (bi.animated()) base.animate(bi.animFrames, bi.animTime, true);
                             Texture formatted = createTexture(base, bi.overlayTextures, c, bi.cutRadius, cut, sp,
-                                    model);
+                                    model); // format the texture
+                            // if the texture is animated, add it to the animated textures list
                             if (formatted instanceof AnimatedTexture) ats.add((AnimatedTexture) formatted);
-                            m = new Material(formatted);
+                            m = new Material(formatted); // create a new material using the formatted texture
                         }
                         mm.put(mmKey, m); // save in material map
                     }
+                    // if no list in blocks exists for the material yet, create a new one
                     blocks.computeIfAbsent(m, k -> new ArrayList<>());
                     blocks.get(m).add(new Pair<>(x, y)); // add the position to that material
                 }
@@ -425,10 +433,9 @@ public abstract class Block {
         List<Integer> rotations = new ArrayList<>();
 
         // check for proper cut flag list size
-        if (cut.size() != 4) // crash if the cut flag list is not the correct size
-            Utils.handleException(new Exception("Invalid size of cut flag list: '" + cut.size() + "'"),
-                    "gameobject.gameworld.Block", "createTexture(Texture, Map<BlockInfo.OverlayType, Texture>, " +
-                            "Connectivity, float, List<Boolean>, ShaderProgram, Model", true);
+        if (cut.size() != 4) // if the flag list is not the correct size
+            Utils.handleException(new Exception("Invalid size of cut flag list: '" + cut.size() + "'"), Block.class,
+                    "createTexture", true); // crash
 
         // determine which overlays need applied and at what rotation
         if (!c.equals(Connectivity.DEFAULT)) { // default connectivity gets no texture formatting
@@ -634,11 +641,11 @@ public abstract class Block {
      */
     private static ShaderProgram beginBlockFormatting() {
         // create shader program
-        ShaderProgram sp = new ShaderProgram("/shaders/format_block_vertex.glsl",
-                "/shaders/format_block_fragment.glsl");
+        ShaderProgram sp = new ShaderProgram(new Utils.Path("/shaders/format_block_vertex.glsl", true),
+                new Utils.Path("/shaders/format_block_fragment.glsl", true));
         // register uniforms
         sp.registerUniform("base");
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < MAX_OVERLAYS; i++) {
             sp.registerUniform("overlays[" + i + "]");
             sp.registerUniform("rotations[" + i + "]");
         }
@@ -709,18 +716,17 @@ public abstract class Block {
         sp.setUniform("frames", base instanceof AnimatedTexture ? ((AnimatedTexture) base).getFrameCount() : 1);
         glActiveTexture(GL_TEXTURE0); // set active texture to the one in slot 0
         glBindTexture(GL_TEXTURE_2D, base.getID()); // bind base texture to slot 0
-        for (int i = 0; i < 4; i++) {
-            // activate the corresponding texture slot
-            if (i == 0) glActiveTexture(GL_TEXTURE1);
-            else if (i == 1) glActiveTexture(GL_TEXTURE2);
-            else if (i == 2) glActiveTexture(GL_TEXTURE3);
-            else glActiveTexture(GL_TEXTURE4);
-            if (i < overlays.size()) { // if
+        for (int i = 0; i < MAX_OVERLAYS; i++) {
+            glActiveTexture(GL_TEXTURE1 + i); // activate the corresponding texture slot
+            if (i < overlays.size()) { // if there are more overlays
+                // set the overlay and rotation uniforms
                 sp.setUniform("overlays[" + i + "]", i + 1);
                 sp.setUniform("rotations[" + i + "]", rotations.get(i));
-                glBindTexture(GL_TEXTURE_2D, overlays.get(i).getID());
-            } else {
+                glBindTexture(GL_TEXTURE_2D, overlays.get(i).getID()); // bind the overlay texture
+            } else { // if there are no more overlays
+                // unbind textures
                 glBindTexture(GL_TEXTURE_2D, 0);
+                // set uniforms to appropriate values to denote no more overlays
                 sp.setUniform("rotations[" + i + "]", -1);
                 sp.setUniform("overlays[" + i + "]", 0);
             }
@@ -780,9 +786,10 @@ public abstract class Block {
     }
 
     /**
-     * Encapsulates info about a block as laid out in a node-file. For info on node-files, see utils.Node.java. For info
-     * on how to format a block info node-file, see block info's constructor. When the corresponding blocks are created,
-     * the block info is no longer used. Thus, block info is just used for loading purposes
+     * Encapsulates info about a block as laid out in a node-file. For info on node-files, see utils.Node. For info on
+     * how nodes are loaded, see utils.NodeLoader. See the constructor for info on how to format a block info node. When
+     * corresponding blocks are created, the block info is no longer used. Thus, block info is just used for loading
+     * purposes
      */
     public static class BlockInfo {
 
@@ -796,37 +803,34 @@ public abstract class Block {
         /**
          * Members
          */
-        public final List<String> texPaths = new ArrayList<>(); // list of texture paths to be randomized over
-        public float[] color = new float[]{1f, 1f, 1f, 1f};     // block color
-        public Material.BlendMode bm = Material.BlendMode.NONE; /* how to blend color and texture in the material. For
-            info on how colors and textures can be blended, see graphics.Material.java's BlendMode enum */
-        public Map<OverlayType, Texture> overlayTextures;       // mapping from overlay types to corresponding textures
-        public String overlayPath;                              // base path of overlay textures to use
-        public float frameTime = 1f;                            // how long each frame should last if block is animated
-        public float cutRadius = 0.5f;                          // radius of cuts made to corresponding corner blocks
-        public int animFrames = 1;                              // how many frames there should be if block is animated
-        public boolean texResPath = true;                       // whether the texture paths are resource-relative
+        public List<Utils.Path> texturePaths = new ArrayList<>(); // a list of texture paths to randomize over
+        public float[] color = new float[]{1f, 1f, 1f, 1f};       // block color
+        public Material.BlendMode bm;                             // how to blend color and texture in the block
+        public Map<OverlayType, Texture> overlayTextures;         // map from overlay types to corresponding textures
+        public float animTime;                                    // length in seconds of a frame if block is animated
+        public float cutRadius;                                   // radius of cuts made to corner blocks
+        public int animFrames;                                    // how many frames there are if block is animated
 
         /**
-         * Constructs the block info by compiling the information from a given node. If the value of the root node
-         * starts with the statements 'from' or 'resfrom', the next statement will be assumed to be a different path at
-         * which to find the block info. This is useful for reusing the same block info in multiple settings. 'from'
-         * assumes the following path is relative to the Ambulare data folder (in the user's home folder) while
-         * 'resfrom' assumes the following path is relative to the Ambulares's resource path. Note that these kinds of
-         * statements cannot be chained together. A block info node can have the following children:
+         * Constructs the block info by compiling the information from a given node. BlockInfo nodes can use res(from)
+         * statements. See utils.NodeLoader for info on res(from) statements. A block info node can have the following
+         * children:
          * <p>
-         * - texture_path [optional][default: no texture]: specifies what path to look for textures at. There may be
-         * more than one path listed. If this is the case, a random texture path from the set of given paths will be
-         * chosen as the actual texture
+         * - texture_paths [optional][default: no texture]: specifies what paths to look for textures at. This node
+         * itself should have one or more children nodes formatted as path nodes. If more than one texture path is
+         * specified, a random one will be chosen when the corresponding block is created. See utils.Utils.Path for
+         * more information on path nodes
          * <p>
-         * - overlay_path [optional][default: no overlays]: specifies the base path to overlay textures. Overlays are
-         * textures that can be applied on top of the normal texture during edge/corner detection. For a example, if the
-         * block is positioned such that it is a corner piece of a group of blocks, it will apply the texture at the
-         * path: [overlay_path]_corner.[ext] on top of the normal texture, if it exists. The extension will be assumed
-         * from the first provided texture path's extension. Overlays allow for more aesthetic corners/edges in groups
-         * of blocks. Note that overlays can only be applied to textured blocks and that overlays cannot be animated
-         * though the underlying texture may still be. The following are the possible overlay texture paths that may be
-         * searched for and the circumstances under which they would be searched for:
+         * - overlay_info [optional][default: no overlays]: specifies necessary information to use overlays on the
+         * block. Overlays are textures that can be applied on top of the normal texture during edge/corner detection.
+         * For a example, if the block is positioned such that it is a corner piece of a group of blocks, it will apply
+         * the texture at the path: [overlay_path]_corner.[ext] on top of the normal texture, if it exists. The
+         * extension will be assumed from the first provided texture path's extension. Overlays allow for more aesthetic
+         * corners/edges in groups of blocks. Note that overlays can only be applied to textured blocks and that
+         * overlays cannot be animated though the underlying texture may still be. An overlay_info node should have the
+         * following children: (1): a valid path node describing the overlay_path base path for overlay image files, and
+         * (2) 'extension': the image file extension, including the dot (ex: '.png'). The following are the possible
+         * overlay texture paths that may be searched for and the circumstances under which they would be searched for:
          * - [overlay_path]_edge: used for edges - when a side of the block contains no neighbor and no adjacent sides
          * also contain no neighbor. If two adjacent sides contain no neighbor, a corner overlay is used. If two
          * opposite sides contain no neighbor, two edge overlays will be used - one for each edge. The texture for edges
@@ -843,10 +847,6 @@ public abstract class Block {
          * there is no block diagonally above and to the left, and inset will be used on the top-left corner of the
          * block. The texture for insets should have the inset on the top-left by default
          * <p>
-         * - resource_relative [optional][default: true]: specifies whether the given texture path is relative to
-         * Ambulare's resource path. If this is false, the given path must be relative to Ambulare's data folder (in
-         * the user's home folder)
-         * <p>
          * - color [optional][default: 1f 1f 1f 1f]: specifies what color to use for the block
          * <p>
          * - blend_mode [optional][default: none]: specifies how to blend color and texture. The options are: (1) none -
@@ -855,157 +855,120 @@ public abstract class Block {
          * multiplied to create a final color. (3) averaged - the components of the block color and the components of
          * the texture will be averaged to create a final color
          * <p>
-         * - animation_frames [optional][default: 1]: specifies how many animation frames are in the texture. Frames
-         * should be placed in horizontal order and should be equal widths. If 1 (by default) no animation will occur
+         * - animation_frames [optional][default: 1][0, 20]: specifies how many animation frames are in the texture.
+         * Frames should be placed in horizontal order and should be equal widths. If 1 (by default), no animation will
+         * occur
          * <p>
-         * - animation_time [optional][default: 1.0f]: specifies how long (in seconds) each frame should appear if the
-         * block is animated
+         * - animation_time [optional][default: 1.0f][0.01f, INFINITY]: specifies how long (in seconds) each frame
+         * should appear if the block is animated
          * <p>
-         * - cut_radius [optional][default: 0.5f]: specifies the radius of the circle to use for cutting corners. This
-         * should be a value between 0f and 1f (inclusive) where 0f represents no cutting and 1f represents cutting any
-         * content outside of a circle whose radius is half of the entire block off of the texture. For if this is set
-         * 0.5f and a corresponding block is at the top-right corner of a group of blocks, then anything outside of the
-         * radius of 1/4 of the block's total side relative to the top-right corner will be cut off, if within the top-
-         * right quadrant of the corresponding circle. Note that cuts are only applied to textured blocks
-         * <p>
-         * Note that, if any of the info above is improperly formatted, a message saying as much will be logged. As
-         * such, when designing blocks to be loaded into the game, the logs should be checked often to make sure the
-         * loading process is unfolding correctly
+         * - cut_radius [optional][default: 0.5f][0f, 1f]: specifies the radius of the circle to use for cutting
+         * corners. 0f represents no cutting and 1f represents cutting any content outside of a circle whose radius is
+         * half of the entire block off of the texture. For example, if this is set to 0.5f and a corresponding block is
+         * at the top-right corner of a group of blocks, then anything outside of the radius of 1/4 of the block's total
+         * side relative to the top-right corner will be cut off, if within the top-right quadrant of the corresponding
+         * circle. Note that cuts are only applied to textured blocks
          *
-         * @param info the node containing the info to create the blocks info with
+         * @param data the node containing the info to create the blocks info with
          */
-        public BlockInfo(Node info) {
+        public BlockInfo(Node data) {
 
-            // load from elsewhere if from or resfrom statement used
-            String value = info.getValue(); // get value
-            if (value != null) { // if there is a value
-                // check for a from statement
-                if (value.length() >= 4 && value.substring(0, 4).toUpperCase().equals("FROM"))
-                    // update info with node at the given path in the from statement
-                    info = Node.fileToNode(info.getValue().substring(5), true);
-                    // check for a resfrom statement
-                else if (value.length() >= 7 && value.substring(0, 7).toUpperCase().equals("RESFROM"))
-                    // update info with node at the given path in the from statement
-                    info = Node.resToNode(info.getValue().substring(8));
-                if (info == null) // if the new info is null, then throw an exception stating the path is invalid
-                    Utils.handleException(new Exception(Utils.getImproperFormatErrorLine("(res)from statement",
-                            "BlockInfo", "invalid path in (res)from statement: " + value,
-                            false)), "gameobject.gameworld.Block.BlockInfo", "BlockInfo(Node)", true);
+            /*
+             * Load block information using node loader
+             */
+            data = NodeLoader.checkForFromStatement("BlockInfo", data);
+            Map<String, Object> blockInfo = NodeLoader.loadFromNode("BlockInfo", data,
+                    new NodeLoader.LoadItem[]{
+                            new NodeLoader.LoadItem<>("texture_paths", null, Node.class)
+                                    .useTest((v, sb) -> {
+                                boolean issue = false;
+                                for (Node child : ((Node) v).getChildren()) {
+                                    Utils.Path p = new Utils.Path(child);
+                                    if (!p.exists()) {
+                                        sb.append("Texture at path does not exist: '").append(p).append('\n');
+                                        issue = true;
+                                    } else this.texturePaths.add(p);
+                                }
+                                return !issue;
+                            }),
+                            new NodeLoader.LoadItem<>("overlay_info", null, Node.class),
+                            new NodeLoader.LoadItem<>("color", "1f 1f 1f 1f", String.class)
+                                    .useTest((v, sb) -> {
+                                float[] c = Utils.strToColor(v);
+                                if (c == null) {
+                                    sb.append("Must be four valid rgba float values separated by a space");
+                                    sb.append("\nFor example: '1f 0f 1f 0.5' for a half-transparent purple");
+                                    return false;
+                                }
+                                this.color = c;
+                                return true;
+                            }),
+                            new NodeLoader.LoadItem<>("blend_mode", "none", String.class)
+                                    .setAllowedValues(new String[]{"none", "multiplicative", "averaged"}),
+                            new NodeLoader.LoadItem<>("animation_frames", 1, Integer.class)
+                                    .setLowerBound(1).setUpperBound(20),
+                            new NodeLoader.LoadItem<>("animation_time", 1f, Float.class)
+                                    .setLowerBound(0.1f),
+                            new NodeLoader.LoadItem<>("cut_radius", 0.5f, Float.class)
+                                    .setLowerBound(0f).setUpperBound(1f)
+                    });
+
+            /*
+             * Apply loaded information
+             */
+            // save blend mode as member
+            this.bm = Material.BlendMode.valueOf(((String) blockInfo.get("blend_mode")).toUpperCase());
+            this.animFrames = (Integer) blockInfo.get("animation_frames"); // save animation frames as member
+            this.animTime = (Float) blockInfo.get("animation_time"); // save animation time as member
+            this.cutRadius = (Float) blockInfo.get("cut_radius"); // save cut radius as member
+            if (this.texturePaths.size() > 0) { // if the block is textured
+                Node overlayData = (Node) blockInfo.get("overlay_info"); // get overlay info
+                if (overlayData != null) { // if overlay info was supplied, load overlay info using node loader
+                    overlayData = NodeLoader.checkForFromStatement("overlay_info", overlayData);
+                    Map<String, Object> overlayInfo = NodeLoader.loadFromNode("overlay_info", overlayData,
+                            new NodeLoader.LoadItem[]{
+                                    new NodeLoader.LoadItem<>("resource_path", null, Node.class),
+                                    new NodeLoader.LoadItem<>("data_dir_path", null, Node.class),
+                                    new NodeLoader.LoadItem<>("extension", null, String.class)
+                                            .makeRequired()
+                            });
+                    for (Node c : overlayData.getChildren()) // for each child in the overlay data node
+                        if (c.getName().toLowerCase().contains("path")) // if a path is found
+                            createOverlays(new Utils.Path(c), (String) overlayInfo.get("extension")); // create overlays
+                }
             }
-
-            // parse node
-            try { // surround in try/catch so as to intercept and log any issues
-                if (!info.hasChildren()) return; // if no children, just return with default properties
-                for (Node c : info.getChildren()) { // go through each child
-                    if (!parseChild(c)) { // parse it
-                        Utils.log("Unrecognized child given for block info:\n" + c + "Ignoring.",
-                                "gameobject.gameworld.Block.BlockInfo", "BlockInfo(Node)",
-                                false); // and log it if is not recognized
-                    }
-                }
-            } catch (Exception e) { // if any other exceptions occur
-                Utils.handleException(new Exception(Utils.getImproperFormatErrorLine("BlockInfo",
-                        "BlockInfo", e.getMessage(), false)),
-                        "gameobject.gameworld.Block.BlockInfo", "BlockInfo(Node)", true); // crash
-            }
-
-            // create overlays if the block is textured and an overlay path was provided
-            if (this.texPaths.size() > 0 && this.overlayPath != null) this.createOverlays();
-        }
-
-        /**
-         * Parses an individual child of a block info node and applies the setting it represents to the block info
-         *
-         * @param c the child to parse
-         * @return whether the child was recognized
-         */
-        protected boolean parseChild(Node c) {
-            String n = c.getName().toLowerCase(); // get the name of the child in lowercase
-            if (n.equals("texture_path")) this.texPaths.add(c.getValue()); // texture path
-            else if (n.equals("overlay_path")) this.overlayPath = c.getValue(); // overlay path
-                // resource relative texture path flag
-            else if (n.equals("resource_relative")) this.texResPath = Boolean.parseBoolean(c.getValue());
-            else if (n.equals("color")) { // color
-                float[] color = Utils.strToColor(c.getValue()); // try to convert to a float array of color components
-                if (color == null) // if conversion was unsuccessful
-                    Utils.log(Utils.getImproperFormatErrorLine("color", "BlockInfo",
-                            "must be four valid floating point numbers separated by spaces",
-                            true), "gameobject.gameworld.Block.BlockInfo", "parseChild(Node)",
-                            false); // log as much
-                else this.color = color; // otherwise save the color
-            } else if (n.equals("blend_mode")) { // blend mode
-                try { // try to convert to a blend mode
-                    this.bm = Material.BlendMode.valueOf(c.getValue().toUpperCase());
-                } catch (Exception e) { // if conversion was unsuccessful, log as much
-                    Utils.log(Utils.getImproperFormatErrorLine("blend_mode", "BlockInfo",
-                            "must be either: none, multiplicative, or averaged", true),
-                            "gameobject.gameworld.Block.BlockInfo", "parseChild(Node)", false);
-                }
-            } else if (n.equals("animation_frames")) { // animation frames
-                try { // try to convert to an integer
-                    this.animFrames = Integer.parseInt(c.getValue());
-                } catch (Exception e) { // if conversion was unsuccessful
-                    Utils.log(Utils.getImproperFormatErrorLine("animation_frame_count",
-                            "BlockInfo", "must be a proper integer greater than 0",
-                            true), "gameobject.gameworld.Block.BlockInfo", "parseChild(Node)",
-                            false); // log as much
-                }
-                if (this.animFrames < 1) { // if the amount of frames is invalid
-                    Utils.log(Utils.getImproperFormatErrorLine("animation_frame_count",
-                            "BlockInfo", "must be a proper integer greater than 0",
-                            true), "gameobject.gameworld.Block.BlockInfo", "parseChild(Node)",
-                            false); // log as much
-                    this.animFrames = 1; // and return to default amount of frames
-                }
-            } else if (n.equals("animation_time")) { // animation time
-                try { // try to convert to a float
-                    this.frameTime = Float.parseFloat(c.getValue());
-                } catch (Exception e) { // if conversion was unsuccessful, log as much
-                    Utils.log(Utils.getImproperFormatErrorLine("animation_frame_time", "BlockInfo",
-                            "must be a proper floating pointer number greater than 0", true),
-                            "gameobject.gameworld.Block.BlockInfo", "parseChild(Node)", false);
-                }
-                if (this.frameTime <= 0f) { // if the frame time is invalid, log as much
-                    Utils.log(Utils.getImproperFormatErrorLine("animation_frame_time", "BlockInfo",
-                            "must be a proper floating pointer number greater than 0", true),
-                            "gameobject.gameworld.Block.BlockInfo", "parseChild(Node)", false);
-                    this.frameTime = 1f; // and return to default frame time
-                }
-            } else if (n.equals("cut_radius")) {
-                try { // try to convert to a float
-                    this.cutRadius = Float.parseFloat(c.getValue());
-                } catch (Exception e) { // if conversion was unsuccessful
-                    Utils.log(Utils.getImproperFormatErrorLine("cut_radius", "BlockInfo",
-                            "must be a proper floating pointer number between 0f and 1f inclusive",
-                            true), "gameobject.gameworld.Block.BlockInfo", "parseChild(Node)",
-                            false); // log as much
-                }
-                if (this.cutRadius < 0f || this.cutRadius > 1f) { // if the cut radius is invalid
-                    Utils.log(Utils.getImproperFormatErrorLine("cut_radius", "BlockInfo",
-                            "must be a proper floating pointer number between 0f and 1f inclusive",
-                            true), "gameobject.gameworld.Block.BlockInfo", "parseChild(Node)",
-                            false); // log as much
-                    this.cutRadius = 0.5f; // and return to default cut radius
-                }
-            } else return false; // return false if unrecognized child
-            return true; // return true if the child was recognized
         }
 
         /**
          * Creates overlay textures for the block info using the parsed overlay path. This method should not be called
          * if the block info doesn't have a texture or an overlay path
          */
-        private void createOverlays() {
+        private void createOverlays(Utils.Path path, String extension) {
             this.overlayTextures = new HashMap<>(); // create a new mapping for the overlay textures
             // assume the file extension for the overlay image is the same as the first texture path
-            String ext = Utils.getFileInfoForPath(this.texResPath, this.texPaths.get(0))[2];
             for (OverlayType ot : OverlayType.values()) { // for each kind of overlay
-                String supposedPath = this.overlayPath + "_" + ot.toString() + ext; // create supposed path to image
-                if (Utils.fileExists(supposedPath, this.texResPath)) { // if the image exists
-                    // create and save the overlay texture
-                    this.overlayTextures.put(ot, new Texture(supposedPath, this.texResPath));
-                }
+                Utils.Path sp = path.add("_" + ot.toString() + extension); // create the supposed path
+                // if that path exists, create a texture using the image at the path
+                if (sp.exists()) this.overlayTextures.put(ot, new Texture(sp));
             }
+        }
+
+        /**
+         * Creates a material based off of the block info. The resulting material should be re-used as much as possible
+         *
+         * @param animated whether to allow the resulting material to have an animated texture if the block info
+         *                 supports it
+         * @return a material based off of the block inf
+         */
+        public Material createMaterial(boolean animated) {
+            Texture t = null; // texture is null if none specified
+            if (this.texturePaths.size() > 0) { // if there are texture paths
+                // choose a random texture path and create a texture with it
+                t = new Texture(this.texturePaths.get((int) (Math.random() * this.texturePaths.size())));
+                // animate the texture if the block info supports it and the animated flag is set to true
+                if (this.animated() && animated) t = t.animate(this.animFrames, this.animTime, true);
+            }
+            return new Material(t, this.color, this.bm); // create and return corresponding material
         }
 
         /**
