@@ -85,6 +85,8 @@ public class PhysicsEngine {
                  */
                 Pair<Integer> cell = new Pair<>(); // create a pair to store collided cell
                 int collision = checkBlocksAndSlopes(aabb, cell, 0); // check for collisions with blocks/slopes
+                boolean bottom = collision != NO_COLLISION && (slopeMap[cell.x][cell.y] == SlopeType.NegativeBottom ||
+                        slopeMap[cell.x][cell.y] == SlopeType.PositiveBottom);
                 if (collision == RESPOND_AS_BLOCK_IN_Y) {
 
                     /*
@@ -95,7 +97,7 @@ public class PhysicsEngine {
                     o.setY(round(o.getY() + pb)); // perform collision resolution
                     Pair<Float> rxn = performReaction(o.getVY(), o.getPhysicsProperties()); // calculate a reaction
                     // apply the reaction to the object's velocity
-                    o.setVY(Math.max(o.getVY(), rxn.x));
+                    o.setVY(bottom ? Math.max(o.getVY(), rxn.x) : rxn.x);
                     o.setVX(rxn.y * o.getVX());
                     dy = Math.max(0, dy); // do not check for y collisions this loop
                 } else if (collision == RESPOND_AS_SLOPE) {
@@ -104,22 +106,25 @@ public class PhysicsEngine {
                      * Respond as slope collision
                      */
                     // move up to respond to horizontal movement
-                    o.setY(round(o.getY() + Math.abs(calcPBFromSlope(aabb, cell, true))));
+                    o.setY(round(o.getY() + calcPBFromSlope(aabb, cell, true)));
                     aabb = o.getAABB(); // calculate new AABB
                     Pair<Integer> newCell = new Pair<>(); // create a pair to hold result of another check
                     // check if move up causes a new collision
                     int newCollision = checkBlocksAndSlopes(aabb, newCell, 0);
                     if (newCollision != NO_COLLISION) { // if move up caused another collision
                         // move object back down to resolve with object above
-                        o.setY(round(o.getY() - Math.abs(calcPBFromBlock(aabb, newCell, true))));
-                        SlopeType type = slopeMap[cell.x][cell.y]; // get the type of slope below
+                        o.setY(round(o.getY() + (newCollision == RESPOND_AS_SLOPE
+                                ? calcPBFromSlope(aabb, newCell, true)
+                                : calcPBFromBlock(aabb, newCell, true))));
                         // then push back horizontally enough to resolve collision with the slope underneath
-                        o.setX(round(o.getX() - (type == SlopeType.PositiveBottom ? 1 : -1) *
-                                Math.abs(calcPBFromSlope(o.getAABB(), cell, false))));
+                        o.setX(round(o.getX() + calcPBFromSlope(o.getAABB(), cell, false)));
+                        Pair<Float> rxn = performReaction(o.getVX(), o.getPhysicsProperties());
+                        o.setVX(rxn.x);
+                        o.setVY(rxn.y * o.getVY());
                     }
                     Pair<Float> rxn = performReaction(o.getVY(), o.getPhysicsProperties()); // calculate a reaction
                     // apply the reaction to the object's velocity
-                    o.setVY(Math.max(o.getVY(), rxn.x));
+                    o.setVY(bottom ? Math.max(o.getVY(), rxn.x) : rxn.x);
                     o.setVX(rxn.y * o.getVX());
                     dy = Math.max(0, dy); // do not check for y collisions this loop
                 } else if (collision == RESPOND_AS_BLOCK) {
@@ -185,6 +190,9 @@ public class PhysicsEngine {
                  */
                 Pair<Integer> cell = new Pair<>(); // create a pair to store collided cell
                 int collision = checkBlocksAndSlopes(aabb, cell, dy); // check for collisions with blocks/slopes
+                // preemptively calculate whether slope is a bottom slope in the collided cell
+                boolean bottom = collision != NO_COLLISION && (slopeMap[cell.x][cell.y] == SlopeType.NegativeBottom ||
+                        slopeMap[cell.x][cell.y] == SlopeType.PositiveBottom);
                 if (collision == RESPOND_AS_BLOCK_IN_Y || collision == RESPOND_AS_BLOCK) {
 
                     /*
@@ -195,17 +203,17 @@ public class PhysicsEngine {
                     o.setY(round(o.getY() + pb)); // perform collision resolution
                     Pair<Float> rxn = performReaction(o.getVY(), o.getPhysicsProperties()); // calculate a reaction
                     // apply the reaction to the object's velocity
-                    o.setVY(collision == RESPOND_AS_BLOCK ? rxn.x : Math.max(o.getVY(), rxn.x));
+                    o.setVY((collision == RESPOND_AS_BLOCK || !bottom) ? rxn.x : Math.max(o.getVY(), rxn.x));
                     o.setVX(rxn.y * o.getVX());
                 } else if (collision == RESPOND_AS_SLOPE) {
 
                     /*
                      * Respond as slope collision
                      */
-                    o.setY(round(o.getY() + Math.abs(calcPBFromSlope(aabb, cell, true)))); // calc and apply PB
+                    o.setY(round(o.getY() + calcPBFromSlope(aabb, cell, true))); // calc and apply PB
                     Pair<Float> rxn = performReaction(o.getVY(), o.getPhysicsProperties()); // calculate a reaction
                     // apply the reaction to the object's velocity
-                    o.setVY(Math.max(o.getVY(), rxn.x));
+                    o.setVY(bottom ? Math.max(o.getVY(), rxn.x) : rxn.x);
                     o.setVX(rxn.y * o.getVX());
                 }
 
@@ -315,14 +323,19 @@ public class PhysicsEngine {
      */
     private static int respondToSlopePresence(AABB aabb, List<Pair<Float>> points, int x, int y, float dy) {
         SlopeType type = slopeMap[x][y]; // get the type of slope at the given grid cell
-        int pAboveBottomEdge = 0; // keep a counter for how many points of the AABB are above the bottom edge of slope
+        int pAboveBottomEdge = 0; // a counter for how many points of the AABB are above the bottom edge of slope
+        int pBelowTopEdge = 0; // a counter for how many points of the AABB are below the top edge of the slope
+        int pLeftOfRightEdge = 0; // a counter for how many points of the AABB are to the left of the right edge
+        int pRightOfLeftEdge = 0; // a counter for how many points of the AABB are to the right of the left edge
+        for (Pair<Float> p : points) { // for each point
+            if (p.x >= x) pRightOfLeftEdge++; // count points to right of left edge
+            if (p.x <= (x + 1)) pLeftOfRightEdge++; // count points to left of right edge
+            if (p.y - dy >= y) pAboveBottomEdge++; // count points above bottom edge
+            if (p.y - dy <= (y + 1)) pBelowTopEdge++; // count points below top edge
+        }
+
         switch (type) { // switch on the type of slope
             case PositiveBottom: // if positive bottom slope
-                int pLeftOfRightEdge = 0; // keep track of points to the left of the right edge
-                for (Pair<Float> p : points) { // for each point
-                    if (p.x <= (x + 1)) pLeftOfRightEdge++; // count points to left of right edge
-                    if (p.y - dy >= (y)) pAboveBottomEdge++; // count points above bottom edge
-                }
                 // if all points are above the bottom edge and to the left of the right edge
                 if (pLeftOfRightEdge == points.size() && pAboveBottomEdge == points.size()) {
                     // calculate the minimum y value that the bottom right point can have (relative to the grid cell)
@@ -337,11 +350,6 @@ public class PhysicsEngine {
                 }
                 break;
             case NegativeBottom: // if negative bottom slope
-                int pRightOfLeftEdge = 0; // keep track of points to the right of the left edge
-                for (Pair<Float> p : points) { // for each point
-                    if (p.x >= x) pRightOfLeftEdge++; // count points to right of left edge
-                    if (p.y - dy >= y) pAboveBottomEdge++; // count points above bottom edge
-                }
                 // if all points are above the bottom edge and to the right of the left edge
                 if (pRightOfLeftEdge == points.size() && pAboveBottomEdge == points.size()) {
                     // calculate the minimum y value that the bottom left point can have (relative to the grid cell)
@@ -355,6 +363,33 @@ public class PhysicsEngine {
                     return RESPOND_AS_BLOCK_IN_Y; // otherwise respond vertically as a block
                 }
                 break;
+            case PositiveTop: // if positive top slope
+                // if all points are below the top edge and to the right of the left edge
+                if (pRightOfLeftEdge == points.size() && pBelowTopEdge == points.size()) {
+                    // calculate the maximum y value that the top left point can have (relative to the grid cell)
+                    float maxY = round((aabb.getCX() - aabb.getW2()) % 1);
+                    float ay = (aabb.getCY() + aabb.getH2() - y); // calculate the actual top left y (relative)
+                    if (ay > maxY) return RESPOND_AS_SLOPE; // if the actual is above the maximum slope collision occurs
+                    else return NO_COLLISION; // otherwise, no collision occurs
+                } else if (pRightOfLeftEdge < points.size()) { // if some points are to the left of the slope
+                    // if AABB above bottom edge of the slope and center to the left of slope, respond as if block
+                    if (aabb.getCY() + aabb.getH2() > y && aabb.getCX() < x) return RESPOND_AS_BLOCK;
+                    return RESPOND_AS_BLOCK_IN_Y; // otherwise respond vertically as a block
+                }
+                break;
+            case NegativeTop: // if negative top slope
+                // if all points are below the top edge and to the left of the right edge
+                if (pLeftOfRightEdge == points.size() && pBelowTopEdge == points.size()) {
+                    // calculate the maximum y value that the top right point can have (relative to the grid cell)
+                    float maxY = 1 - round((aabb.getCX() + aabb.getW2()) % 1);
+                    float ay = (aabb.getCY() + aabb.getH2() - y); // calculate the actual top right y (relative)
+                    if (ay > maxY) return RESPOND_AS_SLOPE; // if the actual is above the maximum slope collision occurs
+                    else return NO_COLLISION; // otherwise, no collision occurs
+                } else if (pLeftOfRightEdge < points.size()) { // if some points are to the right of the slope
+                    // if AABB above bottom edge of the slope and center to the right of slope, respond as if block
+                    if (aabb.getCY() + aabb.getH2() > y && aabb.getCX() > x + 1) return RESPOND_AS_BLOCK;
+                    return RESPOND_AS_BLOCK_IN_Y; // otherwise respond vertically as a block
+                }
         }
         return RESPOND_AS_BLOCK; // if all else fails, respond as a block
     }
@@ -421,37 +456,35 @@ public class PhysicsEngine {
      * @param o the axis-aligned AABB of the object who has collided
      * @param p the slope's grid cell location
      * @param y whether to calculate the push back in the vertical component
-     * @return the pushback necessary to resolve collision
+     * @return the push back necessary to resolve collision
      */
     private static float calcPBFromSlope(AABB o, Pair<Integer> p, boolean y) {
         SlopeType type = slopeMap[p.x][p.y]; // get the type of slope
+        boolean positive = type == SlopeType.PositiveBottom || type == SlopeType.PositiveTop; // is slope positive?
+        boolean top = type == SlopeType.PositiveTop || type == SlopeType.NegativeTop; // is slope on top?
+        boolean left = type == SlopeType.NegativeBottom || type == SlopeType.PositiveTop; // is slope on left?
+        float v; // push back value
         if (y) { // if y push back is desired
-            float minY = 0; // need to calculate minimum y
-            // calculate for positive bottom slope
-            if (type == SlopeType.PositiveBottom) minY = round((o.getCX() + o.getW2()) % 1);
-            // calculate for negative bottom slope
-            else if (type == SlopeType.NegativeBottom) minY = 1 - round((o.getCX() - o.getW2()) % 1);
-            float ay = (o.getCY() - o.getH2()) - p.y; // calculate actual y
-            float dif = Math.abs(minY - ay); // calculate difference in actual and minimum
-            float v = -dif - UNIT_AND_HALF; // make negative and add necessary unit
-            if (Math.abs(v) > 0.2f) // if abnormally large push back calculated
-                Utils.log("Abnormally large slope push-back value calculated: " + v + " in " + (y ? "y" : "x") +
-                        "component", PhysicsEngine.class, "calcPBFromSlope", false); // log
-            return v; // return the push back
+            float marginY; // need to calculate max/min y
+            if (left) marginY = round((o.getCX() - o.getW2()) % 1); // if left slope, calc as left point's x
+            else marginY = round((o.getCX() + o.getW2()) % 1); // if right slope, calc as right points's x
+            if (!positive) marginY = 1 - marginY; // if negative, invert
+            float ay = (o.getCY() + (top ? 1f : -1f) * o.getH2()) - p.y; // calculate actual y
+            float dif = Math.abs(marginY - ay); // calculate difference in actual and minimum
+            v = (top ? -1f : 1f) * (dif + UNIT_AND_HALF); // use correct sign and add additional unit
         } else { // if an x push back is desired
-            float marginX = 0; // need to calculate max/min x
-            // calculate for positive bottom slope
-            if (type == SlopeType.PositiveBottom) marginX = round((o.getCY() - o.getH2()) % 1);
-            // calculate for negative bottom slope
-            else if (type == SlopeType.NegativeBottom) marginX = 1 - round((o.getCY() - o.getH2()) % 1);
-            float ax = (o.getCX() + (type == SlopeType.PositiveBottom ? 1 : -1) * o.getW2()) % 1; // calculate actual x
+            float marginX; // need to calculate max/min x
+            if (top) marginX = round((o.getCY() + o.getH2()) % 1);
+            else marginX = round((o.getCY() - o.getH2()) % 1);
+            if (!positive) marginX = 1 - marginX;
+            float ax = (o.getCX() + (left ? -1 : 1) * o.getW2()) - p.x; // calculate actual x
             float dif = Math.abs(marginX - ax); // calculate difference in actual and min/ax
-            float v = -dif - UNIT_AND_HALF; // make negative and add necessary unti
-            if (Math.abs(v) > 0.2f) // if abnormally large push back calculated
-                Utils.log("Abnormally large slope push-back value calculated: " + v + " in " + (y ? "y" : "x") +
-                        "component", PhysicsEngine.class, "calcPBFromSlope", false); // log
-            return v; // return the push back
+            v = (left ? 1f : -1f) * (dif + UNIT_AND_HALF); // make negative and add necessary unti
         }
+        if (Math.abs(v) > 0.2f) // if abnormally large push back calculated
+            Utils.log("Abnormally large slope push-back value calculated: " + v + " in " + (y ? "y" : "x") +
+                    "component", PhysicsEngine.class, "calcPBFromSlope", false); // log
+        return v; // return the push back
     }
 
     /**
