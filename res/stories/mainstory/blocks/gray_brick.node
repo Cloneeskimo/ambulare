@@ -16,4 +16,7 @@ block info:
 
     # specify no cut radius
     cut_radius: 0f
+
+    # specify for it to slope
+    slopes: true
 }

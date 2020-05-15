@@ -2,6 +2,7 @@ package gameobject.gameworld;
 
 import graphics.*;
 import org.lwjgl.opengl.GL32;
+import org.lwjgl.system.CallbackI;
 import utils.*;
 
 import java.nio.ByteBuffer;
@@ -78,9 +79,10 @@ public abstract class Block {
      *                     foreground blocks
      * @param ats          the list of animated textures to populate
      * @param w            the GLFW window in use
-     * @return the block map for the middleground layer to be used for block collision
+     * @return an array of objects where [0](boolean[][]) is the block map populated with the layout layer's blocks and
+     * [1](PhysicsEngine.SlopeType[][]) is the slope map populated with the layout layer's slopes
      */
-    public static boolean[][] loadLayoutBlocks(Node key, Node background, Node middleground, Node foreground,
+    public static Object[] loadLayoutBlocks(Node key, Node background, Node middleground, Node foreground,
                                                Map<Material, List<Pair<Integer>>>[] blocks, List<AnimatedTexture> ats,
                                                Window w) {
         Map<Character, BlockInfo> k = parseKeyData(key); // parse the key
@@ -120,8 +122,8 @@ public abstract class Block {
         // load layouts for each layer
         if (background != null) // if there is a background
             loadLayoutLayerBlocks(mm, blocks[0], background, k, ats, bmw, bmh, sp, m); // load background
-        // load middleground and save the block map for collision
-        boolean[][] blockMap = loadLayoutLayerBlocks(mm, blocks[1], middleground, k, ats, bmw, bmh, sp, m);
+        // load middleground and save the block map and slope map for collision
+        Object[] maps = loadLayoutLayerBlocks(mm, blocks[1], middleground, k, ats, bmw, bmh, sp, m);
         if (foreground != null) // if there is a foreground
             loadLayoutLayerBlocks(mm, blocks[2], foreground, k, ats, bmw, bmh, sp, m); // load foreground
         for (BlockInfo bi : k.values()) bi.cleanup(); // cleanup block info overlay textures
@@ -134,7 +136,7 @@ public abstract class Block {
             for (List<Pair<Integer>> bs : block.values()) totalBlocks += bs.size(); // and count the total blocks
         Utils.log("Finished loading block layout with:\n" + mm.values().size() + " resulting material instances\n"
                 + totalBlocks + " total blocks", Block.class, "loadLayoutBlocks", false); // log metrics
-        return blockMap; // return the middleground block map to use for collision
+        return maps; // return the middleground block map and slope map to use for collision
     }
 
     /**
@@ -149,9 +151,10 @@ public abstract class Block {
      * @param bmh    the height of a block map for the corresponding layout
      * @param sp     the block formatting shader program created via beginBlockFormatting
      * @param model  the full square model to use for formatting block textures
-     * @return the block map populated of the layout layers
+     * @return an array of objects where [0](boolean[][]) is the block map populated with the layout layer's blocks and
+     * [1](PhysicsEngine.SlopeType[][]) is the slope map populated with the layout layer's slopes
      */
-    private static boolean[][] loadLayoutLayerBlocks(Map<List<Object>, Material> mm,
+    private static Object[] loadLayoutLayerBlocks(Map<List<Object>, Material> mm,
                                                      Map<Material, List<Pair<Integer>>> blocks, Node layout,
                                                      Map<Character, BlockInfo> key, List<AnimatedTexture> ats, int bmw,
                                                      int bmh, ShaderProgram sp, Model model) {
@@ -160,6 +163,7 @@ public abstract class Block {
         List<Node> rows = layout.getChildren(); // get the rows of the layout
         int diff = bmh - rows.size(); // find diff in rows of the current layer and the overall layout
         boolean[][] blockMap = new boolean[bmw][bmh]; // create an appropriately sized block map
+        Map<Pair<Integer>, PhysicsEngine.SlopeType> slopeList = new HashMap<>(); //  slope positions to populate
         for (int i = 0; i < rows.size(); i++) { // for each row
             int y = i + diff; // the y for this row is i + the difference in rows
             String row = rows.get(rows.size() - 1 - i).getValue(); // get the row
@@ -184,7 +188,8 @@ public abstract class Block {
                             bi.texturePaths.size()))); // if there are textures, choose a random one to use
                     else mmKey.add(NO_TEXTURE); // otherwise use the no texture flag to denote a lack of textures
                     List<Boolean> cut = new ArrayList<>(); // create boolean list to store cut flags
-                    Connectivity c = getConnectivity(x, y, blockMap, bi.overlayTextures, cut); // get connectivity
+                    // get connectivity and add to slopes list in the process if applicable
+                    Connectivity c = getConnectivity(x, y, blockMap, slopeList, bi.slopes, bi.overlayTextures, cut);
                     mmKey.add(c); // add connectivity to the map
                     mmKey.add(cut); // add cuts to the map
 
@@ -197,8 +202,9 @@ public abstract class Block {
                             Texture base = new Texture((Utils.Path) mmKey.get(1)); // get base texture
                             // apply animation if the texture is animated
                             if (bi.animated()) base.animate(bi.animFrames, bi.animTime, true);
-                            Texture formatted = createTexture(base, bi.overlayTextures, c, bi.cutRadius, cut, sp,
-                                    model); // format the texture
+                            // format the texture
+                            Texture formatted = createTexture(base, bi.overlayTextures, c, bi.cutRadius, cut,
+                                    bi.slopes && c.toString().toLowerCase().contains("corner"), sp, model);
                             // if the texture is animated, add it to the animated textures list
                             if (formatted instanceof AnimatedTexture) ats.add((AnimatedTexture) formatted);
                             m = new Material(formatted); // create a new material using the formatted texture
@@ -211,7 +217,14 @@ public abstract class Block {
                 }
             }
         }
-        return blockMap; // return block maps
+
+        // process slopes
+        PhysicsEngine.SlopeType[][] slopeMap = new PhysicsEngine.SlopeType[bmw][bmh]; // create slope map
+        for (Pair<Integer> slope : slopeList.keySet()) { // for each slope
+            slopeMap[slope.x][slope.y] = slopeList.get(slope); // put in slope map
+            blockMap[slope.x][slope.y] = false; // disable position in block map
+        }
+        return new Object[] { blockMap, slopeMap }; // return block map and slope map
     }
 
     /**
@@ -233,18 +246,22 @@ public abstract class Block {
      * will be aesthetically perfect if not all types of overlay are given. For the best results, ensure that the
      * block has all five overlay textures provided
      *
-     * @param x        the x position of the block to calculate connectivity for
-     * @param y        the y position of the block to calculate connectivity for
-     * @param blockMap the block map to use to check for neighbors to calculate connectivity
-     * @param overlays a mapping from overlay types to corresponding textures (if an overlay type maps to null, this
-     *                 method will assume that no texture for that kind of overlay exists. If this is null, default
-     *                 connectivity will be returned
-     * @param cut      flags to populate determining what corners to cut (starting at the top-left and continuing counter-
-     *                 clockwise) as given by getConnectivity(). Must be initialized to an array of length four
+     * @param x         the x position of the block to calculate connectivity for
+     * @param y         the y position of the block to calculate connectivity for
+     * @param blockMap  the block map to use to check for neighbors to calculate connectivity
+     * @param slopes    whether the corresponding block slopes. If the corresponding block does slope, and present a
+     *                  corner-based connectivity, its position will be added to the given slope list
+     * @param slopeList the slope list to populate
+     * @param overlays  a mapping from overlay types to corresponding textures (if an overlay type maps to null, this
+     *                  method will assume that no texture for that kind of overlay exists. If this is null, default
+     *                  connectivity will be returned
+     * @param cut       flags to populate determining what corners to cut (starting at the top-left and continuing
+     *                  counter-clockwise) as given by getConnectivity(). Must be initialized to an array of length four
      * @return the best possible type of connectivity for the block at the given position given its neighbors and its
      * available overlay textures
      */
     private static Connectivity getConnectivity(int x, int y, boolean[][] blockMap,
+                                                Map<Pair<Integer>, PhysicsEngine.SlopeType> slopeList, boolean slopes,
                                                 Map<BlockInfo.OverlayType, Texture> overlays, List<Boolean> cut) {
         // determine which directions are still within bounds of the block map
         boolean leftInBounds = x > 0;
@@ -294,24 +311,28 @@ public abstract class Block {
 
             // check for top left (inset) corner
             if (below && right && !(above || left)) {
+                if (slopes) slopeList.put(new Pair<>(x, y), PhysicsEngine.SlopeType.PositiveBottom);
                 if (!belowRight && insetAvailable) return Connectivity.TOP_LEFT_CORNER_INSET;
                 else return Connectivity.TOP_LEFT_CORNER;
             }
 
             // check for top right (inset) corner
             if (below && left && !(above || right)) {
+                if (slopes) slopeList.put(new Pair<>(x, y), PhysicsEngine.SlopeType.NegativeBottom);
                 if (!belowLeft && insetAvailable) return Connectivity.TOP_RIGHT_CORNER_INSET;
                 else return Connectivity.TOP_RIGHT_CORNER;
             }
 
             // check for bottom left (inset) corner
             if (above && right && !(below || left)) {
+                if (slopes) slopeList.put(new Pair<>(x, y), PhysicsEngine.SlopeType.NegativeTop);
                 if (!aboveRight && insetAvailable) return Connectivity.BOTTOM_LEFT_CORNER_INSET;
                 else return Connectivity.BOTTOM_LEFT_CORNER;
             }
 
             // check for bottom right (inset) corner
             if (above && left && !(below || right)) {
+                if (slopes) slopeList.put(new Pair<>(x, y), PhysicsEngine.SlopeType.PositiveTop);
                 if (!aboveLeft && insetAvailable) return Connectivity.BOTTOM_RIGHT_CORNER_INSET;
                 else return Connectivity.BOTTOM_RIGHT_CORNER;
             }
@@ -422,12 +443,14 @@ public abstract class Block {
      * @param cutRadius the cut radius to use
      * @param cut       flags determining what corners to cut (starting at the top-left and continuing counter-clockwise) as
      *                  given by getConnectivity()
+     * @param slope     whether the corresponding block should be cut as a slope
      * @param sp        the block formatting shader program created via beginBlockFormatting
      * @param m         the square model to use for formatting block textures
      * @return the created texture
      */
     private static Texture createTexture(Texture base, Map<BlockInfo.OverlayType, Texture> overlays, Connectivity c,
-                                         float cutRadius, List<Boolean> cut, ShaderProgram sp, Model m) {
+                                         float cutRadius, List<Boolean> cut, boolean slope, ShaderProgram sp,
+                                         Model m) {
         // create empty lists for overlay to apply and their corresponding rotations
         List<Texture> overlaysToApply = new ArrayList<>();
         List<Integer> rotations = new ArrayList<>();
@@ -631,7 +654,7 @@ public abstract class Block {
 
         // format texture according to overlays, rotation, and cut
         return applyBlockTextureFormatting(base, overlaysToApply, rotations, cut.get(0), cut.get(3), cut.get(1),
-                cut.get(2), cutRadius, sp, m);
+                cut.get(2), slope, cutRadius, sp, m);
     }
 
     /**
@@ -655,6 +678,7 @@ public abstract class Block {
         sp.registerUniform("cutBottomLeft");
         sp.registerUniform("cutBottomRight");
         sp.registerUniform("cutRadius");
+        sp.registerUniform("slope");
         return sp; // return created and initialized shader program
     }
 
@@ -681,13 +705,14 @@ public abstract class Block {
      *
      * @param base           the base block texture
      * @param overlays       the textures to overlay onto the base texture. If empty, no overlay textures will be
-     * @param rotations      how to rotate the overlays, kept as a parallel list, when applying it to the base texture. The
-     *                       following values are accepted: 0 - no rotation; 1 - 90 degrees of rotation; 2 - 180 degrees of
-     *                       rotation; 3 - 270 degreees of rotation
+     * @param rotations      how to rotate the overlays, kept as a parallel list, when applying it to the base texture.
+     *                       The following values are accepted: 0 - no rotation; 1 - 90 degrees of rotation; 2 - 180
+     *                       degrees of rotation; 3 - 270 degreees of rotation
      * @param cutTopLeft     whether to apply a cut to the top-left corner
      * @param cutTopRight    whether to apply a cut to the top-right corner
      * @param cutBottomLeft  whether to apply a cut to the bottom-left corner
      * @param cutBottomRight whether to apply a cut to the bottom-right corner
+     * @param slope          whether the corresponding block should be cut as a slope
      * @param cutRadius      the radius to use when applying cuts. See BlockInfo's constructor for more info on cuts and cut
      *                       radius
      * @param sp             the block formatting shader program created via beginBlockFormatting
@@ -696,8 +721,8 @@ public abstract class Block {
      */
     public static Texture applyBlockTextureFormatting(Texture base, List<Texture> overlays, List<Integer> rotations,
                                                       boolean cutTopLeft, boolean cutTopRight, boolean cutBottomLeft,
-                                                      boolean cutBottomRight, float cutRadius, ShaderProgram sp,
-                                                      Model m) {
+                                                      boolean cutBottomRight, boolean slope, float cutRadius,
+                                                      ShaderProgram sp, Model m) {
         // create the FBO and the texture attachment
         int[] IDs = Utils.createFBOWithTextureAttachment(base.getWidth(), base.getHeight());
 
@@ -714,6 +739,7 @@ public abstract class Block {
         sp.setUniform("cutBottomRight", cutBottomRight ? 1 : 0); // set the bottom-right cutting uniform
         // set the frames uniform based on the base texture's animation properties
         sp.setUniform("frames", base instanceof AnimatedTexture ? ((AnimatedTexture) base).getFrameCount() : 1);
+        sp.setUniform("slope", slope ? 1 : 0); // set slopes uniform
         glActiveTexture(GL_TEXTURE0); // set active texture to the one in slot 0
         glBindTexture(GL_TEXTURE_2D, base.getID()); // bind base texture to slot 0
         for (int i = 0; i < MAX_OVERLAYS; i++) {
@@ -797,7 +823,7 @@ public abstract class Block {
          * Defines the types of texture overlays. See BlockInfo's constructor for more info on overlays
          */
         public enum OverlayType {
-            corner, edge, cap, single, inset
+            corner, edge, cap, single, inset, slope
         }
 
         /**
@@ -810,6 +836,7 @@ public abstract class Block {
         public float animTime;                                    // length in seconds of a frame if block is animated
         public float cutRadius;                                   // radius of cuts made to corner blocks
         public int animFrames;                                    // how many frames there are if block is animated
+        public boolean slopes;                                    // whether the block is a slope in corners
 
         /**
          * Constructs the block info by compiling the information from a given node. BlockInfo nodes can use res(from)
@@ -838,6 +865,8 @@ public abstract class Block {
          * - [overlay_path]_corner: used only for corners - when only two adjacent sides of the block contain no
          * neighbor. If three sides (adjacent or not) contain no neighbor, a cap overlay is used. The texture for
          * corners should have the corner on the top-left by default
+         * - [overlay_path]_slope: used in place of the corner overlays if the block slopes. The texture for slopes
+         * should have a positive slope with the sides of the triangle on the bottom and right by default
          * - [overlay_path]_cap: used only when three sides of the block contain no neighbor. Adjacency is implied as it
          * is impossible to have three collectively non-adjacent sides of a rectangle. The texture for caps should have
          * the cap on the top by default
@@ -868,6 +897,9 @@ public abstract class Block {
          * at the top-right corner of a group of blocks, then anything outside of the radius of 1/4 of the block's total
          * side relative to the top-right corner will be cut off, if within the top-right quadrant of the corresponding
          * circle. Note that cuts are only applied to textured blocks
+         * <p>
+         * - slopes [optional][default: false]: specifies whether the block should become sloped when in a corner
+         * position
          *
          * @param data the node containing the info to create the blocks info with
          */
@@ -910,7 +942,8 @@ public abstract class Block {
                             new NodeLoader.LoadItem<>("animation_time", 1f, Float.class)
                                     .setLowerBound(0.1f),
                             new NodeLoader.LoadItem<>("cut_radius", 0.5f, Float.class)
-                                    .setLowerBound(0f).setUpperBound(1f)
+                                    .setLowerBound(0f).setUpperBound(1f),
+                            new NodeLoader.LoadItem<>("slopes", false, Boolean.class)
                     });
 
             /*
@@ -921,6 +954,7 @@ public abstract class Block {
             this.animFrames = (Integer) blockInfo.get("animation_frames"); // save animation frames as member
             this.animTime = (Float) blockInfo.get("animation_time"); // save animation time as member
             this.cutRadius = (Float) blockInfo.get("cut_radius"); // save cut radius as member
+            this.slopes = (Boolean) blockInfo.get("slopes"); // save slopes flag as member
             if (this.texturePaths.size() > 0) { // if the block is textured
                 Node overlayData = (Node) blockInfo.get("overlay_info"); // get overlay info
                 if (overlayData != null) { // if overlay info was supplied, load overlay info using node loader
@@ -949,7 +983,8 @@ public abstract class Block {
             for (OverlayType ot : OverlayType.values()) { // for each kind of overlay
                 Utils.Path sp = path.add("_" + ot.toString() + extension); // create the supposed path
                 // if that path exists, create a texture using the image at the path
-                if (sp.exists()) this.overlayTextures.put(ot, new Texture(sp));
+                if (sp.exists()) this.overlayTextures.put(ot == OverlayType.slope && this.slopes
+                                ? OverlayType.corner : ot, new Texture(sp)); // slopes put in place of corners
             }
         }
 

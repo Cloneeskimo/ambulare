@@ -50,16 +50,7 @@ public class GameWorld {
         float ssr = area.getStartingSunRotation(); // get the starting sun rotation from the area
         this.dnc = new DayNightCycle(ssr < 0 ? 0f : ssr, area.getSunSpeed()); // initialize day/night cycle
         PhysicsEngine.giveBlockMap(this.area.getBlockMap()); // give the area's block map to the physics engine
-        int[][] slopeMap = new int[this.area.getBlockMap().length][this.area.getBlockMap()[0].length];
-        slopeMap[45][3] = 1;
-        slopeMap[46][4] = 1;
-        slopeMap[49][2] = 1;
-        slopeMap[49][4] = 1;
-        slopeMap[34][3] = 2;
-        slopeMap[33][4] = 2;
-        slopeMap[31][2] = 2;
-        slopeMap[31][4] = 2;
-        PhysicsEngine.giveSlopeMap(slopeMap); // give the area's slope map to the physics engine
+        PhysicsEngine.giveSlopeMap(this.area.getSlopeMap()); // give the area's slope map to the physics engine
         // register GLFW window scroll callback for camera zoom
         glfwSetScrollCallback(windowHandle, (w, x, y) -> { // when the user scrolls
             this.cam.aestheticZoom(y > 0 ? 1.1f : (1f / 1.1f)); // zoom on camera

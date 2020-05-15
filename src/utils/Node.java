@@ -107,6 +107,13 @@ public class Node {
     }
 
     /**
+     * Resets the nodes list of children to an empty list
+     */
+    public void resetChildren() {
+        this.children = new ArrayList<>(); // reset to an empty list
+    }
+
+    /**
      * If this node has no children, the given children will become its children. Otherwise, the given
      * children will be added one-by-one to this node's list of children.
      *

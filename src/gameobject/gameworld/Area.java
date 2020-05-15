@@ -58,6 +58,7 @@ public class Area {
                                                                    background decor and decor[1] is foreground decor */
     private final List<AnimatedTexture> ats;                    // a list of animated textures to update
     private final boolean[][] blockMap;                         // block map of the middleground for collision
+    private final PhysicsEngine.SlopeType[][] slopeMap;         // slope map of the middleground for collision
     private final Block.BlockModel bm = new Block.BlockModel(); // all blocks use same 1x1 square model
     private BackDrop backdrop;                                  // the backdrop rendered behind the world
     private String name;                                        // the name of the area
@@ -151,9 +152,11 @@ public class Area {
         this.blocks = new Map[]{new HashMap<>(), new HashMap<>(), new HashMap<>()}; // block pos for each layout layer
         this.decor = new List[]{new ArrayList<>(), new ArrayList<>()}; // decor list for background and foreground
         this.ats = new ArrayList<>(); // create new list to animated textures to update
-        this.blockMap = Block.loadLayoutBlocks((Node) (area.get("block_key")),
+        Object[] maps = Block.loadLayoutBlocks((Node) (area.get("block_key")),
                 (Node) (area.get("background_layout")), (Node) (area.get("middleground_layout")),
                 (Node) (area.get("foreground_layout")), this.blocks, this.ats, window); // load block layout
+        this.blockMap = (boolean[][])maps[0]; // save block map
+        this.slopeMap = (PhysicsEngine.SlopeType[][])maps[1]; // save slope map
         if (area.get("decor_key") != null) Decor.loadLayoutDecor((Node) (area.get("decor_key")),
                 (Node) (area.get("background_layout")), (Node) (area.get("middleground_layout")),
                 (Node) (area.get("foreground_layout")), this.decor, this.ats, this.blockMap); // load decor
@@ -232,6 +235,13 @@ public class Area {
      */
     public boolean[][] getBlockMap() {
         return this.blockMap;
+    }
+
+    /**
+     * @return the area's slope map
+     */
+    public PhysicsEngine.SlopeType[][] getSlopeMap() {
+        return this.slopeMap;
     }
 
     /**

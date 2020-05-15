@@ -110,7 +110,7 @@ public class MenuLogic extends GameLogic {
      */
     private Camera cam;                // the cam that pans the menu area
     private GameObject title;          // title game object
-    private Node toTransfer;           // data transferred to world logic
+    private Node toTransfer;           // data transferred to world loTransfergic
     private ShaderProgram sp;          /* shader program to render title occasionally. Specifically, the title is
                                           manually rendered during the introductory physics simulation and whenever the
                                           ROC is fading and the goal is to not fade the title */
@@ -397,6 +397,16 @@ public class MenuLogic extends GameLogic {
     @Override
     public void keyboardInput(int key, int action) {
         if (this.nameInput != null) this.nameInput.keyboardInput(key, action); // delegate to name input if not null
+        if (key == GLFW_KEY_3) { // if 3 is pressed, skip straight to main story
+            toTransfer = new Node(); // instantiate the transfer data node to world logic
+            // add story to transfer data
+            toTransfer.addChild(new Story(Node.pathContentsToNode(new Utils.Path(
+                    "/stories/mainstory/story_info.node",
+                    true)), new Utils.Path("/stories/mainstory/", true)).toNode());
+            toTransfer.addChild("name", "DEV"); // use dev_test name
+            GameLogic.logicChange = new LogicChange(new WorldLogic(), 0f); // change to world logic
+            GameLogic.logicChange.useTransferData(toTransfer); // using our transfer data
+        }
     }
 
     /**

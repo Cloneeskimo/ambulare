@@ -76,9 +76,8 @@ public abstract class NodeLoader {
                 }
             }
             // if no match was made, log that an unrecognized child was found
-            if (!matched) Utils.log(getMessage(object, null, "Unrecognized child found while loading '" +
-                            object + "':\n" + child + "Unexpected", true), NodeLoader.class,
-                    "loadFromNode", false);
+            if (!matched) Utils.log(getMessage(object, null, "Unrecognized child:\n" + child +
+                    "Unexpected", true), NodeLoader.class, "loadFromNode", false);
         }
         // compile the map items by finishing up each load item
         for (LoadItem item : li) loadedNode.put(item.getName(), item.finish());
@@ -87,32 +86,48 @@ public abstract class NodeLoader {
 
     /**
      * This method checks the given node for a (res)from statement in its value and will, if one exists, create a new
-     * node at the corresponding path and return it if it exists. If it does not exist, the program will crash. Note
-     * that resfrom statements refer to paths that are resource-relative and from statements refer to paths that are
-     * relative to the Ambulare data directory. Node also that this method will not check for chains of these statements
+     * node at the corresponding path and return it if it exists. If it does not exist, the program will return the
+     * original node. If the original node has any additional children listed, they will be added to the final node and
+     * will replace any children present in the node loaded using the (res)from state. Note that resfrom statements
+     * refer to paths that are resource-relative and from statements refer to paths that are relative to the Ambulare
+     * data directory. Node also that this method will not check for chains of these statements
      *
      * @param object the name of the object attempting to be loaded from this method, to be used for logging and error-
      *               reporting
      * @param data   the node to check for a (res)from statement in
-     * @return the node at the path of the (res)from statement, or the original node if no (res)from statement was found
+     * @return the node at the path of the (res)from statement with the original nodes children added wwith replacement,
+     * or the original node if no valid (res)from statement was found
      */
     public static Node checkForFromStatement(String object, Node data) {
         String value = data.getValue(); // get value
+        Node loaded = null; // a node to store the data loaded using the (res)from statement
+        boolean loadAttempt = true; // a flag representing whether a load attempt was made
         if (value != null) { // if there is a value
             // check for a from statement
             if (value.length() >= 4 && value.substring(0, 4).toUpperCase().equals("FROM"))
                 // update info with node at the given path in the from statement
-                data = Node.pathContentsToNode(new Utils.Path(data.getValue().substring(5), false));
+                loaded = Node.pathContentsToNode(new Utils.Path(data.getValue().substring(5), false));
                 // check for a resfrom statement
             else if (value.length() >= 7 && value.substring(0, 7).toUpperCase().equals("RESFROM"))
                 // update info with node at the given path in the from statement
-                data = Node.pathContentsToNode(new Utils.Path(data.getValue().substring(8), true));
-
-            if (data == null) // if the new info is null, then throw an exception stating the path is invalid
-                Utils.handleException(new Exception(getMessage(object, null, "Invalid (res)from path: '" +
-                        value + "'", false)), NodeLoader.class, "checkForFromStatement", true);
+                loaded = Node.pathContentsToNode(new Utils.Path(data.getValue().substring(8), true));
+            else loadAttempt = false; // if no (res)from statement, no load attempt was made
+            if (loaded == null && loadAttempt) // if load attempt failed, log and ignore
+                Utils.log(getMessage(object, null, "Invalid (res)from path: '" +
+                        value + "'", true), NodeLoader.class, "checkForFromStatement", true);
+            else if (loaded != null){ // if successful load, add original node's children with replacement and return
+                for (Node child : data.getChildren()) { // for each child
+                    Node equiv = loaded.getChild(child.getName()); // get its equivalent in the loaded node
+                    if (equiv != null) { // if there is an equivalent
+                        equiv.setValue(child.getValue()); // set its value to the original node's child's value
+                        equiv.resetChildren(); // reset the equivalent node's children
+                        equiv.setAddChildren(child.getChildren()); // and add the original node's child's children
+                    } else loaded.addChild(child); // if no equivalent, just add original node's child
+                }
+                return loaded; // return final node
+            }
         }
-        return data; // return final node
+        return data; // return original node
     }
 
     /**

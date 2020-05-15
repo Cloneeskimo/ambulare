@@ -3,10 +3,13 @@ package graphics;
 import org.lwjgl.system.MemoryUtil;
 import utils.FittingBox;
 import utils.Pair;
+import utils.PhysicsEngine;
 import utils.Utils;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.glDisableVertexAttribArray;
@@ -83,11 +86,13 @@ public class Model {
      * bottom right
      */
     public static float[] getGridRectModelCoords(int w, int h) {
+        float w2 = (float)w / 2;
+        float h2 = (float)h / 2;
         return new float[]{
-                -(float) w / 2, (float) h / 2, // top left
-                -(float) w / 2, -(float) h / 2, // bottom left
-                (float) w / 2, -(float) h / 2, // bottom right
-                (float) w / 2, (float) h / 2  // top right
+                -w2, h2, // top left
+                -w2, -h2, // bottom left
+                w2, -h2, // bottom right
+                w2, h2  // top right
         };
     }
 

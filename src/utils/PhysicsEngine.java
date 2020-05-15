@@ -33,10 +33,8 @@ public class PhysicsEngine {
         calculating push-back vector during collision resolution becomes infinitely more difficult and prone to bugs.
         Thus, rounding all numbers in the form allows for much more stability. The physics engine handless this rounding
         automatically */
-    private static boolean[][] blockMap; // the block map to use for collision detection with blocks
-    private static int[][] slopeMap; /* the slope map to use for collision detection with slopes, where the following
-        values have meaning: 1) positive slope on ground; 2) negative slope on ground; 3) positive slope on ceiling; 4)
-        negative slope on ceiling; any other values refer to a lack of slope */
+    private static boolean[][] blockMap;   // the block map to use for collision detection with blocks
+    private static SlopeType[][] slopeMap; // the slope map to use for collision detection with slopes
     public static final float UNIT_AND_HALF = 0.0015f; /* the minimum unit (as specified by the rounding performed by
         the physics engine by ROUNDED_FORMAT) to be added to a push-back vector in order to resolve a collision */
     public static final float TERMINAL_VELOCITY = -50f; /* the minimum vertical velocity from gravity. Note that the
@@ -114,10 +112,10 @@ public class PhysicsEngine {
                     if (newCollision != NO_COLLISION) { // if move up caused another collision
                         // move object back down to resolve with object above
                         o.setY(round(o.getY() - Math.abs(calcPBFromBlock(aabb, newCell, true))));
-                        int type = slopeMap[cell.x][cell.y]; // get the type of slope below
+                        SlopeType type = slopeMap[cell.x][cell.y]; // get the type of slope below
                         // then push back horizontally enough to resolve collision with the slope underneath
-                        o.setX(round(o.getX() - (type == 1 ? 1 : -1) * Math.abs(calcPBFromSlope(o.getAABB(), cell,
-                                false))));
+                        o.setX(round(o.getX() - (type == SlopeType.PositiveBottom ? 1 : -1) *
+                                Math.abs(calcPBFromSlope(o.getAABB(), cell, false))));
                     }
                     Pair<Float> rxn = performReaction(o.getVY(), o.getPhysicsProperties()); // calculate a reaction
                     // apply the reaction to the object's velocity
@@ -168,11 +166,11 @@ public class PhysicsEngine {
              * Update change in y if object is sticky, based on horizontal movement
              */
             // if the object sticks to slopes and is on a slope
-            if (o.getPhysicsProperties().sticky && o.getPhysicsProperties().onSlope != 0) {
+            if (o.getPhysicsProperties().sticky && o.getPhysicsProperties().onSlope != null) {
                 float adx = o.getX() - ox; // calculate the horizontal change that occurred
                 // apply the change to the vertical component as well to simulate sticking to the slop
-                if (adx < 0 && o.getPhysicsProperties().onSlope == 1) dy += adx;
-                else if (adx > 0 && o.getPhysicsProperties().onSlope == 2) dy -= adx;
+                if (adx < 0 && o.getPhysicsProperties().onSlope == SlopeType.PositiveBottom) dy += adx;
+                else if (adx > 0 && o.getPhysicsProperties().onSlope == SlopeType.NegativeBottom) dy -= adx;
             }
 
             /*
@@ -251,7 +249,7 @@ public class PhysicsEngine {
             // if a slope collision occurred
             o.getPhysicsProperties().onSlope = (collision == RESPOND_AS_BLOCK_IN_Y || collision == RESPOND_AS_SLOPE)
                     ? slopeMap[cell.x][cell.y]  // set flag based on the type of slope at the position
-                    : 0; // if no slope collision occurred, set flag to zero to denote the object is not on a slope
+                    : null; // if no slope collision occurred, set flag to zero to denote the object is not on a slope
             o.setY(oyb); // return the object to its original y position
         }
 
@@ -283,7 +281,7 @@ public class PhysicsEngine {
             Pair<Integer> cell = Transformation.getGridCell(point); // get the corresponding grid cell
             // if the grid cell is not out of bounds
             if (cell.x >= 0 && cell.x < blockMap.length && cell.y >= 0 && cell.y < blockMap[0].length) {
-                if (slopeMap[cell.x][cell.y] != 0) { // if there is a slope there
+                if (slopeMap[cell.x][cell.y] != null) { // if there is a slope there
                     // calculate the appropriate response to being in the slope's grid cell
                     int idx = respondToSlopePresence(aabb, points, cell.x, cell.y, dy);
                     if (idx != NO_COLLISION) { // if a response is necessary
@@ -316,10 +314,10 @@ public class PhysicsEngine {
      * at the top of this file
      */
     private static int respondToSlopePresence(AABB aabb, List<Pair<Float>> points, int x, int y, float dy) {
-        int type = slopeMap[x][y]; // get the type of slope at the given grid cell
+        SlopeType type = slopeMap[x][y]; // get the type of slope at the given grid cell
         int pAboveBottomEdge = 0; // keep a counter for how many points of the AABB are above the bottom edge of slope
         switch (type) { // switch on the type of slope
-            case 1: // if positive slope on ground
+            case PositiveBottom: // if positive bottom slope
                 int pLeftOfRightEdge = 0; // keep track of points to the left of the right edge
                 for (Pair<Float> p : points) { // for each point
                     if (p.x <= (x + 1)) pLeftOfRightEdge++; // count points to left of right edge
@@ -338,7 +336,7 @@ public class PhysicsEngine {
                     return RESPOND_AS_BLOCK_IN_Y; // otherwise respond vertically as a block
                 }
                 break;
-            case 2: // if negative slope on ground
+            case NegativeBottom: // if negative bottom slope
                 int pRightOfLeftEdge = 0; // keep track of points to the right of the left edge
                 for (Pair<Float> p : points) { // for each point
                     if (p.x >= x) pRightOfLeftEdge++; // count points to right of left edge
@@ -426,11 +424,13 @@ public class PhysicsEngine {
      * @return the pushback necessary to resolve collision
      */
     private static float calcPBFromSlope(AABB o, Pair<Integer> p, boolean y) {
-        int type = slopeMap[p.x][p.y]; // get the type of slope
+        SlopeType type = slopeMap[p.x][p.y]; // get the type of slope
         if (y) { // if y push back is desired
             float minY = 0; // need to calculate minimum y
-            if (type == 1) minY = round((o.getCX() + o.getW2()) % 1); // calculate for positive bottom slope
-            else if (type == 2) minY = 1 - round((o.getCX() - o.getW2()) % 1); // calculate for negative bottom slope
+            // calculate for positive bottom slope
+            if (type == SlopeType.PositiveBottom) minY = round((o.getCX() + o.getW2()) % 1);
+            // calculate for negative bottom slope
+            else if (type == SlopeType.NegativeBottom) minY = 1 - round((o.getCX() - o.getW2()) % 1);
             float ay = (o.getCY() - o.getH2()) - p.y; // calculate actual y
             float dif = Math.abs(minY - ay); // calculate difference in actual and minimum
             float v = -dif - UNIT_AND_HALF; // make negative and add necessary unit
@@ -440,9 +440,11 @@ public class PhysicsEngine {
             return v; // return the push back
         } else { // if an x push back is desired
             float marginX = 0; // need to calculate max/min x
-            if (type == 1) marginX = round((o.getCY() - o.getH2()) % 1); // calculate for positive bottom slope
-            else if (type == 2) marginX = 1 - round((o.getCY() - o.getH2()) % 1); // calc for negative bottom sslope
-            float ax = (o.getCX() + (type == 1 ? 1 : -1) * o.getW2()) % 1; // calculate actual x
+            // calculate for positive bottom slope
+            if (type == SlopeType.PositiveBottom) marginX = round((o.getCY() - o.getH2()) % 1);
+            // calculate for negative bottom slope
+            else if (type == SlopeType.NegativeBottom) marginX = 1 - round((o.getCY() - o.getH2()) % 1);
+            float ax = (o.getCX() + (type == SlopeType.PositiveBottom ? 1 : -1) * o.getW2()) % 1; // calculate actual x
             float dif = Math.abs(marginX - ax); // calculate difference in actual and min/ax
             float v = -dif - UNIT_AND_HALF; // make negative and add necessary unti
             if (Math.abs(v) > 0.2f) // if abnormally large push back calculated
@@ -581,13 +583,11 @@ public class PhysicsEngine {
     }
 
     /**
-     * Tells the physics engine what slope map to use for detecting collisions with slopes where the following values
-     * have meaning: 1) positive slope on ground; 2) negative slope on ground; 3) positive slope on ceiling; 4) negative
-     * slope on ceiling; any other values refer to a lack of slope
+     * Tells the physics engine what slope map to use for detecting collisions with slopes
      *
-     * @param slopeMap the slop map to use,
+     * @param slopeMap the slope map to use,
      */
-    public static void giveSlopeMap(int[][] slopeMap) {
+    public static void giveSlopeMap(SlopeType[][] slopeMap) {
         PhysicsEngine.slopeMap = slopeMap; // save slope map as member
         Utils.log("Received slope map", PhysicsEngine.class, "giveSlopeMap", false); // log
     }
@@ -620,9 +620,7 @@ public class PhysicsEngine {
             objects produce collision reactions similar to blocks */
         public boolean collidable = true; /* this determines if an object is able to collide. If false, the object
             will be excluded from all collision detection and reaction calculations. */
-        private int onSlope = 0; /* flag signifying what kind of slope the signifying object is on where the following
-            values have meaning: 1) positive slope on ground; 2) negative slope on ground; 3) positive slope on ceiling;
-            4) negative slope on ceiling; any other values refer to a lack of slope*/
+        private SlopeType onSlope = null; // flag signifying what kind of slope the signifying object is on
 
         /**
          * Constructs the physics properties with the given properties, assuming non-rigid and collidable
@@ -653,17 +651,17 @@ public class PhysicsEngine {
         }
 
         /**
-         * @return the type of slope the corresponding object is on (see members for meanings of numbers)
+         * @return the type of slope the corresponding object is on
          */
-        public int onSlope() {
+        public SlopeType onSlope() {
             return this.onSlope;
         }
 
         /**
-         * Updates the type of slope the corresponding object is on (see members for meanings of numbers)
+         * Updates the type of slope the corresponding object is on
          * @param onSlope the new type of slopes
          */
-        public void setOnSlope(int onSlope) {
+        public void setOnSlope(SlopeType onSlope) {
             this.onSlope = onSlope;
         }
     }
@@ -750,4 +748,10 @@ public class PhysicsEngine {
         }
     }
 
+    /**
+     * Define the four types of slopes
+     */
+    public enum SlopeType {
+        PositiveBottom, NegativeBottom, PositiveTop, NegativeTop
+    }
 }

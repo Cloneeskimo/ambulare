@@ -1,5 +1,6 @@
 package logic;
 
+import gameobject.GameObject;
 import gameobject.ROC;
 import gameobject.ui.TextButton;
 import gameobject.ui.TextObject;

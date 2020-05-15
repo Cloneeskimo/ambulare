@@ -39,6 +39,7 @@ uniform int cutTopRight;                   // whether to cut the top right corne
 uniform int cutBottomLeft;                 // whether to cut the bottom left corner (1) or not (0)
 uniform int cutBottomRight;                // whether to cut the bottom right corner (1) or not (0)
 uniform int frames;                        // how many frames the base block texture has (1 if not animated)
+uniform int slope;                         // flag representing whether to cut the block as a slope (1) or not (0)
 uniform float cutRadius;                   /* the cut radius to use when cutting corners. This should be a value from
                                               0 to 1 (inclusive) where 0 denotes no cutting and 1 denotes cutting
                                               according to a circle whose radius is half of the block size */
@@ -51,36 +52,49 @@ in vec2 modelCoordsF;                      // the model coordinates as passsed i
 out vec4 fragColor;                        // the final fragment color
 
 /*
- * Determines whether this fragment needs to be cut depending on the cut uniforms, radius, and location of the fragment
+ * Determines whether this fragment needs to be cut depending on the cut uniforms, radius, sloping, and location of the
+ * fragment
  */
 bool cut() {
 
     // create relevant variables
-    bool cut = false; // cut flags is false initially
-    float cutStart = 1 - cutRadius; // the start of the cut-applicable area is 1 - the radius
+    bool cut = false;// cut flags is false initially
+    float cutStart = 1 - cutRadius;// the start of the cut-applicable area is 1 - the radius
 
     // transform x based on animation, ensureing that cuts apply to all frames instead of just the overall texture
-    float x = (modelCoordsF.x + 1); // transform x from (-1, 1) to (0, 2)
-    x /= 2; // transform x from (0, 2) to (0, 1)
-    x *= frames; // transform x from (0, 1) to (0, frames)
-    x = mod(x, 1); // transform x from (0, frames) to (0, 1) based on current frame
-    x *= 2; // transform x from (0, 1) based on current frame to (0, 2) based on current frame
-    x -= 1; // transform x from (0, 2) back to (-1, 1) based on current frame
-    vec2 consider = vec2(x, modelCoordsF.y); // create the final position to consider for cutting
+    float x = (modelCoordsF.x + 1);// transform x from (-1, 1) to (0, 2)
+    x /= 2;// transform x from (0, 2) to (0, 1)
+    x *= frames;// transform x from (0, 1) to (0, frames)
+    x = mod(x, 1);// transform x from (0, frames) to (0, 1) based on current frame
+    x *= 2;// transform x from (0, 1) based on current frame to (0, 2) based on current frame
+    x -= 1;// transform x from (0, 2) back to (-1, 1) based on current frame
+    vec2 consider = vec2(x, modelCoordsF.y);// create the final position to consider for cutting
 
-    // detect if the current fragment is within a corner where cutting is applicable
-    int cutXInterval = (consider.x < -cutStart ? -1 : consider.x > cutStart ? 1 : 0);
-    int cutYInterval = (consider.y < -cutStart ? -1 : consider.y > cutStart ? 1 : 0);
+    // determine cutting
+    if (slope == 1) { // slope cutting
 
-    // determine if cuts are necessary
-    if (cutTopLeft == 1 && cutXInterval == -1 && cutYInterval == 1) // top left
-        cut = cut || distance(consider, vec2(-cutStart, cutStart)) > cutRadius; // if outside of radius, cut
-    else if (cutTopRight == 1 && cutXInterval == 1 && cutYInterval == 1) // top right
-        cut = cut || distance(consider, vec2(cutStart, cutStart)) > cutRadius; // if outside of radius, cut
-    else if (cutBottomLeft == 1 && cutXInterval == -1 && cutYInterval == -1) // bottom left
-        cut = cut || distance(consider, vec2(-cutStart, -cutStart)) > cutRadius; // if outside of radius, cut
-    else if (cutBottomRight == 1 && cutXInterval == 1 && cutYInterval == -1) // bottom right
-        cut = cut || distance(consider, vec2(cutStart, -cutStart)) > cutRadius; // if outside of radius, cut
+        // determine if cut is necessary based on position and type of cut
+        if (cutTopLeft == 1) cut = consider.y > consider.x; // top left
+        else if (cutTopRight == 1) cut = x > -consider.y; // top right
+        else if (cutBottomLeft == 1) cut = -consider.y > x; // bottom left
+        else if (cutBottomRight == 1) cut = consider.x > consider.y; // bottom right
+
+    } else { // non-slope cutting
+
+        // detect if the current fragment is within a corner where cutting is applicable
+        int cutXInterval = (consider.x < -cutStart ? -1 : consider.x > cutStart ? 1 : 0);
+        int cutYInterval = (consider.y < -cutStart ? -1 : consider.y > cutStart ? 1 : 0);
+
+        // determine if cut is necessary based on interval and type of cut
+        if (cutTopLeft == 1 && cutXInterval == -1 && cutYInterval == 1)// top left
+            cut = cut || distance(consider, vec2(-cutStart, cutStart)) > cutRadius;// if outside of radius, cut
+        else if (cutTopRight == 1 && cutXInterval == 1 && cutYInterval == 1)// top right
+            cut = cut || distance(consider, vec2(cutStart, cutStart)) > cutRadius;// if outside of radius, cut
+        else if (cutBottomLeft == 1 && cutXInterval == -1 && cutYInterval == -1)// bottom left
+            cut = cut || distance(consider, vec2(-cutStart, -cutStart)) > cutRadius;// if outside of radius, cut
+        else if (cutBottomRight == 1 && cutXInterval == 1 && cutYInterval == -1)// bottom right
+            cut = cut || distance(consider, vec2(cutStart, -cutStart)) > cutRadius;// if outside of radius, cut
+    }
     return cut; // return final cut flag
 }
 
