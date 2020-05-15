@@ -23,7 +23,7 @@ public class Global {
     /**
      * Static Data
      */
-    public static final String VERSION = "com103"; // the version of the game
+    public static final String VERSION = "com104"; // the version of the game
     public static final String WINDOW_TITLE = "Ambulare " + VERSION; // the window title
     public static final float TIME_BETWEEN_METRIC_REPORTS = 0.25f; // time between debug metric reports/average calc
     public static final int DEBUG_TOGGLE_KEY = GLFW_KEY_1; // the key to toggle debug reporting in the engine

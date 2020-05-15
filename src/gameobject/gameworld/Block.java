@@ -189,7 +189,7 @@ public abstract class Block {
                     else mmKey.add(NO_TEXTURE); // otherwise use the no texture flag to denote a lack of textures
                     List<Boolean> cut = new ArrayList<>(); // create boolean list to store cut flags
                     // get connectivity and add to slopes list in the process if applicable
-                    Connectivity c = getConnectivity(x, y, blockMap, slopeList, bi.slopes, bi.overlayTextures, cut);
+                    Connectivity c = getConnectivity(x, y, blockMap, bi, slopeList, cut);
                     mmKey.add(c); // add connectivity to the map
                     mmKey.add(cut); // add cuts to the map
 
@@ -249,20 +249,16 @@ public abstract class Block {
      * @param x         the x position of the block to calculate connectivity for
      * @param y         the y position of the block to calculate connectivity for
      * @param blockMap  the block map to use to check for neighbors to calculate connectivity
-     * @param slopes    whether the corresponding block slopes. If the corresponding block does slope, and present a
-     *                  corner-based connectivity, its position will be added to the given slope list
-     * @param slopeList the slope list to populate
-     * @param overlays  a mapping from overlay types to corresponding textures (if an overlay type maps to null, this
-     *                  method will assume that no texture for that kind of overlay exists. If this is null, default
-     *                  connectivity will be returned
+     * @param bi        the block info whose overlay availability, slope flag, and edge connection flag will help to
+     *                  determine connectivity
      * @param cut       flags to populate determining what corners to cut (starting at the top-left and continuing
      *                  counter-clockwise) as given by getConnectivity(). Must be initialized to an array of length four
      * @return the best possible type of connectivity for the block at the given position given its neighbors and its
      * available overlay textures
      */
-    private static Connectivity getConnectivity(int x, int y, boolean[][] blockMap,
-                                                Map<Pair<Integer>, PhysicsEngine.SlopeType> slopeList, boolean slopes,
-                                                Map<BlockInfo.OverlayType, Texture> overlays, List<Boolean> cut) {
+    private static Connectivity getConnectivity(int x, int y, boolean[][] blockMap, BlockInfo bi,
+                                                Map<Pair<Integer>, PhysicsEngine.SlopeType> slopeList,
+                                                List<Boolean> cut) {
         // determine which directions are still within bounds of the block map
         boolean leftInBounds = x > 0;
         boolean rightInBounds = x < blockMap.length - 1;
@@ -270,10 +266,10 @@ public abstract class Block {
         boolean aboveInBounds = y < blockMap[0].length - 1;
 
         // determine immediate neighbors
-        boolean left = leftInBounds && (blockMap[x - 1][y]); // determine if a block exists to the left
-        boolean right = rightInBounds && (blockMap[x + 1][y]); // determine if a block exists to the right
-        boolean below = belowInBounds && (blockMap[x][y - 1]); // determine if a block exists below
-        boolean above = aboveInBounds && (blockMap[x][y + 1]); // determine if a block exists above
+        boolean left = (leftInBounds && blockMap[x - 1][y]) || (!leftInBounds && bi.connectsWithEdge); // left
+        boolean right = (rightInBounds && blockMap[x + 1][y]) || (!rightInBounds && bi.connectsWithEdge); // right
+        boolean below = (belowInBounds && blockMap[x][y - 1]) || (!belowInBounds && bi.connectsWithEdge); // below
+        boolean above = (aboveInBounds && blockMap[x][y + 1]) || (!aboveInBounds && bi.connectsWithEdge); // above
 
         // determine whether to cut each corner
         cut.add(!(above || left));
@@ -282,15 +278,15 @@ public abstract class Block {
         cut.add(!(right || above));
 
         // if no overlays, return default
-        if (overlays == null) return Connectivity.DEFAULT;
+        if (bi.overlayTextures == null) return Connectivity.DEFAULT;
 
         // check for no connectivity
-        if (overlays.get(BlockInfo.OverlayType.single) != null) {
+        if (bi.overlayTextures.get(BlockInfo.OverlayType.single) != null) {
             if (!(left || right || below || above)) return Connectivity.NONE;
         }
 
         // check for connectivity with only a single neighbor
-        if (overlays.get(BlockInfo.OverlayType.cap) != null) {
+        if (bi.overlayTextures.get(BlockInfo.OverlayType.cap) != null) {
             if (left && !(right || below || above)) return Connectivity.RIGHT_CAP;
             if (right && !(below || above || left)) return Connectivity.LEFT_CAP;
             if (below && !(above || left || right)) return Connectivity.ABOVE_CAP;
@@ -298,41 +294,45 @@ public abstract class Block {
         }
 
         // determine diagonals and whether edges, corners, or insets are available
-        boolean aboveLeft = aboveInBounds && leftInBounds && blockMap[x - 1][y + 1];
-        boolean aboveRight = aboveInBounds && rightInBounds && blockMap[x + 1][y + 1];
-        boolean belowLeft = belowInBounds && leftInBounds && blockMap[x - 1][y - 1];
-        boolean belowRight = belowInBounds && rightInBounds && blockMap[x + 1][y - 1];
-        boolean cornerAvailable = overlays.get(BlockInfo.OverlayType.corner) != null;
-        boolean edgeAvailable = overlays.get(BlockInfo.OverlayType.edge) != null;
-        boolean insetAvailable = overlays.get(BlockInfo.OverlayType.inset) != null;
+        boolean aboveLeft = (aboveInBounds && leftInBounds && blockMap[x - 1][y + 1])
+                || ((!aboveInBounds || !leftInBounds) && bi.connectsWithEdge);
+        boolean aboveRight = (aboveInBounds && rightInBounds && blockMap[x + 1][y + 1])
+                || ((!aboveInBounds || !rightInBounds) && bi.connectsWithEdge);
+        boolean belowLeft = (belowInBounds && leftInBounds && blockMap[x - 1][y - 1])
+                || ((!belowInBounds || !leftInBounds) && bi.connectsWithEdge);
+        boolean belowRight = (belowInBounds && rightInBounds && blockMap[x + 1][y - 1])
+                || ((!belowInBounds || !rightInBounds) && bi.connectsWithEdge);
+        boolean cornerAvailable = bi.overlayTextures.get(BlockInfo.OverlayType.corner) != null;
+        boolean edgeAvailable = bi.overlayTextures.get(BlockInfo.OverlayType.edge) != null;
+        boolean insetAvailable = bi.overlayTextures.get(BlockInfo.OverlayType.inset) != null;
 
         // check for connectivity with two neighbors via corners (two adjacent neighbors)
         if (cornerAvailable) {
 
             // check for top left (inset) corner
             if (below && right && !(above || left)) {
-                if (slopes) slopeList.put(new Pair<>(x, y), PhysicsEngine.SlopeType.PositiveBottom);
+                if (bi.slopes) slopeList.put(new Pair<>(x, y), PhysicsEngine.SlopeType.PositiveBottom);
                 if (!belowRight && insetAvailable) return Connectivity.TOP_LEFT_CORNER_INSET;
                 else return Connectivity.TOP_LEFT_CORNER;
             }
 
             // check for top right (inset) corner
             if (below && left && !(above || right)) {
-                if (slopes) slopeList.put(new Pair<>(x, y), PhysicsEngine.SlopeType.NegativeBottom);
+                if (bi.slopes) slopeList.put(new Pair<>(x, y), PhysicsEngine.SlopeType.NegativeBottom);
                 if (!belowLeft && insetAvailable) return Connectivity.TOP_RIGHT_CORNER_INSET;
                 else return Connectivity.TOP_RIGHT_CORNER;
             }
 
             // check for bottom left (inset) corner
             if (above && right && !(below || left)) {
-                if (slopes) slopeList.put(new Pair<>(x, y), PhysicsEngine.SlopeType.NegativeTop);
+                if (bi.slopes) slopeList.put(new Pair<>(x, y), PhysicsEngine.SlopeType.NegativeTop);
                 if (!aboveRight && insetAvailable) return Connectivity.BOTTOM_LEFT_CORNER_INSET;
                 else return Connectivity.BOTTOM_LEFT_CORNER;
             }
 
             // check for bottom right (inset) corner
             if (above && left && !(below || right)) {
-                if (slopes) slopeList.put(new Pair<>(x, y), PhysicsEngine.SlopeType.PositiveTop);
+                if (bi.slopes) slopeList.put(new Pair<>(x, y), PhysicsEngine.SlopeType.PositiveTop);
                 if (!aboveLeft && insetAvailable) return Connectivity.BOTTOM_RIGHT_CORNER_INSET;
                 else return Connectivity.BOTTOM_RIGHT_CORNER;
             }
@@ -837,6 +837,7 @@ public abstract class Block {
         public float cutRadius;                                   // radius of cuts made to corner blocks
         public int animFrames;                                    // how many frames there are if block is animated
         public boolean slopes;                                    // whether the block is a slope in corners
+        public boolean connectsWithEdge;                          // whether blocks conncect with edge of block map
 
         /**
          * Constructs the block info by compiling the information from a given node. BlockInfo nodes can use res(from)
@@ -900,6 +901,9 @@ public abstract class Block {
          * <p>
          * - slopes [optional][default: false]: specifies whether the block should become sloped when in a corner
          * position
+         * <p>
+         * - connect_with_edge [optional][default: false]: specifies whether this block, when on the edge, should
+         * treat the edge as more blocks (useful for block backdrops) when calculating connectivity
          *
          * @param data the node containing the info to create the blocks info with
          */
@@ -943,7 +947,8 @@ public abstract class Block {
                                     .setLowerBound(0.1f),
                             new NodeLoader.LoadItem<>("cut_radius", 0.5f, Float.class)
                                     .setLowerBound(0f).setUpperBound(1f),
-                            new NodeLoader.LoadItem<>("slopes", false, Boolean.class)
+                            new NodeLoader.LoadItem<>("slopes", false, Boolean.class),
+                            new NodeLoader.LoadItem<>("connect_with_edge", false, Boolean.class)
                     });
 
             /*
@@ -955,6 +960,7 @@ public abstract class Block {
             this.animTime = (Float) blockInfo.get("animation_time"); // save animation time as member
             this.cutRadius = (Float) blockInfo.get("cut_radius"); // save cut radius as member
             this.slopes = (Boolean) blockInfo.get("slopes"); // save slopes flag as member
+            this.connectsWithEdge = (Boolean) blockInfo.get("connect_with_edge"); // save edge connection flag as member
             if (this.texturePaths.size() > 0) { // if the block is textured
                 Node overlayData = (Node) blockInfo.get("overlay_info"); // get overlay info
                 if (overlayData != null) { // if overlay info was supplied, load overlay info using node loader

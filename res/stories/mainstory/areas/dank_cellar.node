@@ -22,6 +22,9 @@ area:
     {
         # gray bricks as the main block
         g: resfrom /stories/mainstory/blocks/gray_brick.node
+        {
+            connect_with_edge: true
+        }
 
         # background gray bricks which are slightly dark
         b: resfrom /stories/mainstory/blocks/gray_brick_background.node
@@ -48,18 +51,16 @@ area:
     middleground_layout:
     {
         00: ggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg
-        01: ggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg
-        02: ggggggggggggggggggggggggggggggggggggggggg                     g      gg
-        03: g       g                           gggg                             gg
-        04: g                                    gg      g   www  ww  ww         gg
-        05: gggwwwwwwwww  ww  ww  ww  wwwww      gg          ggg  gg  gg  ggggggggg
-        06: gggggggggggg  gg  gg  gg  ggggg      gg  g       ggg          ggggggggg
-        07: gggggggggggg              ggggg      gg    g    gggg
-        08:                              ggg     ggg       ggggg
-        09:                              gggg       g     gg  gg
-        10:                              gg gg           ggg  gg
-        11:                              ggtwwwwwwwwwwwgwww   gg
-        12:                              ggggggggggggggggggggggg
-        13:                              ggggggggggggggggggggggg
+        01: ggggggggggggggggggggggggggggggggggggggggg                     g      gg
+        02: g       g                           gggg                             gg
+        03: gg                                   gg      g   www  ww  ww         gg
+        04: gggwwwwwwwww  ww  ww  ww  wwwww      gg          ggg  gg  gg  ggggggggg
+        05: gggggggggggg  gg  gg  gg  ggggg     ggg  g       gg
+        06:           gg  gg  gg  gg     gg    gggg    g    gg
+        07:                              g    gggggg       ggg
+        08:                              gg       gg      gg gg
+        09:                              ggg                  g
+        10:                              gggg wwwwwwwwwgwww  gg
+        11:                              ggggggggggggggggggggg
     }
 }
