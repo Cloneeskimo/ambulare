@@ -1,5 +1,6 @@
 package gameobject;
 
+import gameobject.ui.ListObject;
 import graphics.*;
 import utils.FittingBox;
 import utils.Pair;

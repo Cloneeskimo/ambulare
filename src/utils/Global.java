@@ -23,7 +23,7 @@ public class Global {
     /**
      * Static Data
      */
-    public static final String VERSION = "com104"; // the version of the game
+    public static final String VERSION = "com105"; // the version of the game
     public static final String WINDOW_TITLE = "Ambulare " + VERSION; // the window title
     public static final float TIME_BETWEEN_METRIC_REPORTS = 0.25f; // time between debug metric reports/average calc
     public static final int DEBUG_TOGGLE_KEY = GLFW_KEY_1; // the key to toggle debug reporting in the engine
@@ -31,6 +31,7 @@ public class Global {
     public static final int TARGET_FPS = 60; // the target frames per second when vertical sync is off
     public static final int TARGET_UPS = 60; // the target updates per second regardless of vertical sync
     public static final boolean V_SYNC = true; // whether to enable vertical sync in the Window
+    public static Window GAME_WINDOW; // GLFW window hosting the game
     public static Font FONT; // font used everywhere throughout the program
     public static float ar = 0f; // the current aspect ratio of the game's window
     public static boolean arAction = false; /* a flag representing how to distort coordinates when rendering depending
@@ -52,11 +53,9 @@ public class Global {
 
     /**
      * Updates the global aspect ratio and aspect ratio variables
-     *
-     * @param w the window to use for the calculations
      */
-    public static void updateAr(Window w) {
-        Global.ar = (float) w.getFBWidth() / (float) w.getFBHeight(); // calculate aspect ratio
+    public static void updateAr() {
+        Global.ar = (float) GAME_WINDOW.getFBWidth() / (float) GAME_WINDOW.getFBHeight(); // calculate aspect ratio
         Global.arAction = (Global.ar < 1.0f); // calculate the aspect ratio action. See static data for more information
     }
 

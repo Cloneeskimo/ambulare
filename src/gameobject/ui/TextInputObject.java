@@ -2,6 +2,7 @@ package gameobject.ui;
 
 import graphics.Font;
 import graphics.Window;
+import utils.Global;
 
 import static org.lwjgl.glfw.GLFW.*;
 
@@ -40,15 +41,15 @@ public class TextInputObject extends TextObject {
     /**
      * Constructor
      *
-     * @param window       the window to registers the character callback with
      * @param font         the font to use for the text
      * @param defaultText  the text to display when the input is empty
      * @param defaultColor the color to use when the input is empty
      * @param inputColor   the color to use when the input is not empty
      */
-    public TextInputObject(Window window, Font font, String defaultText, float[] defaultColor, float[] inputColor) {
+    public TextInputObject(Font font, String defaultText, float[] defaultColor, float[] inputColor) {
         super(font, defaultText, defaultColor); // call text object's constructor
-        glfwSetCharCallback(window.getHandle(), (w, c) -> { // register a character callback with the given window
+        // register a character inoput callback with the game window
+        glfwSetCharCallback(Global.GAME_WINDOW.getHandle(), (w, c) -> {
             this.parseChar((char) c); // parse character input when it is received
         });
         this.defaultColor = defaultColor; // save the default color as member

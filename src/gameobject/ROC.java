@@ -59,11 +59,11 @@ public class ROC {
     /**
      * Instantiates the ROC's game world using the given starting area
      *
-     * @param windowHandle the window's GLFW handle
      * @param startingArea the area to give the game world to start with
      */
-    public void useGameWorld(long windowHandle, Area startingArea) {
-        this.gameWorld = new GameWorld(windowHandle, startingArea); // create game world with the starting area
+    public void useGameWorld(Area startingArea) {
+        // create game world with the starting area
+        this.gameWorld = new GameWorld(Global.GAME_WINDOW.getHandle(), startingArea);
         this.mip.useCam(this.gameWorld.getCam()); // tell the mouse input engine to use game world cam for calculations
     }
 

@@ -4,6 +4,7 @@ import org.apache.commons.io.IOUtils;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.system.MemoryStack;
+import utils.Global;
 import utils.Utils;
 
 import javax.imageio.ImageIO;
@@ -49,7 +50,7 @@ public class Texture {
      * @param corners whether to apply corners on the caps of the texture when fadin
      * @return a texture holding the final product
      */
-    public static Texture makeSheet(Material m, Window w, int cols, int rows, int mw, int mh, int fadeDir,
+    public static Texture makeSheet(Material m, Model mod, int cols, int rows, int mw, int mh, int fadeDir,
                                     boolean corners) {
 
         // create the aggregation shader program
@@ -69,8 +70,16 @@ public class Texture {
 
         // create other necessary items
         int[] IDs = Utils.createFBOWithTextureAttachment(cols * mw, rows * mh); // create FBO w/ texture attached
-        Model mod = Model.getStdGridRect(2, 2); // create model
-        mod.setScale((float) mw / (float) (cols * mw), (float) mh / (float) (rows * mh)); // scale down appropriately
+        // save model's original scale
+        float osx = mod.getXScale();
+        float osy = mod.getYScale();
+        // get the model's half-width and half-height
+        float w2 = mod.getWidth() / 2f;
+        float h2 = mod.getHeight() / 2f;
+        // scale model to normalized coordinates
+        mod.scaleScale(1 / w2, 1 / h2);
+        // scale model to fit one grid cells
+        mod.scaleScale((float) mw / (float) (cols * mw), (float) mh / (float) (rows * mh));
 
         // pre-render
         glBindFramebuffer(GL_FRAMEBUFFER, IDs[0]); // bind the frame buffer object
@@ -102,7 +111,11 @@ public class Texture {
         Texture t = new Texture(IDs[1], cols * mw, rows * mh); // create final texture
         glBindFramebuffer(GL_FRAMEBUFFER, 0); // unbind the frame buffer object
         glDeleteFramebuffers(IDs[0]); // delete the frame buffer object
-        glViewport(0, 0, w.getFBWidth(), w.getFBHeight()); // reset viewport to window's framebuffer size
+        // reset GL viewport to window's framebuffer size
+        glViewport(0, 0, Global.GAME_WINDOW.getFBWidth(), Global.GAME_WINDOW.getFBHeight());
+        // scale model to original scale
+        mod.setXScale(osx);
+        mod.setYScale(osy);
         return t; // return the final texture
     }
 

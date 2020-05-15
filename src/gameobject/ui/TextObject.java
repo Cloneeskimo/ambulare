@@ -1,10 +1,7 @@
 package gameobject.ui;
 
 import gameobject.GameObject;
-import graphics.Font;
-import graphics.Material;
-import graphics.Model;
-import graphics.ShaderProgram;
+import graphics.*;
 import utils.Global;
 
 /*
@@ -29,8 +26,8 @@ public class TextObject extends GameObject {
     /**
      * Members
      */
-    private String text;     // the current text
-    private final Font font; // the font used to display the text
+    private String text;       // the current text
+    protected final Font font; // the font used to display the text
 
     /**
      * Constructs the text object with the given color
@@ -56,6 +53,33 @@ public class TextObject extends GameObject {
     public TextObject(Font font, String text) {
         // call other constructor with the default text color
         this(font, text, new float[]{DEFAULT_COLOR[0], DEFAULT_COLOR[1], DEFAULT_COLOR[2], DEFAULT_COLOR[3]});
+    }
+
+    /**
+     * Will convert a text object into a game object with a normal quad model and a regular texture. For text objects
+     * whose text will not be changing often, this is a good idea to call. Note that the resulting game object will
+     * not be able to change its text, but it will be much more efficiently rendered
+     *
+     * @return a game object representing the text object without changeable text
+     */
+    public GameObject solidify() {
+        // create the texture with the text pre-rendered
+        Texture t = Texture.makeSheet(this.material, this.model, 1, 1, this.getPixelWidth(),
+                (int)font.getCharHeight(), 0, false); // make a texture with the text
+        GameObject r = new GameObject(new Model(t.getModelCoords(font.getCharHeight() / DEFAULT_SIZE),
+                Model.getStdRectTexCoords(),  Model.getStdRectIdx()), new Material(t)); // create a new game object with the texture
+        r.setScale(this.model.getXScale(), this.model.getYScale()); // scale the game object to text object's scale
+        return r; // return final game object
+    }
+
+    /**
+     * @return the wwidth of the text object in pixels, as if it were a solidifed texture
+     */
+    protected int getPixelWidth() {
+        int w = 0; // int to store total width of texture
+        for (int i = 0; i < this.text.length(); i++) // for each character in the text object
+            w += (font.getCharWidth() - font.getCharCutoff(text.charAt(i)) * 2); // add its width to total width
+        return w; // return final pixel width
     }
 
     /**

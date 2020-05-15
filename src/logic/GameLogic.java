@@ -63,21 +63,17 @@ public abstract class GameLogic {
      * Initializes the logic. This method is the only entry point into the logic other then input, update, and render
      * Extending classes cannot override this method. However, this method will call initOthers() which can be
      * overridden by extending classes and should be used for additional initialization
-     *
-     * @param window the window
      */
-    public final void init(Window window) {
+    public final void init() {
         this.roc = new ROC(); // initialize ROC
-        this.initOthers(window); // allow extending classes to initialize other members
+        this.initOthers(); // allow extending classes to initialize other members
     }
 
     /**
      * Extending classes should initialize any game objects to be placed in the ROC or any additional members here
      * In order for debug info to properly display in the HUD, this super method should be called
-     *
-     * @param window the window
      */
-    protected void initOthers(Window window) {
+    protected void initOthers() {
         // create debug info
         this.debugInfo = new DebugInfo(0.01f, new Material(new float[]{0f, 0f, 0f, 0.4f}));
         this.debugInfo.setVisibility(false); // don't make visible until engine reports debugging data

@@ -6,6 +6,7 @@ import gameobject.ui.TextButton;
 import gameobject.ui.TextObject;
 import gameobject.gameworld.Area;
 import gameobject.gameworld.Entity;
+import gameobject.ui.TexturedButton;
 import graphics.*;
 import story.Story;
 import utils.*;
@@ -36,19 +37,15 @@ public class WorldLogic extends GameLogic {
     /**
      * Members
      */
-    Window window; // reference to the window for exit button
     Entity player; // reference to player
     Story story;   // the current story in use
 
     /**
      * Initializes the world logic by loading the area given by the transfer data
-     *
-     * @param window the window
      */
     @Override
-    protected void initOthers(Window window) {
-        super.initOthers(window); // call super so that FPS displaying objects are added to HUD
-        this.window = window; // save reference to window
+    protected void initOthers() {
+        super.initOthers(); // call super so that FPS displaying objects are added to HUD
         if (this.transferData == null) { // if no transfer data was given
             Utils.handleException(new Exception("world logic initiated without transfer data. Transfer data is needed" +
                     "to create an area for the game world"), this.getClass(), "initOthers", true); // crash
@@ -65,7 +62,7 @@ public class WorldLogic extends GameLogic {
     private void initStoryAndArea() {
         this.story = new Story(transferData.getChild("story")); // create story from transfer data node
         Node startingArea = Node.pathContentsToNode(this.story.getStartingAreaPath()); // get starting area node
-        this.roc.useGameWorld(window.getHandle(), new Area(startingArea, this.window)); // create game world with area
+        this.roc.useGameWorld(new Area(startingArea)); // create game world with area
     }
 
     /**
@@ -109,7 +106,7 @@ public class WorldLogic extends GameLogic {
         this.roc.getStaticGameObject(TAG_PLAYER_POS).setScale(0.6f, 0.6f); // scale text down
 
         // create and add return button
-        TextButton returnButton = new TextButton(Global.FONT, "Return"); // create return button
+        TexturedButton returnButton = new TextButton(Global.FONT, "Return").solidify(); // create return button
         returnButton.setScale(0.6f, 0.6f); // scale return button down by about half
         returnButton.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { // when pressed
             if (GameLogic.logicChange == null) { // if no logic change is currently underway
@@ -121,7 +118,8 @@ public class WorldLogic extends GameLogic {
                 true, 0.02f)); // add return button to ROC
 
         // create and add area name
-        this.roc.addStaticObject(new TextObject(Global.FONT, this.roc.getGameWorld().getArea().getName()), TAG_AREA,
+        this.roc.addStaticObject(new TextObject(Global.FONT,
+                        this.roc.getGameWorld().getArea().getName()).solidify(), TAG_AREA,
                 false, new ROC.PositionSettings(0f, 1f, true, 0.1f));
         this.roc.getStaticGameObject(TAG_AREA).setScale(0.8f, 0.8f); // scale area name
 
@@ -161,11 +159,12 @@ public class WorldLogic extends GameLogic {
     public void update(float interval) {
         super.update(interval); // update game logic members
         // update player position text on hud
-        if (((TextObject) this.roc.getStaticGameObject(TAG_PLAYER_POS)).setText(player.getX() + ", " + player.getY() + ")"))
+        if (((TextObject) this.roc.getStaticGameObject(TAG_PLAYER_POS)).setText("(" + player.getX() + ", " +
+                player.getY() + ")"))
             this.roc.ensurePlacement(TAG_PLAYER_POS); // update placement if changed
         int vx = 0; // calculate player horizontal velocity starting at zero
-        if (window.isKeyPressed(GLFW_KEY_D)) vx += 4; // if D is pressed, move player to the right
-        if (window.isKeyPressed(GLFW_KEY_A)) vx -= 4; // if A is pressed, move player to the left
+        if (Global.GAME_WINDOW.isKeyPressed(GLFW_KEY_D)) vx += 4; // if D is pressed, move player to the right
+        if (Global.GAME_WINDOW.isKeyPressed(GLFW_KEY_A)) vx -= 4; // if A is pressed, move player to the left
         player.setVX(vx); // update player's horizontal velocity
         if (vx == 0) player.setIsMoving(false); // if the horizontal velocity is zero, update player's moving flag
         else { // otherwise

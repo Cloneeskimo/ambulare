@@ -35,15 +35,30 @@ public class MSAT extends AnimatedTexture {
     private int state = 0;            // the current animation state
 
     /**
-     * Constructor
+     * Constructs the MSAT with the given texture path
      *
      * @param path   the path to the image
      * @param states a list of states to guide the MSAT in updating its animation. See MSATState for more info. Note
      *               that the sum of the frames of each state must equal the total amount of frames in the actual image.
-     *               These should be given in thee order that they appear in the image
+     *               These should be given in the order that they appear in the image
      */
     public MSAT(Utils.Path path, MSATState[] states) {
         super(path, countFrames(states), states[0].frameTime, false);
+        this.states = states;
+        this.state = 0;
+    }
+
+    /**
+     * Constructs the MSAT with the given OpenGL texture ID, width and height
+     * @param id the OpenGL texture id
+     * @param w the width of the texture in pixels
+     * @param h the height of the texture in pixels
+     * @param states the multi-state animated texture states. See MSATState for more info. Note that the sum of the
+     *               frames of each state must equal the total amount of frames in the actual image. These should be
+     *               given in the order that they appear in the image
+     */
+    public MSAT(int id, int w, int h, MSATState[] states) {
+        super(id, w, h, countFrames(states), states[0].frameTime, false);
         this.states = states;
         this.state = 0;
     }

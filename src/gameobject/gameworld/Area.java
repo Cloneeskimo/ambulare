@@ -118,7 +118,7 @@ public class Area {
      *
      * @param data the node to create the area from
      */
-    public Area(Node data, Window window) {
+    public Area(Node data) {
         double time = Timer.getTimeMilliseconds(); // record time at beginning of area loading
 
         /*
@@ -154,7 +154,7 @@ public class Area {
         this.ats = new ArrayList<>(); // create new list to animated textures to update
         Object[] maps = Block.loadLayoutBlocks((Node) (area.get("block_key")),
                 (Node) (area.get("background_layout")), (Node) (area.get("middleground_layout")),
-                (Node) (area.get("foreground_layout")), this.blocks, this.ats, window); // load block layout
+                (Node) (area.get("foreground_layout")), this.blocks, this.ats); // load block layout
         this.blockMap = (boolean[][])maps[0]; // save block map
         this.slopeMap = (PhysicsEngine.SlopeType[][])maps[1]; // save slope map
         if (area.get("decor_key") != null) Decor.loadLayoutDecor((Node) (area.get("decor_key")),
@@ -168,7 +168,7 @@ public class Area {
         if (type.equals("material_backdrop")) this.backdrop = new MaterialBackDrop(((Node) (area.get("backdrop"))),
                 this.blockMap.length, this.blockMap[0].length); // if material backdrop, create it
         else if (type.equals("block_backdrop")) this.backdrop = new BlockBackDrop(((Node) (area.get("backdrop"))),
-                window, this.blockMap.length, this.blockMap[0].length); // if block backdrop, create it
+                this.blockMap.length, this.blockMap[0].length); // if block backdrop, create it
         Utils.log("Finished loading area '" + this.name + "' in " + String.format("%.2f",
                 (Timer.getTimeMilliseconds() - time)) + "ms", this.getClass(), "Area",
                 false); // log time it took to load area

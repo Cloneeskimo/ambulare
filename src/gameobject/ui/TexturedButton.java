@@ -18,12 +18,24 @@ import utils.Utils;
  * This extends GameObject to implement mouse interaction by using a multi-state animated texture with separate states
  * for no mouse interaction, mouse hovering, and mouse pressing - practically simulating a button
  */
-public class TexturedButton extends GameObject implements MouseInputEngine.MouseInteractive {
+public class TexturedButton extends GameObject implements MouseInputEngine.MouseInteractive, ListObject.ListItem {
 
     /**
      * Members
      */
     private final MouseInputEngine.MouseCallback[] mcs; // array of callbacks as outlined by mouse interaction interface
+
+    /**
+     * Constructs the textured button with an already created MSAT
+     *
+     * @param model the model to use for the texture button
+     * @param msat  the MSAT which should have at least three states: (0) default; (1) hover; (2) press
+     */
+    public TexturedButton(Model model, MSAT msat) {
+        super(model, null); // call super constructor
+        this.material = new Material(msat); // create material with MSAT
+        mcs = new MouseInputEngine.MouseCallback[4]; // create array for callbacks
+    }
 
     /**
      * Constructs the textured button with animation within texture states state
@@ -38,13 +50,10 @@ public class TexturedButton extends GameObject implements MouseInputEngine.Mouse
      */
     public TexturedButton(Model model, Utils.Path texturePath, int defaultFrames, int hoverFrames, int pressedFrames,
                           float frameTime) {
-        super(model, null);
-        // create material using a multi-state animated texture
-        this.material = new Material(new MSAT(texturePath, new MSAT.MSATState[]{
+        this(model, new MSAT(texturePath, new MSAT.MSATState[]{
                 new MSAT.MSATState(defaultFrames, frameTime),
                 new MSAT.MSATState(hoverFrames, frameTime),
-                new MSAT.MSATState(pressedFrames, frameTime)}));
-        mcs = new MouseInputEngine.MouseCallback[4]; // create array for callbacks
+                new MSAT.MSATState(pressedFrames, frameTime)})); // create MSAT and call other constructor
     }
 
     /**

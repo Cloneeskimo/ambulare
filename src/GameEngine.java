@@ -23,7 +23,6 @@ public class GameEngine {
      */
     private static boolean debugging;            // whether or not the engine is reporting debugging info to the logic
     private double[] debug;                      // info about debugging. See loop() for more info
-    private final Window window;                 // the window being used
     private final Timer timer;                   // timer used for accurate debugging and loop
     private GameLogic logic;                     // the logic the engine should follow
     private float logicTransitionTime;           // a timer for logic transitions
@@ -36,11 +35,12 @@ public class GameEngine {
     public GameEngine(GameLogic logic) {
         int w = -1, h = -1; // if there is no saved window data, use -1 to denote default width and height
         Node wd = Node.pathContentsToNode(new Utils.Path("/wd.node", false)); // try to load window data
-        if (wd != null) { // if window data was found
+        if (wd.hasChildren()) { // if window data was found
             w = Integer.parseInt(wd.getChild("width").getValue()); // use saved width of window
             h = Integer.parseInt(wd.getChild("height").getValue()); // ues saved height of window
         }
-        this.window = new Window(Global.WINDOW_TITLE, w, h, Global.V_SYNC); // create window with determined size
+        // create window with determined size
+        Global.GAME_WINDOW = new Window(Global.WINDOW_TITLE, w, h, Global.V_SYNC);
         this.timer = new Timer(); // initialize timer
         this.logic = logic; // save starting logic as member
     }
@@ -59,11 +59,11 @@ public class GameEngine {
      */
     private void init() {
         SoundManager.init(); // initialize sound manager
-        this.window.init(); // initialize the window
-        Global.updateAr(this.window); // update global aspect ratio variable
+        Global.GAME_WINDOW.init(); // initialize the window
+        Global.updateAr(); // update global aspect ratio variable
         this.initInput(); // initialize mouse and keyboard input callbacks
         Global.init(); // initialize global members
-        this.logic.init(this.window); // initialize starting logic
+        this.logic.init(); // initialize starting logic
         this.timer.init(); // initialize the timer
     }
 
@@ -72,15 +72,15 @@ public class GameEngine {
      */
     private void initInput() {
         // funnel both mouse movement and buttons events into a single method called mouseInput()
-        glfwSetCursorPosCallback(window.getHandle(), (w, x, y) -> { // create GLFW callback for cursor position
+        glfwSetCursorPosCallback(Global.GAME_WINDOW.getHandle(), (w, x, y) -> { // create GLFW callback for cursor position
             // pass along cursor position to mouseInput() and use GLFW_HOVERED as the action
             this.mouseInput((float) x, (float) y, GLFW_HOVERED);
         });
-        glfwSetMouseButtonCallback(window.getHandle(), (w, b, a, i) -> {
+        glfwSetMouseButtonCallback(Global.GAME_WINDOW.getHandle(), (w, b, a, i) -> {
             // mouse button events don't have mouse positions, so just send zero and hope mouseInput checks the action
             this.mouseInput(0f, 0f, a);
         });
-        glfwSetKeyCallback(window.getHandle(), (w, k, s, a, m) -> {
+        glfwSetKeyCallback(Global.GAME_WINDOW.getHandle(), (w, k, s, a, m) -> {
             this.keyboardInput(k, a); // pass keyboard input to the keyboardInput() function
         });
     }
@@ -101,7 +101,7 @@ public class GameEngine {
         debug[1] = Double.POSITIVE_INFINITY; // initialize lowest FPS to infinity for proper worst calculations
 
         // game loop
-        while (!this.window.shouldClose()) { // while the Window shouldn't close
+        while (!Global.GAME_WINDOW.shouldClose()) { // while the Window shouldn't close
 
             // timekeeping
             elapsedTime = this.timer.getElapsedTime(true); // get elapsed time since last loop
@@ -112,7 +112,7 @@ public class GameEngine {
             accumulator += elapsedTime; // add elapsed time to the accumulator for time unaccounted for
 
             // four phases of loop
-            this.window.pollEvents(); // gather input by polling for GLFW window events
+            Global.GAME_WINDOW.pollEvents(); // gather input by polling for GLFW window events
             // if debugging, record time in milliseconds before update
             if (GameEngine.debugging) debug[10] = (float) Timer.getTimeMilliseconds();
             while (accumulator >= interval) { // while there is a sufficient amount of unaccounted for time
@@ -131,7 +131,7 @@ public class GameEngine {
             if (GameEngine.debugging) // if debugging, update debugging metrics with render time
                 this.updateDebugMetrics(Timer.getTimeMilliseconds() - debug[11], debug, 2);
             // attempt to manually sync loop unless the window has vertical sync enabled
-            if (!this.window.usesVSync()) this.sync(1 / (float) Global.TARGET_FPS);
+            if (!Global.GAME_WINDOW.usesVSync()) this.sync(1 / (float) Global.TARGET_FPS);
         }
     }
 
@@ -212,7 +212,8 @@ public class GameEngine {
     private void mouseInput(float x, float y, int action) {
         if (action == GLFW_HOVERED) { // if hover,
             Pair<Float> pos = new Pair<>(x, y); // bundle into coordinate object
-            Transformation.normalize(pos, window.getWidth(), window.getHeight()); // normalize mouse position
+            // normalize mouse position
+            Transformation.normalize(pos, Global.GAME_WINDOW.getWidth(), Global.GAME_WINDOW.getHeight());
             Transformation.deaspect(pos, Global.ar); // project position
             x = pos.x;
             y = pos.y; // extract x and y
@@ -244,7 +245,7 @@ public class GameEngine {
         this.logic.cleanup(); // cleanup old logic
         this.logic = GameLogic.logicChange.getNewLogic(); // grab new logic
         this.logic.giveTransferData(GameLogic.logicChange.getTransferData()); // give new logic the transfer data
-        this.logic.init(this.window); // initialize new logic
+        this.logic.init(); // initialize new logic
         GameLogic.logicChange = null; // delete logic change data
     }
 
@@ -254,13 +255,14 @@ public class GameEngine {
      */
     private void render() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the screen
-        if (this.window.resized(true)) { // if the window was resized
-            glViewport(0, 0, this.window.getFBWidth(), this.window.getFBHeight()); // change GL viewport to
-            Global.updateAr(this.window); // update global aspect ratio variable
+        if (Global.GAME_WINDOW.resized(true)) { // if the window was resized
+            // change GL viewport to fit window's frame buffer
+            glViewport(0, 0, Global.GAME_WINDOW.getFBWidth(), Global.GAME_WINDOW.getFBHeight());
+            Global.updateAr(); // update global aspect ratio variable
             this.logic.resized(); // notify the logic of the resize
         }
         this.logic.render(); // allow the logic to render
-        this.window.swapBuffers(); // refresh the window
+        Global.GAME_WINDOW.swapBuffers(); // refresh the window
     }
 
     /**
@@ -286,8 +288,8 @@ public class GameEngine {
      */
     private void cleanup() {
         Node wd = new Node("window data"); // create a node to hold window data
-        wd.addChild("width", Integer.toString(window.getWidth())); // add window width
-        wd.addChild("height", Integer.toString(window.getHeight())); // add window height
+        wd.addChild("width", Integer.toString(Global.GAME_WINDOW.getWidth())); // add window width
+        wd.addChild("height", Integer.toString(Global.GAME_WINDOW.getHeight())); // add window height
         Node.nodeToFile(wd, new Utils.Path("/wd.node", false)); // and save node
         this.logic.cleanup(); // tell logic to cleanup
         SoundManager.cleanup(); // cleanup the sound manager

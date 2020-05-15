@@ -1,5 +1,6 @@
 package gameobject.gameworld;
 
+import gameobject.GameObject;
 import gameobject.ui.TextObject;
 import graphics.*;
 import utils.Global;
@@ -32,7 +33,7 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
     private MouseInputEngine.MouseCallback[] mcs = new MouseInputEngine.MouseCallback[4]; /* array of mouse callbacks as
         specified by the mouse interaction interface */
     private String name;          // name of the entity
-    private TextObject nameplate; // nameplate to display above entity
+    private GameObject nameplate; // nameplate to display above entity
     private Sound[] step;         // the step sounds of the entity to be randomized over when the entity takes a step
     private Sound jump, land;     // sounds for jumping and landing of the entity
     private boolean right;        // whether the entity is facing to the right
@@ -53,7 +54,7 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
     public Entity(String name, Model model, Material material) {
         super(model, material); // call world object constructor
         this.name = name; // save name as member
-        this.nameplate = new TextObject(Global.FONT, this.name); // create nameplate
+        this.nameplate = new TextObject(Global.FONT, this.name).solidify(); // create nameplate
         this.nameplate.setScale(2.5f, 2.5f); // make nameplate larger
         this.positionNameplate(); // position the nameplate above the entity
         this.getPhysicsProperties().sticky = true; // entities should stick to slopes

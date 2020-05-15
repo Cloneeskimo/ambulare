@@ -56,11 +56,10 @@ public class BlockBackDrop implements Area.BackDrop {
      * border_thickness [optional][default: 5][1, 20]: how many blocks thick the border around the block map should be
      *
      * @param data the node to use to construct the block backdrop
-     * @param w    the window in use
      * @param bmw  the width of the area's block map
      * @param bmh  the height of the area's block map
      */
-    public BlockBackDrop(Node data, Window w, int bmw, int bmh) {
+    public BlockBackDrop(Node data, int bmw, int bmh) {
 
         /*
          * Load block backdrop information using node loader
@@ -82,7 +81,7 @@ public class BlockBackDrop implements Area.BackDrop {
         Node borderBackNode = (Node) blockBackDrop.get("border_background_block"); // get border background block node
         // make block info from border background block node
         Block.BlockInfo borderBI = new Block.BlockInfo(borderBackNode == null ? new Node() : borderBackNode);
-        this.createBackgrounds(bmBI.createMaterial(false), borderBI.createMaterial(false), w,
+        this.createBackgrounds(bmBI.createMaterial(false), borderBI.createMaterial(false),
                 (Integer) blockBackDrop.get("border_thickness"), bmw, bmh); // create backgrounds
     }
 
@@ -92,40 +91,39 @@ public class BlockBackDrop implements Area.BackDrop {
      *
      * @param bmBack     the material to use for the block map background blocks
      * @param borderBack the material to use for the border background
-     * @param window     the window whose framebuffer is currently in use
      * @param thickness  the thickness of the border around the block map
      * @param bmw        the width of the area's block map
      * @param bmh        the height of the area's block map
      */
-    private void createBackgrounds(Material bmBack, Material borderBack, Window window, int thickness, int bmw,
-                                   int bmh) {
+    private void createBackgrounds(Material bmBack, Material borderBack, int thickness, int bmw, int bmh) {
         // create models for vertical and horizontal borders
         Model ver = Model.getStdGridRect(thickness, bmh + (2 * thickness));
         Model hor = Model.getStdGridRect(bmw, thickness);
         // calculate width/height of an individual block's texture (32 if no texture)
         int w = borderBack.isTextured() ? borderBack.getTexture().getWidth() : 32;
         int h = borderBack.isTextured() ? borderBack.getTexture().getHeight() : 32;
+        Model mod = Model.getStdGridRect(2, 2);
         this.backgrounds = new GameObject[]{ // compile background game objects
                 // blockmap background
                 new GameObject((float) bmw / 2, (float) bmh / 2, Model.getStdGridRect(bmw, bmh),
-                        new Material(Texture.makeSheet(bmBack, window, bmw, bmh,
+                        new Material(Texture.makeSheet(bmBack, mod, bmw, bmh,
                                 bmBack.isTextured() ? bmBack.getTexture().getWidth() : 32,
                                 bmBack.isTextured() ? bmBack.getTexture().getHeight() : 32, 0, false))),
                 // left border
                 new GameObject(-(float) thickness / 2f, ((float) bmh) / 2f, ver,
-                        new Material(Texture.makeSheet(borderBack, window, thickness, bmh + (2 * thickness),
+                        new Material(Texture.makeSheet(borderBack, mod, thickness, bmh + (2 * thickness),
                                 w, h, 1, true))),
                 // right border
                 new GameObject((float) bmw + (float) thickness / 2, ((float) bmh) / 2f, ver,
-                        new Material(Texture.makeSheet(borderBack, window, thickness, bmh + (2 * thickness),
+                        new Material(Texture.makeSheet(borderBack, mod, thickness, bmh + (2 * thickness),
                                 w, h, 2, true))),
                 // top border
                 new GameObject(((float) bmw) / 2f, (float) bmh + (float) thickness / 2f, hor,
-                        new Material(Texture.makeSheet(borderBack, window, bmw, thickness,
+                        new Material(Texture.makeSheet(borderBack, mod, bmw, thickness,
                                 w, h, 3, false))),
                 // bottom border
                 new GameObject(((float) bmw) / 2f, -(float) thickness / 2f, hor,
-                        new Material(Texture.makeSheet(borderBack, window, bmw, thickness,
+                        new Material(Texture.makeSheet(borderBack, mod, bmw, thickness,
                                 w, h, 4, false)))
         };
     }

@@ -78,13 +78,11 @@ public abstract class Block {
      *                     the background blocks, blocks[1] is for the middleground blocks, and blocks[2] is for the
      *                     foreground blocks
      * @param ats          the list of animated textures to populate
-     * @param w            the GLFW window in use
      * @return an array of objects where [0](boolean[][]) is the block map populated with the layout layer's blocks and
      * [1](PhysicsEngine.SlopeType[][]) is the slope map populated with the layout layer's slopes
      */
     public static Object[] loadLayoutBlocks(Node key, Node background, Node middleground, Node foreground,
-                                               Map<Material, List<Pair<Integer>>>[] blocks, List<AnimatedTexture> ats,
-                                               Window w) {
+                                               Map<Material, List<Pair<Integer>>>[] blocks, List<AnimatedTexture> ats) {
         Map<Character, BlockInfo> k = parseKeyData(key); // parse the key
         Map<List<Object>, Material> mm = new HashMap<>(); /* maps from a list of properties of a block to a
             corresponding material. This is used to maintain high space efficiency and low memory usage by minimizing
@@ -127,7 +125,7 @@ public abstract class Block {
         if (foreground != null) // if there is a foreground
             loadLayoutLayerBlocks(mm, blocks[2], foreground, k, ats, bmw, bmh, sp, m); // load foreground
         for (BlockInfo bi : k.values()) bi.cleanup(); // cleanup block info overlay textures
-        endBlockFormatting(sp, w); // end block formatting
+        endBlockFormatting(sp); // end block formatting
 
         // log block loading metrics
         int totalBlocks = 0; // create variable to store block count
@@ -687,11 +685,11 @@ public abstract class Block {
      * the correct size based on the given window
      *
      * @param sp the shader program that was used for block formatting
-     * @param w  the window whose frame buffer size will be used to reset the gl viewport size
      */
-    private static void endBlockFormatting(ShaderProgram sp, Window w) {
+    private static void endBlockFormatting(ShaderProgram sp) {
         sp.cleanup(); // cleanup the shader program
-        glViewport(0, 0, w.getFBWidth(), w.getFBHeight()); // change GL viewport to window frame buffer size
+        // change GL viewport back to the window's framebuffer size
+        glViewport(0, 0, Global.GAME_WINDOW.getFBWidth(), Global.GAME_WINDOW.getFBHeight());
     }
 
     /**

@@ -4,6 +4,7 @@ import gameobject.GameObject;
 import gameobject.ui.ListObject;
 import gameobject.ui.TextButton;
 import gameobject.ui.TextObject;
+import gameobject.ui.TexturedButton;
 import graphics.Material;
 import graphics.Model;
 import graphics.ShaderProgram;
@@ -220,8 +221,8 @@ public class Story {
          */
         private final MouseInputEngine.MouseCallback[] mcs = new MouseInputEngine.MouseCallback[4]; /* callback array as
             outlined by the mouse interaction interface */
-        private final TextButton name; // text button for name
-        private final TextObject author, path; // text objects for author and path
+        private final TexturedButton name; // text button for name
+        private final GameObject author, path; // text objects for author and path
 
         /**
          * Constructor
@@ -231,11 +232,11 @@ public class Story {
         public StoryListItem(Story story) {
             // call super with a standard square model and with a transparent material
             super(Model.getStdGridRect(1, 1), new Material(new float[]{1f, 1f, 1f, 0f}));
-            this.name = new TextButton(Global.FONT, story.getName()); // create name text button with story name
+            this.name = new TextButton(Global.FONT, story.getName()).solidify(); // create name button with story name
             this.name.setScale(0.8f, 0.8f); // scale story name down a little bit
-            this.author = new TextObject(Global.FONT, "author: " + story.getAuthor()); // create author text object
+            this.author = new TextObject(Global.FONT, "author: " + story.getAuthor()).solidify(); // author text
             this.author.setScale(0.4f, 0.4f); // scale author down by a little over half
-            this.path = new TextObject(Global.FONT, "path: " + story.getFolderPath()); // create path text object
+            this.path = new TextObject(Global.FONT, "path: " + story.getFolderPath()).solidify(); // path text
             this.path.setScale(0.3f, 0.3f); // scale path down by about one third
             this.position(); // position the text objects in the story list item
         }

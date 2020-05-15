@@ -4,10 +4,7 @@ import gameobject.GameObject;
 import gameobject.ROC;
 import gameobject.gameworld.Area;
 import gameobject.gameworld.Block;
-import gameobject.ui.ListObject;
-import gameobject.ui.TextButton;
-import gameobject.ui.TextInputObject;
-import gameobject.ui.TextObject;
+import gameobject.ui.*;
 import graphics.*;
 import org.lwjgl.openal.AL;
 import org.lwjgl.openal.ALC;
@@ -114,12 +111,11 @@ public class MenuLogic extends GameLogic {
     private ShaderProgram sp;          /* shader program to render title occasionally. Specifically, the title is
                                           manually rendered during the introductory physics simulation and whenever the
                                           ROC is fading and the goal is to not fade the title */
-    private TextButton newGame;        // new game button (main menu)
-    private TextButton loadGame;       // load game button (main menu)
-    private TextButton settings;       // settings button (main menu)
-    private TextButton exit;           // exit button (main menu)
+    private TexturedButton newGame;    // new game button (main menu)
+    private TexturedButton loadGame;   // load game button (main menu)
+    private TexturedButton settings;   // settings button (main menu)
+    private TexturedButton exit;       // exit button (main menu)
     private TextInputObject nameInput; // used to gather user input for player name (new game)
-    private Window window;             // reference to window to close when exit button is pressed
     private float maxCamX;             // x beyond which the menu area camera should start scrolling back
     private float minTitleY;           // the minimum y the title should be during the physics simulation before bounce
     private float time;                // a generic timer used for timing within a phase of the animation
@@ -143,13 +139,10 @@ public class MenuLogic extends GameLogic {
 
     /**
      * Initializes the menu logic by beginning the introductory physics simulation
-     *
-     * @param window the window
      */
     @Override
-    public void initOthers(Window window) {
-        super.initOthers(window); // initialize debug info through base game logic class
-        this.window = window; // save window reference
+    public void initOthers() {
+        super.initOthers(); // initialize debug info through base game logic class
         // create the title texture
         Texture titleTexture = new Texture(new Utils.Path("/textures/ui/title.png", true));
         float[] titleModelCoords = titleTexture.getModelCoords(128); // get the corresponding model coords
@@ -185,9 +178,8 @@ public class MenuLogic extends GameLogic {
      */
     private void initMenuArea() {
         // tell the ROC to use a game world with the menu area
-        this.roc.useGameWorld(this.window.getHandle(),
-                new Area(Node.pathContentsToNode(new Utils.Path("/misc/menu_area.node", true)),
-                        this.window));
+        this.roc.useGameWorld(new Area(Node.pathContentsToNode(new Utils.Path("/misc/menu_area.node",
+                true))));
         this.cam = this.roc.getGameWorld().getCam(); // save camera handle to make sure it stays within bounds
         // place camera at a random x within the area and at the vertical center of the area
         this.cam.setPos((float) Math.random() * (float) this.roc.getGameWorld().getArea().getBlockMap().length,
@@ -195,8 +187,7 @@ public class MenuLogic extends GameLogic {
         this.cam.setVX(0.5f); // make camera slowly scroll to the right
         this.cam.setZoom(0.15f); // zoom out a little
         this.maxCamX = this.roc.getGameWorld().getArea().getBlockMap().length; // don't allow cam past area
-        glfwSetScrollCallback(this.window.getHandle(), (x, y, s) -> {
-        }); // disable mouse scroll wheel zooming
+        glfwSetScrollCallback(Global.GAME_WINDOW.getHandle(), (x, y, s) -> {}); // disable mouse scroll wheel zooming
     }
 
     /**
@@ -215,21 +206,21 @@ public class MenuLogic extends GameLogic {
      * these items are created and added to the ROC, the phase which created and added them will never be revisited
      */
     private void createMainMenuUI() {
-        newGame = new TextButton(Global.FONT, "New Game"); // create new game button
+        newGame = new TextButton(Global.FONT, "New Game").solidify(); // create new game button
         newGame.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { // when clicked,
             this.phase = 20; // go phase 20 which will transition to the new game sub-menu
         });
-        loadGame = new TextButton(Global.FONT, "Load Game"); // create load game button
+        loadGame = new TextButton(Global.FONT, "Load Game").solidify(); // create load game button
         loadGame.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { // when clicked,
             //TODO: Load Game
         });
-        settings = new TextButton(Global.FONT, "Settings"); // create settings button
+        settings = new TextButton(Global.FONT, "Settings").solidify(); // create settings button
         loadGame.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { // when clicked,
             //TODO: Settings
         });
-        exit = new TextButton(Global.FONT, "Exit"); // create exit button
+        exit = new TextButton(Global.FONT, "Exit").solidify(); // create exit button
         exit.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { // when clicked,
-            window.close(); // close the window
+            Global.GAME_WINDOW.close(); // close the window
         });
         TextObject version = new TextObject(Global.FONT, "version: " + Global.VERSION); // create version text
         version.setScale(0.35f, 0.35f); // make version text small
@@ -312,7 +303,7 @@ public class MenuLogic extends GameLogic {
             }
 
             // create a list text button to open the data directory stories folder
-            ListTextButton openStoryFolder = new ListTextButton(Global.FONT, "(open stories folder)");
+            TexturedButton openStoryFolder = new ListTextButton(Global.FONT, "(open stories folder)").solidify();
             openStoryFolder.setScale(0.4f, 0.4f); // scale the button down by a little over half
             openStoryFolder.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { // when clicked
                 // open stories dir in data dir
@@ -330,7 +321,7 @@ public class MenuLogic extends GameLogic {
                     new ROC.PositionSettings(0f, belowWindow(), true, 0.2f));
 
             // create and add a button to return to the main menu
-            TextButton returnButton = new TextButton(Global.FONT, "Return");
+            TexturedButton returnButton = new TextButton(Global.FONT, "Return").solidify();
             returnButton.setScale(0.8f, 0.8f); // scale return button down slightly
             returnButton.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { // when clicked,
                 this.roc.moveStaticObject(TAG_TITLE, new ROC.PositionSettings(0f, MM_TITLE_POS, false,
@@ -342,7 +333,7 @@ public class MenuLogic extends GameLogic {
                     belowWindow(), false, 0f)); // add return button at bottom
 
             // create and add name input text input object for player name select
-            this.nameInput = new TextInputObject(window, Global.FONT, "(name)", // default text is (name)
+            this.nameInput = new TextInputObject(Global.FONT, "(name)", // default text is (name)
                     Global.getThemeColor(Global.ThemeColor.GRAY), // default text will be gray
                     Global.getThemeColor(Global.ThemeColor.GREEN)); // input text will be green
             this.nameInput.setScale(1.5f, 1.5f); // scale name input up a by about 3/2
@@ -362,7 +353,7 @@ public class MenuLogic extends GameLogic {
                     belowWindow(), false, 0f)); // add name input text input object to ROC
 
             // create and add finish button for name input
-            TextButton finish = new TextButton(Global.FONT, "Accept"); // create a button to pressed when done
+            TexturedButton finish = new TextButton(Global.FONT, "Accept").solidify(); // finish button
             finish.setScale(0.8f, 0.8f); // scale finish button down sslightly
             finish.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { // when clicked,
                 // simulate enter being pressed on the name input because this will automatically check for validity

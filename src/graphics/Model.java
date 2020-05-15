@@ -152,7 +152,7 @@ public class Model {
      */
     protected final int[] ids;           /* integer array to store the various GL object ids: [0] - VAO ID,
                                             [1] - model coordinate VBO ID, [2] - texture coordinate VBO ID,
-                                            [3] - index VBO ID, [4] - normals VBO ID */
+                                            [3] - index VBO ID */
     protected final int idx;             // the amount of vertices this shape has
     private final float[] modelCoords;   // the model's model coordinates
     private final float uw, uh;          // width and height of the model when not rotated
@@ -320,6 +320,16 @@ public class Model {
         }
         this.updateModelCoordsVBO(); // update VBO
         this.outdatedSize = true; // flag that the size members are outdated
+    }
+
+    /**
+     * Scales the model by applying the given multipliers to the existing scales. For example, if the model is already
+     * twice scale and x and y are 4, the result will be an eight scaled model
+     * @param x the horizontal factor to multiply the current horizontal scaling factor by
+     * @param y the vertical factor to multiply the current vertical scaling factor by
+     */
+    public void scaleScale(float x, float y) {
+        this.setScale(x * this.sx, y * this.sy);
     }
 
     /**
