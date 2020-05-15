@@ -6,7 +6,6 @@ import gameobject.ui.TextObject;
 import gameobject.gameworld.Area;
 import gameobject.gameworld.Entity;
 import graphics.*;
-import org.lwjgl.system.CallbackI;
 import story.Story;
 import utils.*;
 
@@ -73,19 +72,22 @@ public class WorldLogic extends GameLogic {
      */
     private void initWorldObjects() {
         // create player entity
-        Sound[] playerStepSounds = new Sound[]{
+        Sound[] playerStepSounds = new Sound[]{ // create player step sounds
                 new Sound(new Utils.Path("/sounds/step1.ogg", true)),
                 new Sound(new Utils.Path("/sounds/step2.ogg", true)),
                 new Sound(new Utils.Path("/sounds/step3.ogg", true)),
                 new Sound(new Utils.Path("/sounds/step4.ogg", true))
         };
+        Sound playerJumpSound = new Sound(new Utils.Path("/sounds/jump1.ogg", true)); // jump sound
+        Sound playerLandSound = new Sound(new Utils.Path("/sounds/land1.ogg", true)); // land sound
         player = new Entity(this.transferData.getChild("name").getValue(), Model.getStdGridRect(1, 2),
                 new LightSourceMaterial(new MSAT(new Utils.Path("/textures/entity/player.png", true),
                         new MSAT.MSATState[]{
                                 new MSAT.MSATState(2, 0.5f),
                                 new MSAT.MSATState(1, 1f),
                                 new MSAT.MSATState(12, 0.035f)
-                        }), new LightSource(new float[]{1f, 1f, 1f, 1f}, 5f, 1.5f)), playerStepSounds);
+                        }), new LightSource(new float[]{1f, 1f, 1f, 1f}, 5f, 1.5f)));
+        player.useSounds(playerStepSounds, playerJumpSound, playerLandSound); // give sounds to player
         // lower player bounding width slightly to fit better and appear more aesthetically
         player.setBoundingWidth(0.9f);
         player.setBoundingHeight(0.9f);
@@ -134,9 +136,7 @@ public class WorldLogic extends GameLogic {
      */
     @Override
     public void keyboardInput(int key, int action) {
-        if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) { // if space is pressed
-            if (PhysicsEngine.nextTo(player, 0f, -1f)) player.setVY(10f); // jump if there is something under
-        }
+        if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) this.player.attemptJump(); // space -> jump
     }
 
     /**

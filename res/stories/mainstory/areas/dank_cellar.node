@@ -25,6 +25,26 @@ area:
 
         # background gray bricks which are slightly dark
         b: resfrom /stories/mainstory/blocks/gray_brick_background.node
+
+        # slope
+        s:
+        {
+            texture_paths:
+            {
+                resource_path: /textures/slope.png
+            }
+            cut_radius: 0f
+        }
+
+        # other slope
+        t:
+        {
+            texture_paths:
+            {
+                resource_path: /textures/slope2.png
+            }
+            cut_radius: 0f
+        }
     }
 
     # provides a key mapping characters in the layout to decor
@@ -53,12 +73,12 @@ area:
         03: g       g                           gggg                             gg
         04: g                                    gg          www  ww  ww         gg
         05: gggwwwwwwwww  ww  ww  ww  wwwww      gg          ggg  gg  gg  ggggggggg
-        06: gggggggggggg  gg  gg  gg  ggggg  ww  gg       g   gg          ggggggggg
-        07: gggggggggggg              ggggg  gg  gg     g     gg
-        08:                              ggg     ggg          gg
-        09:                              gg         g         gg
-        10:                              gg  g           g    gg
-        11:                              ggwwwwwgwwwwwwgwwwwwwgg
+        06: gggggggggggg  gg  gg  gg  ggggg      gg       g   gg          ggggggggg
+        07: gggggggggggg              ggggg      gg     g     gg
+        08:                              gg      ggg          gg
+        09:                              ggt t      g     sg sgg
+        10:                              gg  gt          sg   gg
+        11:                              ggtwwwwwwwwwwwgwww  sgg
         12:                              ggggggggggggggggggggggg
         13:                              ggggggggggggggggggggggg
     }

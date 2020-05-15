@@ -132,7 +132,7 @@ public class Area {
                 new NodeLoader.LoadItem<>("name", "Unnamed", String.class).makeValueSensitive(),
                 new NodeLoader.LoadItem<>("light_foreground", false, Boolean.class),
                 new NodeLoader.LoadItem<>("starting_sun_rotation", -1f, Float.class)
-                        .setLowerBound(0f).setLowerBound(359.99f),
+                        .setLowerBound(0f).setUpperBound(359.99f),
                 new NodeLoader.LoadItem<>("sun_speed", 2f, Float.class)
                         .setLowerBound(0f).setUpperBound(100f),
                 new NodeLoader.LoadItem<>("backdrop", new Node("backdrop", "material_backdrop"),

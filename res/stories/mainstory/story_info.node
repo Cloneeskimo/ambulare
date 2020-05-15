@@ -11,5 +11,5 @@ story info:
     starting_area: /areas/dank_cellar.node
 
     # the starting position of the player
-    starting_position: 4 9
+    starting_position: 44 4
 }

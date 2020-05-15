@@ -1,6 +1,7 @@
 package utils;
 
 import gameobject.gameworld.WorldObject;
+import org.lwjgl.system.CallbackI;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -15,12 +16,12 @@ import java.util.List;
 
 /**
  * Provides framework for performing physics. Specifically, the physics engine performs moves for world objects. In
- * doing so, it checks for collisions with blocks using a block map, and collisions with other collidable world objects.
- * Note that the physics engine rounds all velocities and positions it is given and it produces to the amount of digits
- * corresponding to ROUNDED_FORMAT in order to avoid precision errors. However, errors will still occur when dealing
- * with very large floating point numbers. ROUNDED_FORMAT can be modified to deal with this by rounding to fewer decimal
- * points at the cost of more precise movements. The physics engine also outlines a set of properties than each world
- * object must have which are used to calculate reactions to collisions
+ * doing so, it checks for collisions with blocks using a block map, collisions with slopes using a slope map, and
+ * collisions with other collidable world objects. Note that the physics engine rounds all velocities and positions it
+ * is given and it produces to the amount of digits corresponding to ROUNDED_FORMAT in order to avoid precision errors.
+ * However, errors will still occur when dealing with very large floating point numbers. ROUNDED_FORMAT can be modified
+ * to deal with this by rounding to fewer decimal points at the cost of more precise movements. The physics engine also
+ * outlines a set of properties than each world object must have which are used to calculate reactions to collisions
  */
 public class PhysicsEngine {
 
@@ -33,10 +34,22 @@ public class PhysicsEngine {
         Thus, rounding all numbers in the form allows for much more stability. The physics engine handless this rounding
         automatically */
     private static boolean[][] blockMap; // the block map to use for collision detection with blocks
+    private static int[][] slopeMap; /* the slope map to use for collision detection with slopes, where the following
+        values have meaning: 1) positive slope on ground; 2) negative slope on ground; 3) positive slope on ceiling; 4)
+        negative slope on ceiling; any other values refer to a lack of slope */
     public static final float UNIT_AND_HALF = 0.0015f; /* the minimum unit (as specified by the rounding performed by
         the physics engine by ROUNDED_FORMAT) to be added to a push-back vector in order to resolve a collision */
     public static final float TERMINAL_VELOCITY = -50f; /* the minimum vertical velocity from gravity. Note that the
         the physics engine does not apply gravity. It is up to the object to apply it, hence public access */
+    public static final float NEXT_TO_PRECISION = 0.005f; // how close objects must be to be next to each other
+
+    /**
+     * Flags describing how to respond to a block/slope collision. For more information, see checkBlocksAndSlopes()
+     */
+    private static final int NO_COLLISION = -1;         // no collision occurred
+    private static final int RESPOND_AS_BLOCK = 0;      // respond to the collision normally as a block collision
+    private static final int RESPOND_AS_BLOCK_IN_Y = 1; // respond to the collision as a block collision in y component
+    private static final int RESPOND_AS_SLOPE = 2;      // respond to the collision as a slope collision
 
     /**
      * Attempts to moves the given world object by the given change in x and y. This method will round the values as
@@ -63,17 +76,59 @@ public class PhysicsEngine {
         } else { // if the given object is indeed collidable
 
             /*
-             * check x axis
+             * Check x axis
              */
             if (dx != 0) { // if an x movement is desired
                 o.setX(round(ox + dx)); // make the move and round the new position
                 AABB aabb = o.getAABB(); // get the axis-aligned bounding box after movement
 
                 /*
-                 * check blocks on x axis
+                 * Check blocks and slopes on x axis
                  */
-                Pair<Integer> cell = checkBlocks(aabb); // check for collisions with blocks
-                if (cell != null) { // if a block collision occurred
+                Pair<Integer> cell = new Pair<>(); // create a pair to store collided cell
+                int collision = checkBlocksAndSlopes(aabb, cell, 0); // check for collisions with blocks/slopes
+                if (collision == RESPOND_AS_BLOCK_IN_Y) {
+
+                    /*
+                     * Respond as vertical block collision
+                     */
+                    float pb = calcPBFromBlock(aabb, cell, true); // calculate the push-back for resolution
+                    if ((float) cell.y + 0.5f < o.getY()) pb *= -1; // make sure the sign is correct
+                    o.setY(round(o.getY() + pb)); // perform collision resolution
+                    Pair<Float> rxn = performReaction(o.getVY(), o.getPhysicsProperties()); // calculate a reaction
+                    // apply the reaction to the object's velocity
+                    o.setVY(Math.max(o.getVY(), rxn.x));
+                    o.setVX(rxn.y * o.getVX());
+                    dy = Math.max(0, dy); // do not check for y collisions this loop
+                } else if (collision == RESPOND_AS_SLOPE) {
+
+                    /*
+                     * Respond as slope collision
+                     */
+                    // move up to respond to horizontal movement
+                    o.setY(round(o.getY() + Math.abs(calcPBFromSlope(aabb, cell, true))));
+                    aabb = o.getAABB(); // calculate new AABB
+                    Pair<Integer> newCell = new Pair<>(); // create a pair to hold result of another check
+                    // check if move up causes a new collision
+                    int newCollision = checkBlocksAndSlopes(aabb, newCell, 0);
+                    if (newCollision != NO_COLLISION) { // if move up caused another collision
+                        // move object back down to resolve with object above
+                        o.setY(round(o.getY() - Math.abs(calcPBFromBlock(aabb, newCell, true))));
+                        int type = slopeMap[cell.x][cell.y]; // get the type of slope below
+                        // then push back horizontally enough to resolve collision with the slope underneath
+                        o.setX(round(o.getX() - (type == 1 ? 1 : -1) * Math.abs(calcPBFromSlope(o.getAABB(), cell,
+                                false))));
+                    }
+                    Pair<Float> rxn = performReaction(o.getVY(), o.getPhysicsProperties()); // calculate a reaction
+                    // apply the reaction to the object's velocity
+                    o.setVY(Math.max(o.getVY(), rxn.x));
+                    o.setVX(rxn.y * o.getVX());
+                    dy = Math.max(0, dy); // do not check for y collisions this loop
+                } else if (collision == RESPOND_AS_BLOCK) {
+
+                    /*
+                     * Respond as horizontal block collision
+                     */
                     float pb = calcPBFromBlock(aabb, cell, false); // calculate the push-back for resolution
                     if ((float) cell.x + 0.5f < o.getX()) pb *= -1; // make sure the sign is correct
                     o.setX(round(o.getX() + pb)); // perform collision resolution
@@ -84,9 +139,9 @@ public class PhysicsEngine {
                 }
 
                 /*
-                 * check world objects on x axis
+                 * Check world objects on x axis
                  */
-                else { // only check for world object collision if no block collision has occurred
+                if (collision == NO_COLLISION) { // only check world object collision if no block collision has occurred
                     for (WorldObject other : o.getCollidables()) { // loop through every other object
                         if (other != o && other.getPhysicsProperties().collidable) { // if collidable and different
                             AABB aabb2 = other.getAABB(); // get the other object's axis-aligned bounding box
@@ -110,31 +165,57 @@ public class PhysicsEngine {
             }
 
             /*
-             * check y axis
+             * Update change in y if object is sticky, based on horizontal movement
+             */
+            // if the object sticks to slopes and is on a slope
+            if (o.getPhysicsProperties().sticky && o.getPhysicsProperties().onSlope != 0) {
+                float adx = o.getX() - ox; // calculate the horizontal change that occurred
+                // apply the change to the vertical component as well to simulate sticking to the slop
+                if (adx < 0 && o.getPhysicsProperties().onSlope == 1) dy += adx;
+                else if (adx > 0 && o.getPhysicsProperties().onSlope == 2) dy -= adx;
+            }
+
+            /*
+             * Check y axis
              */
             if (dy != 0) { // if a y movement is desired
                 o.setY(round(oy + dy)); // make the move and round the new position
                 AABB aabb = o.getAABB(); // get the axis-aligned bounding box after movement
 
                 /*
-                 * check blocks on y axis
+                 * Check blocks and slopes on y axis
                  */
-                Pair<Integer> cell = checkBlocks(aabb); // check for collisions with blocks
-                if (cell != null) { // if a block collision occurred
+                Pair<Integer> cell = new Pair<>(); // create a pair to store collided cell
+                int collision = checkBlocksAndSlopes(aabb, cell, dy); // check for collisions with blocks/slopes
+                if (collision == RESPOND_AS_BLOCK_IN_Y || collision == RESPOND_AS_BLOCK) {
+
+                    /*
+                     * Respond as vertical block collision
+                     */
                     float pb = calcPBFromBlock(aabb, cell, true); // calculate the push-back for resolution
                     if ((float) cell.y + 0.5f < o.getY()) pb *= -1; // make sure the sign is correct
                     o.setY(round(o.getY() + pb)); // perform collision resolution
                     Pair<Float> rxn = performReaction(o.getVY(), o.getPhysicsProperties()); // calculate a reaction
                     // apply the reaction to the object's velocity
-                    o.setVY(rxn.x);
+                    o.setVY(collision == RESPOND_AS_BLOCK ? rxn.x : Math.max(o.getVY(), rxn.x));
                     o.setVX(rxn.y * o.getVX());
+                } else if (collision == RESPOND_AS_SLOPE) {
 
+                    /*
+                     * Respond as slope collision
+                     */
+                    o.setY(round(o.getY() + Math.abs(calcPBFromSlope(aabb, cell, true)))); // calc and apply PB
+                    Pair<Float> rxn = performReaction(o.getVY(), o.getPhysicsProperties()); // calculate a reaction
+                    // apply the reaction to the object's velocity
+                    o.setVY(Math.max(o.getVY(), rxn.x));
+                    o.setVX(rxn.y * o.getVX());
                 }
+
 
                 /*
                  * check world objects on y axis
                  */
-                else { // only check for world object collision if no block collision has occurred
+                if (collision == NO_COLLISION) { // only check world object collision if no block collision has occurred
                     for (WorldObject other : o.getCollidables()) { // loop through every other object
                         if (other != o && other.getPhysicsProperties().collidable) { // if collidable and different
                             AABB aabb2 = other.getAABB(); // get the other object's axis-aligned bounding box
@@ -158,6 +239,22 @@ public class PhysicsEngine {
                 }
             }
         }
+
+        /*
+         * Update sticky object onSlope value
+         */
+        if (o.getPhysicsProperties().sticky) { // if the object is sticky
+            float oyb = o.getY(); // get its original y
+            o.setY(round(oyb - NEXT_TO_PRECISION)); // move it down according to the next to precision
+            Pair<Integer> cell = new Pair<>(); // create a pair to store collision cell
+            int collision = checkBlocksAndSlopes(o.getAABB(), cell, -NEXT_TO_PRECISION); // perform check
+            // if a slope collision occurred
+            o.getPhysicsProperties().onSlope = (collision == RESPOND_AS_BLOCK_IN_Y || collision == RESPOND_AS_SLOPE)
+                    ? slopeMap[cell.x][cell.y]  // set flag based on the type of slope at the position
+                    : 0; // if no slope collision occurred, set flag to zero to denote the object is not on a slope
+            o.setY(oyb); // return the object to its original y position
+        }
+
         return oy != o.getY() || ox != o.getX(); // if either x or y has changed, return that a change has occurred
     }
 
@@ -172,21 +269,96 @@ public class PhysicsEngine {
     }
 
     /**
-     * Checks an axis-aligned bounding box for collision with blocks in the block map
-     *
-     * @param aabb the axis-aligned bounding box to check for collision with blocks
-     * @return the grid cell collided with if a collision occurs
+     * Checks an axis-aligned bounding box for collision with blocks in the block map and slopes in the slope map
+     *s
+     * @param aabb the axis-aligned bounding box to check for collision with blocks and slopes
+     * @param collision the pair to populate with the collided cell if a collision occurs
+     * @param dy the change in the vertical positional component that was made before this test
+     * @return the result of the check as an integer specifying how to respond where the possible returns are load out
+     * at the top of this file
      */
-    private static Pair<Integer> checkBlocks(AABB aabb) {
+    private static int checkBlocksAndSlopes(AABB aabb, Pair<Integer> collision, float dy) {
         List<Pair<Float>> points = getPointsToTest(aabb); // calculate the points to apply on the grid for testing
         for (Pair<Float> point : points) { // for each point
             Pair<Integer> cell = Transformation.getGridCell(point); // get the corresponding grid cell
             // if the grid cell is not out of bounds
             if (cell.x >= 0 && cell.x < blockMap.length && cell.y >= 0 && cell.y < blockMap[0].length) {
-                if (blockMap[cell.x][cell.y]) return cell; // return the cell if it is occupied by a block
+                if (slopeMap[cell.x][cell.y] != 0) { // if there is a slope there
+                    // calculate the appropriate response to being in the slope's grid cell
+                    int idx = respondToSlopePresence(aabb, points, cell.x, cell.y, dy);
+                    if (idx != NO_COLLISION) { // if a response is necessary
+                        // set the collision position
+                        collision.x = cell.x;
+                        collision.y = cell.y;
+                        return idx; // return the type of response necessary
+                    }
+                }
+                else if (blockMap[cell.x][cell.y]) {
+                    // set the collision position
+                    collision.x = cell.x;
+                    collision.y = cell.y;
+                    return RESPOND_AS_BLOCK; // return that a normal block collision response is necessary
+                }
             }
         }
-        return null; // if no points were within a cell, return that no collision has occurred
+        return NO_COLLISION; // if no collision occurs, return -1
+    }
+
+    /**
+     * If an axis-aligned bounding box is within a slope's cell, this method will interpret and calculate howw to
+     * respond to it if resolution is required
+     * @param aabb the axis-aligned bounding box
+     * @param points the points used to check for collision with the slope's grid cell
+     * @param x the slope's x grid coordinate
+     * @param y the slopy's y grid coordinate
+     * @param dy the change in the vertical positional component that was made before this test
+     * @return the result of the check as an integer specifying how to respond where the possible returns are load out
+     * at the top of this file
+     */
+    private static int respondToSlopePresence(AABB aabb, List<Pair<Float>> points, int x, int y, float dy) {
+        int type = slopeMap[x][y]; // get the type of slope at the given grid cell
+        int pAboveBottomEdge = 0; // keep a counter for how many points of the AABB are above the bottom edge of slope
+        switch (type) { // switch on the type of slope
+            case 1: // if positive slope on ground
+                int pLeftOfRightEdge = 0; // keep track of points to the left of the right edge
+                for (Pair<Float> p : points) { // for each point
+                    if (p.x <= (x + 1)) pLeftOfRightEdge++; // count points to left of right edge
+                    if (p.y - dy >= (y)) pAboveBottomEdge++; // count points above bottom edge
+                }
+                // if all points are above the bottom edge and to the left of the right edge
+                if (pLeftOfRightEdge == points.size() && pAboveBottomEdge == points.size()) {
+                    // calculate the minimum y value that the bottom right point can have (relative to the grid cell)
+                    float minY = round((aabb.getCX() + aabb.getW2()) % 1);
+                    float ay = (aabb.getCY() - aabb.getH2() - y) ; // calculate the actual bottom right y (relative)
+                    if (ay < minY) return RESPOND_AS_SLOPE; // if the actual is below the minimum slope collision occurs
+                    else return NO_COLLISION; // otherwise, no collision occurs
+                } else if (pLeftOfRightEdge < points.size()) { // if some points are to the ridge of the slope
+                    // if AABB below top edge of the slope and center to the right of slope, respond as if block
+                    if (aabb.getCY() - aabb.getH2() < y + 1 && aabb.getCX() > x + 1) return RESPOND_AS_BLOCK;
+                    return RESPOND_AS_BLOCK_IN_Y; // otherwise respond vertically as a block
+                }
+                break;
+            case 2: // if negative slope on ground
+                int pRightOfLeftEdge = 0; // keep track of points to the right of the left edge
+                for (Pair<Float> p : points) { // for each point
+                    if (p.x >= x) pRightOfLeftEdge++; // count points to right of left edge
+                    if (p.y - dy >= y) pAboveBottomEdge++; // count points above bottom edge
+                }
+                // if all points are above the bottom edge and to the right of the left edge
+                if (pRightOfLeftEdge == points.size() && pAboveBottomEdge == points.size()) {
+                    // calculate the minimum y value that the bottom left point can have (relative to the grid cell)
+                    float minY = 1 - round((aabb.getCX() - aabb.getW2()) % 1);
+                    float ay = (aabb.getCY() - aabb.getH2() - y); // calculate the actual bottom right y (relative)
+                    if (ay < minY) return RESPOND_AS_SLOPE; // if the actual is below the minimum slope collision occurs
+                    else return NO_COLLISION; // otherwise, no collision occurs
+                } else if (pRightOfLeftEdge < points.size()) { // if some points are to the left of the slope
+                    // if AABB below top edge of the slope and center to the left of slope, respond as if block
+                    if (aabb.getCY() - aabb.getH2() < y + 1 && aabb.getCX() < x) return RESPOND_AS_BLOCK;
+                    return RESPOND_AS_BLOCK_IN_Y; // otherwise respond vertically as a block
+                }
+                break;
+        }
+        return RESPOND_AS_BLOCK; // if all else fails, respond as a block
     }
 
     /**
@@ -235,10 +407,49 @@ public class PhysicsEngine {
      */
     private static float calcPBFromBlock(AABB o, Pair<Integer> b, boolean y) {
         // calculate overlap between block and axis-aligned bounding box and return that plus a single unit
-        if (y) return Math.abs(o.getCY() - Transformation.getCenterOfCellComponent(b.y)) - o.getH2() - 0.5f
+        float v;
+        if (y) v = Math.abs(o.getCY() - Transformation.getCenterOfCellComponent(b.y)) - o.getH2() - 0.5f
                 - UNIT_AND_HALF;
-        else return Math.abs(o.getCX() - Transformation.getCenterOfCellComponent(b.x)) - o.getW2() - 0.5f
+        else v = Math.abs(o.getCX() - Transformation.getCenterOfCellComponent(b.x)) - o.getW2() - 0.5f
                 - UNIT_AND_HALF;
+        if (v > 0.2f) // if abnormally large pushback calculated
+            Utils.log("Abnormally large block push-back value calculated: " + v + " in " + (y ? "y" : "x") +
+                    "component", PhysicsEngine.class, "calcPBFromBlock", false); // log
+        return v; // return value
+    }
+
+    /**
+     * Calculates the push back from a collision between a world object and a slope
+     * @param o the axis-aligned AABB of the object who has collided
+     * @param p the slope's grid cell location
+     * @param y whether to calculate the push back in the vertical component
+     * @return the pushback necessary to resolve collision
+     */
+    private static float calcPBFromSlope(AABB o, Pair<Integer> p, boolean y) {
+        int type = slopeMap[p.x][p.y]; // get the type of slope
+        if (y) { // if y push back is desired
+            float minY = 0; // need to calculate minimum y
+            if (type == 1) minY = round((o.getCX() + o.getW2()) % 1); // calculate for positive bottom slope
+            else if (type == 2) minY = 1 - round((o.getCX() - o.getW2()) % 1); // calculate for negative bottom slope
+            float ay = (o.getCY() - o.getH2()) - p.y; // calculate actual y
+            float dif = Math.abs(minY - ay); // calculate difference in actual and minimum
+            float v = -dif - UNIT_AND_HALF; // make negative and add necessary unit
+            if (Math.abs(v) > 0.2f) // if abnormally large push back calculated
+                Utils.log("Abnormally large slope push-back value calculated: " + v + " in " + (y ? "y" : "x") +
+                        "component", PhysicsEngine.class, "calcPBFromSlope", false); // log
+            return v; // return the push back
+        } else { // if an x push back is desired
+            float marginX = 0; // need to calculate max/min x
+            if (type == 1) marginX = round((o.getCY() - o.getH2()) % 1); // calculate for positive bottom slope
+            else if (type == 2) marginX = 1 - round((o.getCY() - o.getH2()) % 1); // calc for negative bottom sslope
+            float ax = (o.getCX() + (type == 1 ? 1 : -1) * o.getW2()) % 1; // calculate actual x
+            float dif = Math.abs(marginX - ax); // calculate difference in actual and min/ax
+            float v = -dif - UNIT_AND_HALF; // make negative and add necessary unti
+            if (Math.abs(v) > 0.2f) // if abnormally large push back calculated
+                Utils.log("Abnormally large slope push-back value calculated: " + v + " in " + (y ? "y" : "x") +
+                        "component", PhysicsEngine.class, "calcPBFromSlope", false); // log
+            return v; // return the push back
+        }
     }
 
     /**
@@ -317,10 +528,11 @@ public class PhysicsEngine {
     }
 
     /**
-     * Calculate if there is an object or block next the given world object in the given direction. X-component and
-     * y-component checks may be combined (for example, can use this to look if there is an object to the "bottom
+     * Calculate if there is an object, block, or slope next the given world object in the given direction. X-component
+     * and y-component checks may be combined (for example, can use this to look if there is an object to the "bottom
      * left" of the given world object). This works for non-collidable objects as well, but will not count other
-     * non-collidable objects as valid checks
+     * non-collidable objects as valid checks. Looks are performed to a precision defined by the constant defined above
+     * as NEXT_TO_PRECISION
      *
      * @param wo the world object to look next to
      * @param x  the x direction to look. If x < 0, will look to the left of the object. If x > 0, will look to the
@@ -331,20 +543,20 @@ public class PhysicsEngine {
      */
     public static boolean nextTo(WorldObject wo, float x, float y) {
         // calculate necessary movement to check if next to
-        float dx = (x < 0f) ? -0.005f : (x > 0f) ? 0.005f : 0f;
-        float dy = (y < 0f) ? -0.005f : (y > 0f) ? 0.005f : 0f;
+        float dx = (x < 0f) ? -NEXT_TO_PRECISION : (x > 0f) ? NEXT_TO_PRECISION : 0f;
+        float dy = (y < 0f) ? -NEXT_TO_PRECISION : (y > 0f) ? NEXT_TO_PRECISION : 0f;
         // save original position to reset later
         float ox = wo.getX();
         float oy = wo.getY();
         // move slightly next to according to parameters
         wo.setX(round(wo.getX() + dx));
         wo.setY(round(wo.getY() + dy));
-        // check if new position collides with blocks
-        boolean nextTo = checkBlocks(wo.getAABB()) != null;
-        if (!nextTo) { // if no block collision was found
-            AABB aabb = wo.getAABB(); // get the object's axis-aligned bounding box
+        AABB aabb = wo.getAABB(); // get the object's axis-aligned bounding box
+        // check if new position collides with blocks or slopes
+        boolean nextTo = checkBlocksAndSlopes(aabb, new Pair<>(), dy) != NO_COLLISION;
+        if (!nextTo) { // if no block or slope collision was found
             for (WorldObject o : wo.getCollidables()) { // and for each collidable object
-                if (o != wo) { // don't check the object against itseslf
+                if (o != wo) { // don't check the object against itself
                     if (AABBColliding(aabb, o.getAABB()) != null) { // if they are colliding
                         nextTo = true; // the object is next to something
                         break; // break from the loop
@@ -364,8 +576,20 @@ public class PhysicsEngine {
      * @param blockMap the block map to use
      */
     public static void giveBlockMap(boolean[][] blockMap) {
-        PhysicsEngine.blockMap = blockMap;
+        PhysicsEngine.blockMap = blockMap; // save block map as member
         Utils.log("Received block map", PhysicsEngine.class, "giveBlockMap", false); // log
+    }
+
+    /**
+     * Tells the physics engine what slope map to use for detecting collisions with slopes where the following values
+     * have meaning: 1) positive slope on ground; 2) negative slope on ground; 3) positive slope on ceiling; 4) negative
+     * slope on ceiling; any other values refer to a lack of slope
+     *
+     * @param slopeMap the slop map to use,
+     */
+    public static void giveSlopeMap(int[][] slopeMap) {
+        PhysicsEngine.slopeMap = slopeMap; // save slope map as member
+        Utils.log("Received slope map", PhysicsEngine.class, "giveSlopeMap", false); // log
     }
 
     /**
@@ -388,6 +612,7 @@ public class PhysicsEngine {
             opposite component of velocity will remain. For example, during a y collision, the object's horizontal
             (x) velocity will be multiplied by its friction resistance, and vice-versa */
         public float gravity = 19.6f; /* this determines how much the object is affected by gravity */
+        public boolean sticky = false; // if true, the object will stick to slopes when descending them
         public boolean rigid = false; /* if an object is rigid, its velocity is unable to be affected by collisions
             with non-rigid objects. Rigid objects can still cause collisions. If they collide with other rigid objects,
             both of the colliding rigid objects will have their velocities reduced to zero in the component in
@@ -395,16 +620,21 @@ public class PhysicsEngine {
             objects produce collision reactions similar to blocks */
         public boolean collidable = true; /* this determines if an object is able to collide. If false, the object
             will be excluded from all collision detection and reaction calculations. */
+        private int onSlope = 0; /* flag signifying what kind of slope the signifying object is on where the following
+            values have meaning: 1) positive slope on ground; 2) negative slope on ground; 3) positive slope on ceiling;
+            4) negative slope on ceiling; any other values refer to a lack of slope*/
 
         /**
          * Constructs the physics properties with the given properties, assuming non-rigid and collidable
          */
-        public PhysicsProperties(float mass, float bounciness, float fricResis, float kbResis, float gravity) {
+        public PhysicsProperties(float mass, float bounciness, float fricResis, float kbResis, float gravity,
+                                 boolean sticky) {
             this.mass = mass;
             this.bounciness = bounciness;
             this.fricResis = fricResis;
             this.kbResis = kbResis;
             this.gravity = gravity;
+            this.sticky = sticky;
         }
 
         /**
@@ -420,6 +650,21 @@ public class PhysicsEngine {
          * Constructs the physics properties at their defaults (see members above)
          */
         public PhysicsProperties() {
+        }
+
+        /**
+         * @return the type of slope the corresponding object is on (see members for meanings of numbers)
+         */
+        public int onSlope() {
+            return this.onSlope;
+        }
+
+        /**
+         * Updates the type of slope the corresponding object is on (see members for meanings of numbers)
+         * @param onSlope the new type of slopes
+         */
+        public void setOnSlope(int onSlope) {
+            this.onSlope = onSlope;
         }
     }
 

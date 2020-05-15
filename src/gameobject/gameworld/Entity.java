@@ -34,6 +34,7 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
     private String name;          // name of the entity
     private TextObject nameplate; // nameplate to display above entity
     private Sound[] step;         // the step sounds of the entity to be randomized over when the entity takes a step
+    private Sound jump, land;     // sounds for jumping and landing of the entity
     private boolean right;        // whether the entity is facing to the right
     private boolean airborne;     // whether the entity is airborne
     private boolean moving;       // whether the entity is moving
@@ -48,14 +49,24 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
      *                 the right, (2) entity airborne and facing to the left, (3) entity airborne and facing to the
      *                 right, (4) entity non-airborne and moving to the left, (5) entity non-airborne and moving to the
      *                 right
-     * @param step     an array of step sounds to randomize over when the entity takes a step
      */
-    public Entity(String name, Model model, Material material, Sound[] step) {
+    public Entity(String name, Model model, Material material) {
         super(model, material); // call world object constructor
         this.name = name; // save name as member
         this.nameplate = new TextObject(Global.FONT, this.name); // create nameplate
         this.nameplate.setScale(2.5f, 2.5f); // make nameplate larger
         this.positionNameplate(); // position the nameplate above the entity
+        this.getPhysicsProperties().sticky = true; // entities should stick to slopes
+    }
+
+    /**
+     * Gives the entity a set of sounds to use for their corresponding scenarios. If any are null, that sound will
+     * not be used
+     * @param step an array of step sounds to randomize over when the entity takes a step
+     * @param jump a sound to play when the entity jumps
+     * @param land a sound to play when the entity lands
+     */
+    public void useSounds(Sound[] step, Sound jump, Sound land) {
         this.step = step; // save step sounds as member
         if (this.step != null) { // if step sounds were given
             if (this.material.getTexture() instanceof AnimatedTexture) { // and the entity is animated
@@ -67,6 +78,8 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
                 });
             }
         }
+        this.jump = jump;
+        this.land = land;
     }
 
     /**
@@ -112,6 +125,16 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
     }
 
     /**
+     * If the entity is on top of an object, this method will cause the entity to jump
+     */
+    public void attemptJump() {
+        if (PhysicsEngine.nextTo(this, 0f, -1f)) { // if entity is on top of something
+            this.setVY(10f); // jump
+            if (this.jump != null) this.jump.play(); // and play jump sound
+        }
+    }
+
+    /**
      * Updates the entity
      *
      * @param interval the amount of time to account for
@@ -123,6 +146,7 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
         if (airborne != this.airborne) { // if airborne value is different
             this.airborne = airborne; // update flag
             this.updateTextureState(); // and update state in MSAT
+            if (!this.airborne && this.land != null) this.land.play(); // if the entity landed, play the landing sound
         }
     }
 
