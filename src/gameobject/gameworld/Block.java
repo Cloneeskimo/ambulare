@@ -43,9 +43,11 @@ public abstract class Block {
      *                       once, repetitive calls can be avoided
      * @param camView        the axis-aligned bounding box to check the block's position against. If the block is not
      *                       within the camera's view, it will not be rendered
+     * @return the total amount of blocks rendered
      */
-    public static void renderBlocks(BlockModel bm, ShaderProgram sp,
+    public static int renderBlocks(BlockModel bm, ShaderProgram sp,
                                     Map<Material, List<Pair<Integer>>> blockPositions, PhysicsEngine.AABB camView) {
+        int blocksRendered = 0; // keep track of the amount of rendered blocks
         for (Material m : blockPositions.keySet()) { // for each material
             Texture t = m.getTexture(); // get texture for material
             if (t instanceof AnimatedTexture) bm.useTexCoordVBO(((AnimatedTexture) t).getTexCoordVBO(false),
@@ -53,8 +55,10 @@ public abstract class Block {
                 // if the texture isn't animated, just use the entire texture
             else bm.useTexCoordVBO(AnimatedTexture.getTexCoordVBO(0, 1, false), false);
             m.setUniforms(sp); // set the appropriate material uniforms
-            bm.renderBlocks(sp, blockPositions.get(m), camView); // render all the blocks with that material at once
+            // render all the blocks with that material at once and keep track of total blocks rendered
+            blocksRendered += bm.renderBlocks(sp, blockPositions.get(m), camView);
         }
+        return blocksRendered; // return total block render count
     }
 
     /**
@@ -786,8 +790,10 @@ public abstract class Block {
          * @param blocks  the positions of the blocks to render
          * @param camView the axis-aligned bounding box to check the block's position against. If the block is not
          *                within the camera's view, it will not be rendered
+         * @return the amount of blocks rendered
          */
-        public void renderBlocks(ShaderProgram sp, List<Pair<Integer>> blocks, PhysicsEngine.AABB camView) {
+        public int renderBlocks(ShaderProgram sp, List<Pair<Integer>> blocks, PhysicsEngine.AABB camView) {
+            int renderCount = 0; // keep track of amount of blocks rendered
             glBindVertexArray(this.ids[0]); // bind vao
             glEnableVertexAttribArray(0); // enable model coordinate vbo
             glEnableVertexAttribArray(1); // enable texture coordinate vbo
@@ -797,11 +803,13 @@ public abstract class Block {
                     sp.setUniform("x", Transformation.getCenterOfCellComponent(b.x));
                     sp.setUniform("y", Transformation.getCenterOfCellComponent(b.y));
                     glDrawElements(GL_TRIANGLES, this.idx, GL_UNSIGNED_INT, 0); // draw block model at that position
+                    renderCount++; // iterate render count
                 }
             }
             glDisableVertexAttribArray(0); // disable model coordinate vbo
             glDisableVertexAttribArray(1); // disable texture coordinate vbo
             glBindVertexArray(0); // disable vao
+            return renderCount; // return amount of rendered blocks
         }
     }
 

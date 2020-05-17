@@ -5,6 +5,9 @@ import graphics.*;
 import utils.Global;
 import utils.Utils;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL30.*;
 
@@ -21,9 +24,11 @@ public class EnhancedTextObject extends GameObject {
     /**
      * Members
      */
-    private Line[] lines;              // the lines being displayed
-    private TextObject[] tos;          // the text objects displaying the lines
-    private final float borderPadding; // the padding around the edges of the contents
+    protected List<Line> lines;         // the lines being displayed
+    private List<TextObject> tos;       // the text objects displaying the lines
+    private final float borderPadding;  // the padding around the edges of the contents
+    private float overallXScale = 1f;   // overall x scale applied to contents (not including line scale)
+    private float overallYScale = 1f;   // overall y scale applied to contents (not including line scale)
 
     /**
      * Constructs the enhanced text object with the given string
@@ -39,7 +44,7 @@ public class EnhancedTextObject extends GameObject {
     }
 
     /**
-     * Constructs the enhanced text object with the given array of string
+     * Constructs the enhanced text object with the given array of strings
      * @param backgroundMaterial the material to use to render the background. If null, no background will be
      *                           rendered
      * @param font the font to use for the text
@@ -52,20 +57,20 @@ public class EnhancedTextObject extends GameObject {
                 ? backgroundMaterial // use background material if exists
                 : new Material(new float[] { 1f, 1f, 1f, 0f })); // otherwise use a transparent material
         this.borderPadding = borderPadding; // save border padding as member
-        Line[] l = new Line[text.length]; // create an array of lines
-        for (int i = 0; i < text.length; i++) l[i] = new Line(text[i]); // populate the lines using given text
+        List<Line> l = new ArrayList<>(); // create a list of lines
+        for (int i = 0; i < text.length; i++) l.add(new Line(text[i])); // populate the lines using given text
         this.createTextObjects(font, l); // create the corresponding text objects
     }
 
     /**
-     * Constructs the enhanced text object with the given array of configured lines
+     * Constructs the enhanced text object with the given list of configured lines
      * @param backgroundMaterial the material to use to render the background. If null, no background will be
      *                           rendered
      * @param font the font to use for the text
      * @param lines the configured lines to display (see Line class)
      * @param borderPadding the padding to place around the edges of the lines
      */
-    public EnhancedTextObject(Material backgroundMaterial, Font font, Line[] lines, float borderPadding) {
+    public EnhancedTextObject(Material backgroundMaterial, Font font, List<Line> lines, float borderPadding) {
         super(Model.getStdGridRect(1, 1), backgroundMaterial != null // call super with rectangle model
                 ? backgroundMaterial // use background material if exists
                 : new Material(new float[] { 1f, 1f, 1f, 0f })); // otherwise use a transparent material
@@ -74,20 +79,29 @@ public class EnhancedTextObject extends GameObject {
     }
 
     /**
-     * Creates the enhanced text object's text objects based off of the given array of configured lines
+     * Creates the enhanced text object's text objects based off of the given list of configured lines
      * @param font the font to use for the text objects
-     * @param lines the array of configured lines
+     * @param lines the list of configured lines
      */
-    private void createTextObjects(Font font, Line[] lines) {
+    private void createTextObjects(Font font, List<Line> lines) {
         this.lines = lines; // save lines as member
-        this.tos = new TextObject[lines.length]; // initialize text object array
-        for (int i = 0; i < lines.length; i++) { // for each line
-            this.tos[i] = new TextObject(font, lines[i].text); // create the corresponding text object
-            this.tos[i].setScale(lines[i].scale, lines[i].scale); // scale it according to line configuration
-            // color it according to line configuration
-            if (this.lines[i].color != null) this.tos[i].getMaterial().setColor(this.lines[i].color);
-        }
+        this.tos = new ArrayList<>(); // initialize text object list
+        for (Line line : lines) this.tos.add(createTextObject(font, line)); // create text objects
         this.position(); // scale the object and the contents
+    }
+
+    /**
+     * Creates a text object corresponding to a given line
+     * @param font the font to used for the text
+     * @param line the line whose configuration to use for the text object
+     * @return the corresponding text object
+     */
+    private TextObject createTextObject(Font font, Line line) {
+        TextObject to = new TextObject(font, line.text); // create the corresponding text object
+        // scale according to line configuration and overall scale
+        to.setScale(line.scale * this.overallXScale, line.scale * this.overallYScale);
+        if (line.color != null) to.getMaterial().setColor(line.color); // color it according to line configuration
+        return to; // return final product
     }
 
     /**
@@ -96,29 +110,30 @@ public class EnhancedTextObject extends GameObject {
     private void position() {
         float w = 0f; // a maximum width will be determined
         float h = this.borderPadding * 2f; // a running sum of text object heights and padding valuess will be kept
-        for (int i = 0; i < this.lines.length; i++) { // for each sum
+        for (int i = 0; i < this.lines.size(); i++) { // for each sum
             // if it is longer than the current recorded width, record it as the new width
-            w = Math.max(w, this.tos[i].getWidth() + (this.borderPadding * 2f));
+            w = Math.max(w, this.tos.get(i).getWidth() + (this.borderPadding * 2f));
             // add its height and appropriate padding to the total height
-            h += this.tos[i].getHeight() + (i == 0 || i == this.lines.length - 1 ? 1f : 2f) * this.lines[i].padding;
+            h += this.tos.get(i).getHeight() + (i == 0 || i == this.lines.size() - 1 ? 1f : 2f) *
+                    this.lines.get(i).padding;
         }
         this.model.setScale(w, h); // scale the object to fit all lines and padding
         float y = this.getY() + (this.getHeight() / 2) - borderPadding; // start from the top of the object
         float lx = this.getX() - (this.getWidth() / 2) + borderPadding; // left-most x of the object
         float rx = this.getX() + (this.getWidth() / 2) - borderPadding; // right-most x of the object
-        for (int i = 0; i < this.lines.length; i++) { // go through each line
-            if (i != 0) y -= this.lines[i].padding; // besides the first line, use additional padding
-            float ih2 = this.tos[i].getHeight() / 2; // calculate the text object's half width
+        for (int i = 0; i < this.lines.size(); i++) { // go through each line
+            if (i != 0) y -= this.lines.get(i).padding; // besides the first line, use additional padding
+            float ih2 = this.tos.get(i).getHeight() / 2; // calculate the text object's half width
             y -= ih2; // iterate y by the text object's half-width
-            this.tos[i].setPos( // set the position
-                    this.lines[i].alignment == Line.Alignment.LEFT // if left aligned
-                            ? lx + this.tos[i].getWidth() / 2 // set x to the left
-                            : this.lines[i].alignment == Line.Alignment.CENTER // if center aligned
+            this.tos.get(i).setPos( // set the position
+                    this.lines.get(i).alignment == Line.Alignment.LEFT // if left aligned
+                            ? lx + this.tos.get(i).getWidth() / 2 // set x to the left
+                            : this.lines.get(i).alignment == Line.Alignment.CENTER // if center aligned
                             ? this.getX() // set x to center
-                            : rx - this.tos[i].getWidth() / 2 // if right aligned, set x to the right
+                            : rx - this.tos.get(i).getWidth() / 2 // if right aligned, set x to the right
                     , y); // then place the item there
             y -= ih2; // iterate y again by the current text object's half-width
-            y -= this.lines[i].padding; // add padding before next text object
+            y -= this.lines.get(i).padding; // add padding before next text object
         }
     }
 
@@ -168,9 +183,9 @@ public class EnhancedTextObject extends GameObject {
 
         // figure out a resolution to use to size the resulting texture
         float resolution = 0;
-        for (int i = 0; i < this.tos.length; i++) { // for each text object
-            // get its resolution relative to the pixel width of the text object
-            float r = ((float)this.tos[i].getPixelWidth() * this.tos[i].getModel().getXScale()) / this.getWidth();
+        for (TextObject to : this.tos) { // for each text object
+            float r = ((float) to.getPixelWidth() * to.getModel().getXScale())
+                    / this.getWidth(); // get its resolution relative to the pixel width of the text object
             if (r > resolution) resolution = r; // use the greatest resolution
         }
 
@@ -234,8 +249,9 @@ public class EnhancedTextObject extends GameObject {
      */
     @Override
     public void setXScale(float x) {
-        for (int i = 0; i < this.lines.length; i++) // for each list item in the list
-            this.tos[i].setXScale(this.lines[i].scale * x); // set its horizontal scale
+        this.overallXScale = x; // save as member
+        for (int i = 0; i < this.lines.size(); i++) // for each list item in the list
+            this.tos.get(i).setXScale(this.lines.get(i).scale * x); // set its horizontal scale
         this.position(); // reposition
     }
 
@@ -246,8 +262,9 @@ public class EnhancedTextObject extends GameObject {
      */
     @Override
     public void setYScale(float y) {
-        for (int i = 0; i < this.lines.length; i++) // for each list item in the list
-            this.tos[i].setYScale(this.lines[i].scale * y); // set its vertical scale
+        this.overallYScale = y; // save as member
+        for (int i = 0; i < this.lines.size(); i++) // for each list item in the list
+            this.tos.get(i).setYScale(this.lines.get(i).scale * y); // set its vertical scale
         this.position(); // reposition
     }
 
@@ -260,9 +277,12 @@ public class EnhancedTextObject extends GameObject {
      */
     @Override
     public void setScale(float x, float y) {
-        for (int i = 0; i < this.lines.length; i++) {// for each list item in the list
-            this.tos[i].setXScale(this.lines[i].scale * x); // set its horizontal scale
-            this.tos[i].setYScale(this.lines[i].scale * y); // set its vertical scale
+        // save as members
+        this.overallXScale = x;
+        this.overallYScale = y;
+        for (int i = 0; i < this.lines.size(); i++) {// for each list item in the list
+            this.tos.get(i).setXScale(this.lines.get(i).scale * x); // set its horizontal scale
+            this.tos.get(i).setYScale(this.lines.get(i).scale * y); // set its vertical scale
         }
         this.position(); // reposition
     }
@@ -281,18 +301,63 @@ public class EnhancedTextObject extends GameObject {
     /**
      * Updates the text at the given line
      * @param line the index of the line whose text should be updated, where index 0 refers to the top line. If out
-     *             of bounds, the occurence will be logged and ignored
+     *             of bounds, the occurrence will be logged and ignored
      * @param text the new text to display
      */
     public void setLineText(int line, String text) {
-        if (line < 0 || line >= this.lines.length) // if the index is out of bounds
-            Utils.log("Invalid line index '" + line + "' when there are " + lines.length + " lines.",
+        if (line < 0 || line >= this.lines.size()) // if the index is out of bounds
+            Utils.log("Invalid line index '" + line + "' when there are " + lines.size() + " lines.",
                     this.getClass(), "setLineText", false); // log and ignore
-        else if (!this.lines[line].getText().equals(text)) { // if the text is actually new
-            this.lines[line].setText(text); // update the line's text
-            this.tos[line].setText(text); // update the corresponding text object
+        else if (!this.lines.get(line).getText().equals(text)) { // if the text is actually new
+            this.lines.get(line).setText(text); // update the line's text
+            this.tos.get(line).setText(text); // update the corresponding text object
             this.position(); // and re-position
         }
+    }
+
+    /**
+     * Adds a line with the default configuration to the bottom of the enhanced text object
+     * @param font the font to use for the new line
+     * @param text the text to display in the line
+     * @return the index of the new line in the enhanced text object
+     */
+    public int addLine(Font font, String text) {
+        return this.addLine(font, new Line(text)); // create default line using given text, add, and return index
+    }
+
+    /**
+     * Adds the given line to the bottom of the enhanced text object
+     * @param font the font to use for the new line
+     * @param line the line to add
+     * @return the index of the new line in the enhanced text object
+     */
+    public int addLine(Font font, Line line) {
+        this.lines.add(line); // add the line
+        this.tos.add(createTextObject(font, line)); // add the corresponding text object
+        this.position(); // position
+        return this.lines.size() - 1; // return the new line's index
+    }
+
+    /**
+     * Removes the line with the corresponding index from the enhanced text object
+     * @param line the index of the line to remove. If invalid, the occurrence will be logged and ignored
+     */
+    public void removeLine(int line) {
+        if (line >= 0 && line < this.lines.size()) { // if valid index
+            this.lines.remove(line); // remove the line
+            this.tos.remove(line); // remove the corresponding text object
+            this.position(); // and re-position
+        } else Utils.log("Invalid line index '" + line + "' when there are " + lines.size() + " lines.",
+                    this.getClass(), "removeLine", false); // log and ignore
+    }
+
+    /**
+     * Cleans up the enhanced text object's background and contained text objected
+     */
+    @Override
+    public void cleanup() {
+        super.cleanup(); // cleanup background
+        for (TextObject to : this.tos) to.cleanup(); // cleanup text objects
     }
 
     /**
@@ -311,7 +376,7 @@ public class EnhancedTextObject extends GameObject {
          */
         private static final Alignment DEFAULT_ALIGNMENT = Alignment.LEFT; // default alignment value
         private static final float DEFAULT_SCALE = 0.5f;                   // default scale value
-        public static final float DEFAULT_PADDING = 0.01f;                 // default padding value
+        public static final float DEFAULT_PADDING = 0.005f;                 // default padding value
 
         /**
          * Members

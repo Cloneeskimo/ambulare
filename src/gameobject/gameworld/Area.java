@@ -203,23 +203,38 @@ public class Area {
      *                This cuts rendering time down by a lot (half the rendering time in some cases according to my
      *                tests!)
      */
-    public void render(ShaderProgram sp, List<WorldObject> os, PhysicsEngine.AABB camView) {
-        camView.scale(2f); // scale camera-view to avoid clipping large objects
+    public void render(ShaderProgram sp, List<WorldObject> os, PhysicsEngine.AABB camView, Camera cam) {
+        int blocksRendered = 0, decorRendered = 0; // keep track of block render count and decor render count
+        // all blocks are the same size so a smaller view can be used to cull out the blocks that to not need rendered
+        PhysicsEngine.AABB blockView = new PhysicsEngine.AABB(camView); // copy camera view
+        blockView.add(1f / cam.getZoom()); // only add enough to catch blocks
+        camView.scale(2f); // scale other objects' camera-view to avoid clipping large objects
         sp.setUniform("useDNC", 1); // enable day/night cycle usage
         sp.setUniform("useLights", 1); // enable usage of single lights after backdrop has been rendered
         this.backdrop.render(sp); // render the backdrop
-        renderBlocks(this.bm, sp, this.blocks[0], camView); // render the background blocks
-        for (GameObject o : this.decor[0]) // render background decor that is within the camera's view or is a light
-            if (camView.contains(o.getX(), o.getY()) || o.getMaterial() instanceof LightSourceMaterial) o.render(sp);
+        blocksRendered += renderBlocks(this.bm, sp, this.blocks[0], blockView); // render the background blocks
+        for (GameObject o : this.decor[0]) { // for each decor piece, if its within view or produces light
+            if (camView.contains(o.getX(), o.getY()) || o.getMaterial() instanceof LightSourceMaterial) {
+                o.render(sp); // render it
+                decorRendered++; // iterate decor rendered counter
+            }
+        }
         //for (GameObject o : this.decor[0]) o.render(sp);
-        renderBlocks(this.bm, sp, this.blocks[1], camView); // render the middleground blocks
+        blocksRendered += renderBlocks(this.bm, sp, this.blocks[1], blockView); // render the middleground blocks
         // render world objects (middleground) from the game world that are within the camera's view
         for (WorldObject wo : os) if (camView.contains(wo.getX(), wo.getY())) wo.render(sp);
         // disable light usage for foreground objects if the setting is set to false
         if (!this.lightForeground) sp.setUniform("useLights", 0);
-        renderBlocks(this.bm, sp, this.blocks[2], camView); // render the foreground blocks
+        blocksRendered += renderBlocks(this.bm, sp, this.blocks[2], blockView); // render the foreground blocks
         // render foreground decor that is within the camera's view
-        for (GameObject o : this.decor[1]) if (camView.contains(o.getX(), o.getY())) o.render(sp);
+        for (GameObject o : this.decor[1]) { // for each decor piece, if its within view or produces light
+            if (camView.contains(o.getX(), o.getY()) || o.getMaterial() instanceof LightSourceMaterial) {
+                o.render(sp); // render it
+                decorRendered++; // iterate decor rendered counter
+            }
+        }
+        Global.debugInfo.setField("decor", Integer.toString(decorRendered)); // show decor render count in debug
+        Global.debugInfo.setField("blocks", Integer.toString(blocksRendered)); // show block render count in debug
     }
 
     /**

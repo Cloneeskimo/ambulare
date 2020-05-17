@@ -19,13 +19,19 @@ import static org.lwjgl.opengl.GL11.*;
 public class GameEngine {
 
     /**
+     * Static Data
+     */
+
+    public static final float TIME_BETWEEN_METRIC_REPORTS = 0.75f; // time between debug metric reports/average calcs
+
+    /**
      * Members
      */
-    private static boolean debugging;            // whether or not the engine is reporting debugging info to the logic
-    private double[] debug;                      // info about debugging. See loop() for more info
     private final Timer timer;                   // timer used for accurate debugging and loop
+    private double[] debug;                      // info about debugging. See loop() for more info
     private GameLogic logic;                     // the logic the engine should follow
     private float logicTransitionTime;           // a timer for logic transitions
+    private boolean debugging;                   // whether or not the engine is reporting debugging info to the logic
 
     /**
      * Constructor
@@ -105,7 +111,7 @@ public class GameEngine {
 
             // timekeeping
             elapsedTime = this.timer.getElapsedTime(true); // get elapsed time since last loop
-            if (GameEngine.debugging) { // if debugging is enabled
+            if (this.debugging) { // if debugging is enabled
                 debug[0] += elapsedTime; // update the accumulator
                 updateDebugMetrics(1 / elapsedTime, debug, 0); // update FPS metrics
             }
@@ -116,7 +122,7 @@ public class GameEngine {
             // if debugging, record time in milliseconds before update
 
             // phase 2: update
-            if (GameEngine.debugging) debug[10] = (float) Timer.getTimeMilliseconds();
+            if (this.debugging) debug[10] = (float) Timer.getTimeMilliseconds();
             if (Global.resetAccumulator) { // if the accumulator needs to be reset
                 accumulator = 0f; // reset accumulator
                 Global.resetAccumulator = false; // reset accumulator resetting flag
@@ -127,7 +133,7 @@ public class GameEngine {
                     when it comes to things like collision */
                 accumulator -= interval; // account for the time for the update
             }
-            if (GameEngine.debugging) { // if debugging, calculate update time and report it to logic
+            if (this.debugging) { // if debugging, calculate update time and report it to logic
                 debug[11] = (float) Timer.getTimeMilliseconds(); // get time after update/before render
                 // update debugging metrics with update time
                 this.updateDebugMetrics(debug[11] - debug[10], debug, 1);
@@ -136,7 +142,7 @@ public class GameEngine {
             // phase 3: render
             this.render();  /* render outside of the above loop because, as opposed to updating, outdated renders are
                 useless wastes of GPU power */
-            if (GameEngine.debugging) // if debugging, update debugging metrics with render time
+            if (this.debugging) // if debugging, update debugging metrics with render time
                 this.updateDebugMetrics(Timer.getTimeMilliseconds() - debug[11], debug, 2);
 
             // phase 4: sync
@@ -146,10 +152,10 @@ public class GameEngine {
 
     /**
      * Updates debugging metrics by keeping track of an average and a worst for each value. If the globally set amount
-     * of time between reports has passed, information is reported to the logic. This information takes the form of an
-     * array of strings where each string contains the average and worst values for three debugging metrics in the
-     * following order: FPS, update time, and render time. The worst values are maintained over a period of calls to
-     * this method where type is not -1. That is, to reset the worst values, call this method with type set to -1
+     * of time between reports has passed, information is update in the global debug info. This information takes the
+     * form of an  array of strings where each string contains the average and worst values for three debugging metrics
+     * in the following order: FPS, update time, and render time. The worst values are maintained over a period of calls
+     * to this method where type is not -1. That is, to reset the worst values, call this method with type set to -1
      *
      * @param val       the value of the new debugging calculation
      * @param debugInfo the debug info array where index 0 should be an accumulator of time updated outside of this
@@ -167,13 +173,13 @@ public class GameEngine {
         if (type > 2 || type < 0) { // if an invalid type was given
             Utils.log("Invalid debugging info metric type given: " + type + ". Ignoring.", this.getClass(),
                     "updateDebugMetrics", false); // log the occurrence
-            return; // and reeturn
+            return; // and return
         }
         int i = 1 + (type * 3); // calculate starting index in debug info array for info for the given metric type
         if ((i == 1 && val < debugInfo[i]) || (i > 1 && val > debugInfo[i])) debugInfo[i] = val; // record new max/min
         debugInfo[i + 1] += val; // update sum of metrics
         debugInfo[i + 2] += 1; // update count of values included in sum
-        if (debugInfo[0] > Global.TIME_BETWEEN_METRIC_REPORTS) { // if a new report is due
+        if (debugInfo[0] > GameEngine.TIME_BETWEEN_METRIC_REPORTS) { // if a new report is due
             debugInfo[0] = 0; // reset the accumulator
             String[] info = new String[3]; // create info array
             for (int j = 0; j < info.length; j++) { // for each metric
@@ -183,7 +189,10 @@ public class GameEngine {
                 // reset the corresponding metric's values in the debug info array
                 debugInfo[2 + (j * 3)] = debugInfo[3 + (j * 3)] = 0;
             }
-            this.logic.reportDebugInfo(info); // report the info to the logic
+            // update fields in the global debug info enhanced text object
+            Global.debugInfo.setField("fps", info[0]);
+            Global.debugInfo.setField("update", info[1]);
+            Global.debugInfo.setField("render", info[2]);
         }
     }
 
@@ -198,9 +207,9 @@ public class GameEngine {
      */
     private void keyboardInput(int key, int action) {
         if (key == Global.DEBUG_TOGGLE_KEY && action == GLFW_RELEASE) { // if debug info toggling key,
-            GameEngine.debugging = !GameEngine.debugging; // toggle static flag
-            if (GameLogic.debugInfo != null) GameLogic.debugInfo.setVisibility(GameEngine.debugging); // update vis
-            if (!GameEngine.debugging && debug != null) this.updateDebugMetrics(0, this.debug, -1); // reset
+            this.debugging = !this.debugging; // toggle static flag
+            Global.debugInfo.setVisibility(this.debugging); // update vis
+            if (!this.debugging && debug != null) this.updateDebugMetrics(0, this.debug, -1); // reset
         } else if (key == Global.POLYGON_MODE_TOGGLE_KEY && action == GLFW_RELEASE) // if polygon toggle key pressed
             Global.togglePolygonMode(); // toggle the polygon mode
         logic.keyboardInput(key, action); // notify logic of input
@@ -254,6 +263,8 @@ public class GameEngine {
         this.logic.giveTransferData(GameLogic.logicChange.getTransferData()); // give new logic the transfer data
         this.logic.init(); // initialize new logic
         GameLogic.logicChange = null; // delete logic change data
+        Utils.log("Logic change performed successfully", this.getClass(), "performLogicChange",
+                false); // log successful logic change
     }
 
     /**
@@ -299,6 +310,7 @@ public class GameEngine {
         wd.addChild("height", Integer.toString(Global.gameWindow.getHeight())); // add window height
         Node.nodeToFile(wd, new Utils.Path("/wd.node", false)); // and save node
         this.logic.cleanup(); // tell logic to cleanup
+        Global.cleanup(); // cleanup global members
         SoundManager.cleanup(); // cleanup the sound manager
     }
 }

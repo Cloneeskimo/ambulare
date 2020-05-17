@@ -697,6 +697,13 @@ public class PhysicsEngine {
          */
         public PhysicsProperties() {
         }
+
+        /**
+         * @return the kind of slope the corresponding object is on, or null if none
+         */
+        public SlopeType onSlope() {
+            return this.onSlope;
+        }
     }
 
     /**
@@ -715,7 +722,7 @@ public class PhysicsEngine {
         private float w2, h2; // half-width and half-height
 
         /**
-         * Constructor
+         * Constructs the axis-aligned bounding box using the given center bounding and width/height
          *
          * @param cx the center-point x
          * @param cy the center-point y
@@ -727,6 +734,17 @@ public class PhysicsEngine {
             this.cy = PhysicsEngine.round(cy);
             this.w2 = PhysicsEngine.round(w / 2);
             this.h2 = PhysicsEngine.round(h / 2);
+        }
+
+        /**
+         * Constructs the axis-aligned bounding box by copying the given other axis-aligned bounding box
+         * @param other the other AABB whose properties to copy
+         */
+        public AABB(AABB other) {
+            this.cx = other.cx;
+            this.cy = other.cy;
+            this.w2 = other.w2;
+            this.h2 = other.h2;
         }
 
         /**
@@ -742,14 +760,22 @@ public class PhysicsEngine {
         }
 
         /**
-         * Multiplies the width and height of the axis-aligned bounding box by the given factor, essentially shrinking
-         * or expanding it
+         * Multiplies the width and height of the axis-aligned bounding box by the given factor
          *
          * @param factor the factor to scale by
          */
         public void scale(float factor) {
             this.w2 *= factor; // scale width
             this.h2 *= factor; // scale height
+        }
+
+        /**
+         * Adds the given value to the width/height of the axis-aligned bounding box
+         * @param amount the amount to add
+         */
+        public void add(float amount) {
+            this.w2 += amount / 2; // add amount to width
+            this.h2 += amount / 2; // add amount to height
         }
 
         /**

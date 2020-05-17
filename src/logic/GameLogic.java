@@ -9,6 +9,7 @@ import graphics.Model;
 import graphics.ShaderProgram;
 import utils.Global;
 import utils.Node;
+import utils.SoundManager;
 import utils.Utils;
 
 /*
@@ -44,7 +45,6 @@ public abstract class GameLogic {
                                                    the logic change. This may be null if no transfer data was given */
     protected boolean renderROC = true;         /* extending classes can disable ROC rendering if they want to render in
                                                    some other manner that does not involve an ROC */
-    public static EnhancedTextObject debugInfo; // debugging info to display when the engine gives info
 
     /**
      * Gives the game logic transfer data to use when initializing
@@ -71,12 +71,11 @@ public abstract class GameLogic {
      * In order for debug info to properly display in the HUD, this super method should be called
      */
     protected void initOthers() {
-        // create debug info
-        debugInfo = new EnhancedTextObject(new Material(new float[] {0f, 0f, 0f, 0.5f}),
-                Global.font, " \n \n ", EnhancedTextObject.Line.DEFAULT_PADDING * 2);
-        debugInfo.setVisibility(false); // don't make visible until engine reports debugging data
-        this.roc.addStaticObject(debugInfo, TAG_DEBUG_INFO, false, new ROC.PositionSettings(-1f, 1f,
-                true, 0.05f)); // add debug info text to ROC
+        this.roc.addStaticObject(Global.debugInfo, TAG_DEBUG_INFO, false, new ROC.PositionSettings(-1f,
+                1f, true, 0.05f)); // add debug info text to ROC
+        Global.debugInfo.useSizeChangeCallback(() -> { // when the debug info size changes
+            this.roc.ensurePlacement(TAG_DEBUG_INFO); // ensure its placement in the ROC
+        });
     }
 
     /**
@@ -141,28 +140,13 @@ public abstract class GameLogic {
     }
 
     /**
-     * This is called by the engine when there is new debugging information. The game logic passes this along to an
-     * enhanced text object
-     *
-     * @param info the new debugging information, where each index is as outlined in the Engine.updateDebugMetrics()
-     */
-    public void reportDebugInfo(String[] info) {
-        if (debugInfo != null) { // if the debug info enhanced text object is instantiated
-            for (int i = 0; i < info.length; i++) // for each line of info
-                debugInfo.setLineText(i,
-                        (i == 0 ? "FPS: " : i == 1 ? "Update: " : "Render: ")
-                                + info[i]); // update the corresponding line in the enhanced text object
-            this.roc.ensurePlacement(TAG_DEBUG_INFO); // ensure its position
-        }
-    }
-
-    /**
      * Cleans up this logic
      * Extending classes should override this to cleanup any additional members they need to do, but they should ALWAYS
      * call super.cleanup() to clean up the base logic members as well
      */
     public void cleanup() {
         this.roc.cleanup(); // cleanup ROC
+        Utils.log("GameLogic cleaned up", this.getClass(), "cleanup", false); // log
     }
 
     /**

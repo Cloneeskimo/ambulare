@@ -147,11 +147,11 @@ public class Model {
     /**
      * Members
      */
+    protected final float[] modelCoords; // the model's model coordinates
     protected final int[] ids;           /* integer array to store the various GL object ids: [0] - VAO ID,
                                             [1] - model coordinate VBO ID, [2] - texture coordinate VBO ID,
                                             [3] - index VBO ID */
     protected final int idx;             // the amount of vertices this shape has
-    private final float[] modelCoords;   // the model's model coordinates
     private final float uw, uh;          // width and height of the model when not rotated
     private float sx = 1f, sy = 1f;      // horizontal and vertical scale
     private float r = 0f;                // rotation in radians

@@ -62,13 +62,13 @@ bool cut() {
     float cutStart = 1 - cutRadius;// the start of the cut-applicable area is 1 - the radius
 
     // transform x based on animation, ensureing that cuts apply to all frames instead of just the overall texture
-    float x = (modelCoordsF.x + 1);// transform x from (-1, 1) to (0, 2)
-    x /= 2;// transform x from (0, 2) to (0, 1)
-    x *= frames;// transform x from (0, 1) to (0, frames)
-    x = mod(x, 1);// transform x from (0, frames) to (0, 1) based on current frame
-    x *= 2;// transform x from (0, 1) based on current frame to (0, 2) based on current frame
-    x -= 1;// transform x from (0, 2) back to (-1, 1) based on current frame
-    vec2 consider = vec2(x, modelCoordsF.y);// create the final position to consider for cutting
+    float x = (modelCoordsF.x + 1); // transform x from (-1, 1) to (0, 2)
+    x /= 2; // transform x from (0, 2) to (0, 1)
+    x *= frames; // transform x from (0, 1) to (0, frames)
+    x = mod(x, 1); // transform x from (0, frames) to (0, 1) based on current frame
+    x *= 2; // transform x from (0, 1) based on current frame to (0, 2) based on current frame
+    x -= 1; // transform x from (0, 2) back to (-1, 1) based on current frame
+    vec2 consider = vec2(x, modelCoordsF.y); // create the final position to consider for cutting
 
     // determine cutting
     if (slope == 1) { // slope cutting

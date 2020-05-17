@@ -185,10 +185,15 @@ public class ROC {
      * Model, etc.) or if the object with the given tag is dependent on a different object's position which has recently
      * changed
      *
-     * @param tag the tag of the object whose placement should be ensured
+     * @param tag the tag of the object whose placement should be ensured. If no object exists with the given tag, the
+     *            occurrence will be logged and ignored
      */
     public void ensurePlacement(int tag) {
-        getStaticObject(tag).ensurePosition(Global.ar);
+        if (this.staticObjects.get(tag) != null) // if a static object exists with that tag
+            getStaticObject(tag).ensurePosition(Global.ar); // ensure its position
+        else // otherwise
+            Utils.log("Attempted to ensure the placement of an item with a non-existent tag: " + tag +
+                    ". Ignoring", this.getClass(), "ensurePlacement", false); // log and ignore
     }
 
     /**
@@ -301,7 +306,10 @@ public class ROC {
         if (this.sp != null) this.sp.cleanup(); // cleanup shader program
         if (this.gameWorld != null) this.gameWorld.cleanup(); // cleanup game worlds
         if (this.fadeBox != null) this.fadeBox.cleanup(); // cleanup fade box
-        for (StaticObject so : this.staticObjects.values()) so.o.cleanup(); // cleanup static objects
+        for (StaticObject so : this.staticObjects.values()) {
+            if (so.o != Global.debugInfo) // if the static object is not the debug info
+                so.o.cleanup(); // cleanup static objects
+        }
         AnimatedTexture.texCoords = new HashMap<>(); // reset animated texture texture coordinate VBOs
     }
 

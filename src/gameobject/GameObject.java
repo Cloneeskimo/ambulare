@@ -307,6 +307,11 @@ public class GameObject {
     }
 
     /**
+     * @return whether the game object is visible
+     */
+    public boolean visible() { return this.visible; }
+
+    /**
      * @return the material used to render the game object
      */
     public Material getMaterial() {

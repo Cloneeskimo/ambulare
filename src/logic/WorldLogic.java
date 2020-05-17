@@ -33,9 +33,8 @@ public class WorldLogic extends GameLogic {
     /**
      * ROC (UI Element) Tags
      */
-    private static final int TAG_PLAYER_POS = 0; // player position text
-    private static final int TAG_RETURN = 2;     // return button
-    private static final int TAG_AREA = 3;       // area name text
+    private static final int TAG_RETURN = 1;     // return button
+    private static final int TAG_AREA = 2;       // area name text
 
     /**
      * Members
@@ -104,11 +103,6 @@ public class WorldLogic extends GameLogic {
      */
     private void initHUDObjects() {
 
-        // create and add player position text
-        this.roc.addStaticObject(new TextObject(Global.font, "(0, 0)"), TAG_PLAYER_POS, false,
-                new ROC.PositionSettings(-1f, -1f, true, 0.02f)); // create pos text
-        this.roc.getStaticGameObject(TAG_PLAYER_POS).setScale(0.6f, 0.6f); // scale text down
-
         // create and add return button
         TexturedButton returnButton = new TextButton(Global.font, "Return").solidify(); // create return button
         returnButton.setScale(0.6f, 0.6f); // scale return button down by about half
@@ -162,10 +156,10 @@ public class WorldLogic extends GameLogic {
     @Override
     public void update(float interval) {
         super.update(interval); // update game logic members
-        // update player position text on hud
-        if (((TextObject) this.roc.getStaticGameObject(TAG_PLAYER_POS)).setText("(" + player.getX() + ", " +
-                player.getY() + ")"))
-            this.roc.ensurePlacement(TAG_PLAYER_POS); // update placement if changed
+
+        /*
+         * Update Player
+         */
         int vx = 0; // calculate player horizontal velocity starting at zero
         if (Global.gameWindow.isKeyPressed(GLFW_KEY_D)) vx += 4; // if D is pressed, move player to the right
         if (Global.gameWindow.isKeyPressed(GLFW_KEY_A)) vx -= 4; // if A is pressed, move player to the left
@@ -175,5 +169,29 @@ public class WorldLogic extends GameLogic {
             player.setIsMoving(true); // flag that the player is moving
             player.setFacing(vx > 0); // make player face the correct direction
         }
+
+        /*
+         * Update Debug Info
+         */
+        if (Global.debugInfo.visible()) { // if the debug info is visible
+            // update player position on the debug info
+            Global.debugInfo.setField("pos", "(" + player.getX() + ", " + player.getY() + ")");
+            // update player velocity on the debug info
+            Global.debugInfo.setField("v", "(" + player.getVX() + ", " + player.getVY() + ")");
+            // update the slope field on the debug info
+            PhysicsEngine.SlopeType slope = player.getPhysicsProperties().onSlope();
+            Global.debugInfo.setField("slope", slope != null ? slope.toString() : "false");
+        }
+    }
+
+    /**
+     * Cleans up by removing fields from the debug info that are specific to world logic
+     */
+    @Override
+    public void cleanup() {
+        super.cleanup(); // cleanup normal game logic members
+        Global.debugInfo.removeField("pos"); // remove player position field
+        Global.debugInfo.removeField("v"); // remove player velocity field
+        Global.debugInfo.removeField("slope"); // remove slope field
     }
 }

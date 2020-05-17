@@ -1,7 +1,16 @@
 package utils;
 
+import gameobject.ui.EnhancedTextObject;
 import graphics.Font;
+import graphics.Material;
+import graphics.ShaderProgram;
 import graphics.Window;
+import org.lwjgl.system.CallbackI;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_1;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_2;
@@ -22,14 +31,14 @@ public class Global {
     /**
      * Static Data
      */
-    public static final String VERSION = "com108"; // the version of the game
+    public static final String VERSION = "com109"; // the version of the game
     public static final String WINDOW_TITLE = "Ambulare " + VERSION; // the window title
-    public static final float TIME_BETWEEN_METRIC_REPORTS = 0.25f; // time between debug metric reports/average calc
-    public static final int DEBUG_TOGGLE_KEY = GLFW_KEY_1; // the key to toggle debug reporting in the engine
     public static final int POLYGON_MODE_TOGGLE_KEY = GLFW_KEY_2; // the key to toggle between fill/line polygon modes
+    public static final int DEBUG_TOGGLE_KEY = GLFW_KEY_1;  // key to toggle debug reporting
     public static final int TARGET_FPS = 60; // the target frames per second when vertical sync is off
     public static final int TARGET_UPS = 60; // the target updates per second regardless of vertical sync
     public static final boolean V_SYNC = true; // whether to enable vertical sync in the Window
+    public static DebugInfo debugInfo; // an extended enhanced text object to display debug info
     public static Window gameWindow; // GLFW window hosting the game
     public static Font font; // font used everywhere throughout the program
     public static float ar = 0f; // the current aspect ratio of the game's window
@@ -42,7 +51,7 @@ public class Global {
     private static boolean polygonMode; // the current polygon mode used by GL (lines or fill)
 
     /**
-     * Initialize any global members
+     * Initializes global members
      */
     public static void init() {
         // log game version
@@ -50,7 +59,18 @@ public class Global {
         // initialize the global font
         Global.font = new Font(new Utils.Path("/textures/ui/font.png", true),
                 Node.pathContentsToNode(new Utils.Path("/misc/font.node", true)));
-        Utils.log("Global font initialized", Global.class, "init", false); // log
+        Global.debugInfo = new DebugInfo(); // initialize debug info
+        Global.debugInfo.setVisibility(false); // set debug info visibility to false initially
+        Utils.log("Global members initialized", Global.class, "init", false); // log
+    }
+
+    /**
+     * Cleans up global members
+     */
+    public static void cleanup() {
+        Global.font.getSheet().cleanup(); // cleanup global font sheet texture
+        Global.debugInfo.cleanup(); // cleanup debug info
+        Utils.log("Global members cleaned up", Global.class, "cleanup", false); // log
     }
 
     /**
@@ -103,5 +123,83 @@ public class Global {
      */
     public enum ThemeColor {
         GRAY, WHITE, DARK_GREEN, GREEN, SKY_BLUE
+    }
+
+    /**
+     * A generic callback functional interface
+     */
+    @FunctionalInterface
+    public interface Callback {
+        void invoke(); // called when the generic event occurs
+
+    }
+
+    /**
+     * An extension of enhanced text objects which allows for easy reporting of debug information by allowing for
+     * convenient editing of specific debug fields dynamically
+     */
+    public static class DebugInfo extends EnhancedTextObject {
+
+        /**
+         * Members
+         */
+        private final Map<String, Integer> fields = new HashMap<>(); // map from debug fields to line indices
+        private Callback sizeChangeCallback;                         // a callback to invoke when the size changes
+
+        /**
+         * Constructor
+         */
+        public DebugInfo() {
+            // call super with pre-defined settings for debug information
+            super(new Material(new float[] { 0f, 0f, 0f, 0.33f }), Global.font, "version: " + Global.VERSION,
+                    Line.DEFAULT_PADDING * 2f);
+            this.setScale(0.75f, 0.75f); // scale down slightly
+        }
+
+        /**
+         * Updates a specific debug field to the given value which will then be displayed in the debug info. Note that
+         * any calls to this will be ignored if the debug info is invisible
+         * @param field the field to update; for example, "FPS" or "Render"
+         * @param value the new value; for example, "60" or "13 ms"
+         */
+        public void setField(String field, String value) {
+            if (!this.visible) return; // do not update anything if not even visible
+            // save width and height before field is set
+            float w = this.getWidth();
+            float h = this.getHeight();
+            if (this.visible) { // only update if visible
+                Integer index = this.fields.get(field); // get the line index of the field
+                // if new field, add and save index to map
+                if (index == null) this.fields.put(field, this.addLine(Global.font, field + ": " + value));
+                else this.setLineText(index, field + ": " + value); // otherwise, update text at line
+            }
+            // if the size has changed and there is a size change callback
+            if (this.sizeChangeCallback != null && (this.getWidth() != w || this.getHeight() != h))
+                this.sizeChangeCallback.invoke(); // invoke the size change callback
+        }
+
+        /**
+         * Removes the line corresponding to the given field from the debug info
+         * @param field the field whose line should be removed. If no line with the given field exists, the occurrence
+         *              will be logged and ignored
+         */
+        public void removeField(String field) {
+            Integer index = this.fields.remove(field); // get the index of the line corresponding to the given field
+            if (index == null) // if there is no corresponding line
+                Utils.log("Field '" + field + "' cannot be removed as it does not exist", this.getClass(),
+                        "removeField", false); // log and ignore
+            else { // otherwise
+                this.removeLine(index); // remove the corresponding line
+                for (String s : this.fields.keySet()) // and for all fields, if their index was greater than given one
+                    if (this.fields.get(s) > index) this.fields.put(s, this.fields.get(s) - 1); // lower its index
+            }
+        }
+
+        /**
+         * Specifies a callback to invoke when the size of the debug info changes
+         */
+        public void useSizeChangeCallback(Callback cb) {
+            this.sizeChangeCallback = cb; // save callback as member
+        }
     }
 }

@@ -106,6 +106,7 @@ public class Camera {
      */
     public void setZoom(float z) {
         this.zoom = Math.min(Camera.MAX_ZOOM, Math.max(Camera.MIN_ZOOM, z));
+        Global.debugInfo.setField("zoom", Float.toString(this.zoom));
     }
 
     /**

@@ -1,0 +1,124 @@
+area:
+{
+    # specify the name of the area
+    name: Menu Area
+
+    # specify that lights should be applied to foreground objects
+    light_foreground: true
+
+    # specify the backdrop details
+    backdrop: material_backdrop
+    {
+        texture_paths:
+        {
+            resource_path: /textures/backdrop.png
+        }
+    }
+
+    # provide a key mapping from characters in the layout to blocks
+    block_key:
+    {
+        d: resfrom /stories/mainstory/blocks/dirt.node
+        g: resfrom /stories/mainstory/blocks/grass.node
+        G: resfrom /stories/mainstory/blocks/grass_nocut.node
+    }
+
+    # provides a key mapping characters in the layout to decor
+    decor_key:
+    {
+        # background weeds
+        w:
+        {
+            texture_paths:
+            {
+                resource_path: /textures/decor/foliage/weeds.png
+                resource_path: /textures/decor/foliage/weeds2.png
+            }
+            pin: below
+            x_random_interval: 0.4f
+            y_offset: -0.09f
+        }
+
+        # background dead tree
+        t:
+        {
+            texture_paths:
+            {
+                resource_path: /textures/decor/foliage/dead_tree.png
+            }
+            pin: below
+            x_random_interval: 0.4f
+            light_source:
+            {
+                glow: 4 1f 1f 1f
+                reach: 2f
+            }
+        }
+
+        # foreground weeds
+        W:
+        {
+            texture_paths:
+            {
+                resource_path: /textures/decor/foliage/weeds.png
+                resource_path: /textures/decor/foliage/weeds2.png
+            }
+            pin: below
+            x_random_interval: 0.4f
+            y_offset: -0.09f
+        }
+
+        # foreground dead tree
+        T:
+        {
+            texture_paths:
+            {
+                resource_path: /textures/decor/foliage/dead_tree.png
+            }
+            pin: below
+            x_random_interval: 0.4f
+            y_offset: -0.09f
+            light_source:
+            {
+                reach: 2f
+            }
+        }
+    }
+
+    # specify the layout of the background
+    background_layout:
+    {
+        0:
+        1:
+        2:                            dddddddd
+        3:                            dddddddd
+        4:                            dddddddd
+        5:                            dddddddd
+        6:
+        7:
+    }
+
+    # specify the layout of the middleground
+    middleground_layout:
+    {
+        0: wwwwwwwwwwwwwwwtw        ddddwtwwtw
+        1: dddwtw   d   wddd        dddddddddd
+        2: dddddd       ddddd     www ddddddddwwwwwww     wwww
+        3: ddddddw wwwdddddddd   wwww ww w  www  wwtw     wtww
+        4: dddddddddddddddddddd  ddddwwwwwwwwwwwwdddd     dddd
+        5:   dddddddddddddddddd  dddddddddddddddddddd     dddd
+        6:       ddddddd           ddddddddddddddddd
+        7:                              dddddd
+    }
+
+    # specify the layout of the foreground
+    foreground_layout:
+    {
+        0:                          gggg
+        1: ggg           ggg
+        2:    ggg     WTg   g
+        3:        T   gG     g   T W
+        4:       GgggG        g  gggg            gggg     gggg
+        5:                           G        GgG
+    }
+}
