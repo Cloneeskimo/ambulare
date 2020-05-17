@@ -42,8 +42,27 @@ area:
                 resource_path: /textures/decor/foliage/weeds2.png
             }
             pin: below
-            x_random_interval: 0.4f
-            y_offset: -0.09f
+            x_random_interval: 0.35f
+            y_offset: -0.06f
+            rotate_on_slope: true
+        }
+
+        # hanging lamps
+        l:
+        {
+            texture_paths:
+            {
+                resource_path: /textures/decor/lighting/hanging-lamp.png
+            }
+            pin: above
+            x_random_interval: 0.35f
+            y_offset: 0.06f
+            y_light_offset: -0.5f
+            light_source:
+            {
+                intensity: 1.8f
+                reach: 4f
+            }
         }
     }
 
@@ -51,15 +70,15 @@ area:
     middleground_layout:
     {
         00: ggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg
-        01: ggggggggggggggggggggggggggggggggggggggggg                     g      gg
-        02: g       g                           gggg                             gg
-        03: gg                                   gg      g   www  ww  ww         gg
+        01: ggggggggggggggggggggggggggggggggggggggggg    l          l     g      gg
+        02: g   l   g     l             l       gggg      wwwwww                 gg
+        03: gg                                   ggl     g   www  ww  ww         gg
         04: gggwwwwwwwww  ww  ww  ww  wwwww      gg          ggg  gg  gg  ggggggggg
-        05: gggggggggggg  gg  gg  gg  ggggg     ggg  g       gg
-        06:           gg  gg  gg  gg     gg    gggg    g    gg
+        05: gggggggggggg  gg  gg  gg  ggggg     ggg  g    wwwgg
+        06:           gg  gg  gg  gg     gg    ggggw   g    gg
         07:                              g    gggggg       ggg
-        08:                              gg       gg      gg gg
-        09:                              ggg                  g
+        08:                              gg     l gg      gg gg
+        09:                              ggg               l  g
         10:                              gggg wwwwwwwwwgwww  gg
         11:                              ggggggggggggggggggggg
     }

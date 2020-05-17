@@ -152,6 +152,7 @@ public class MenuLogic extends GameLogic {
         title.setPos(0f, aboveWindow()); // move title to be up and out of view
         this.renderROC = false; // do not render ROC on startup at first
         initSP(); // initialize the shader programs
+        this.createNewGameUI(); // create the new game UI elements
     }
 
     /**
@@ -523,7 +524,6 @@ public class MenuLogic extends GameLogic {
                 break;
 
             case 22: // PHASE 22: create (if not done already) new game story selection UI and bring it into view
-                this.createNewGameUI(); // create new game UI elements if not done already
                 // make sure the prompt has the story selection message showing
                 ((TextObject) this.roc.getStaticGameObject(TAG_PROMPT)).setText("Choose a story:");
                 this.roc.moveStaticObject(TAG_STORY_LIST, new ROC.PositionSettings(0f, 0f, false,

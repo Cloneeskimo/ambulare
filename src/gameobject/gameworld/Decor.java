@@ -40,10 +40,12 @@ public abstract class Decor {
      * @param decor        the two lists of game objects to populate with decor where decor[0] should be background
      *                     decor and decor[1] should be foreground decor
      * @param ats          the list of animated textures to populate
-     * @param blockMap     the block map to use for pinning decors - should be the middleground block map
+     * @param blockMap     the block map to use for pinning decors
+     * @param slopeMap     the slope map to use for pinning decor
      */
     public static void loadLayoutDecor(Node decorKey, Node background, Node middleground, Node foreground,
-                                       List<GameObject>[] decor, List<AnimatedTexture> ats, boolean[][] blockMap) {
+                                       List<GameObject>[] decor, List<AnimatedTexture> ats, boolean[][] blockMap,
+                                       PhysicsEngine.SlopeType[][] slopeMap) {
         Map<Character, DecorInfo> key = parseKeyData(decorKey); // parse key
         Map<List<Object>, Material> mm = new HashMap<>(); /* maps from a list of properties of a decor to a
             corresponding material. This is used to maintain high space efficiency and low memory usage by minimizing
@@ -55,9 +57,9 @@ public abstract class Decor {
             field because some block information specifies multiple textures to be randomized over */
 
         // load decor from all three layers, putting middleground decor into the background
-        if (background != null) loadLayoutLayerDecor(mm, decor[0], background, key, ats, blockMap); // load background
-        loadLayoutLayerDecor(mm, decor[0], middleground, key, ats, blockMap); // load middleground decor, place in back
-        if (foreground != null) loadLayoutLayerDecor(mm, decor[1], foreground, key, ats, blockMap); // load foreground
+        if (background != null) loadLayoutLayerDecor(mm, decor[0], background, key, ats, blockMap, slopeMap);
+        loadLayoutLayerDecor(mm, decor[0], middleground, key, ats, blockMap, slopeMap); // middleground decor -> back
+        if (foreground != null) loadLayoutLayerDecor(mm, decor[1], foreground, key, ats, blockMap, slopeMap);
 
         // log decor loading metrics
         int totalDecor = decor[0].size() + decor[1].size(); // count total decor
@@ -73,11 +75,12 @@ public abstract class Decor {
      * @param layout   the layout to load from
      * @param key      the decor key to use
      * @param ats      the list of animated textures to populate
-     * @param blockMap the block map to use for pinning decors - should be the middleground block map
+     * @param blockMap the block map to use for pinning decors
+     * @param slopeMap the slope map to use for pinning decors
      */
     public static void loadLayoutLayerDecor(Map<List<Object>, Material> mm, List<GameObject> decor,
                                             Node layout, Map<Character, DecorInfo> key, List<AnimatedTexture> ats,
-                                            boolean[][] blockMap) {
+                                            boolean[][] blockMap, PhysicsEngine.SlopeType[][] slopeMap) {
         List<Node> rows = layout.getChildren(); // get the rows of the layout
         int diff = blockMap[0].length - rows.size(); // find diff in rows of the current layer and the overall layout
         for (int i = 0; i < rows.size(); i++) { // go through each row
@@ -100,8 +103,10 @@ public abstract class Decor {
                         Texture t = null; // create texture reference as null for now
                         if (di.texturePaths.size() > 0) { // if the decor is textured
                             t = new Texture((Utils.Path) mmKey.get(1)); // create the texture
-                            // apply animation if the block is animated
-                            if (di.animated()) t = t.animate(di.animFrames, di.animTime, true);
+                            if (di.animated()) { // if the texture is animated
+                                t = t.animate(di.animFrames, di.animTime, true); // animate it
+                                ats.add((AnimatedTexture)t); // and add it to the animated textures list
+                            }
                         }
                         if (di.light != null) { // if the decor should emit light
                             m = new LightSourceMaterial(t, di.color, di.bm, di.light); // create material with light
@@ -114,33 +119,67 @@ public abstract class Decor {
                     GameObject go = new GameObject(Model.getStdGridRect(1, 1), m);
                     if (m.isTextured()) go.setScale(m.getTexture().getWidth() / 32f, m.getTexture().getHeight() / 32f);
 
-                    // pin the game object according to the deco info's pin options (if there os a pin)
-                    Pair<Integer> fbid = di.pin == 0 ? new Pair<>(x, y) : lastFreeBlockInDirection(blockMap, x, y,
-                            di.pin == 1 ? -1 : (di.pin == 3 ? 1 : 0),
-                            di.pin == 2 ? 1 : (di.pin == 4 ? -1 : 0)
-                    ); // get the nearest grid cell not containing a block in the direction of the pin
-                    Pair<Float> pos = Transformation.getCenterOfCell(fbid); // get the center of the cell
-                    switch (di.pin) { // switch on the pin and translate the object accordingly
-                        case 1: // left
-                            pos.x += (go.getWidth() / 2) - 0.5f;
-                            break;
-                        case 2: // above
-                            pos.y += -(go.getHeight() / 2) + 0.5f;
-                            break;
-                        case 3: // right
-                            pos.x += -(go.getWidth() / 2) + 0.5f;
-                            break;
-                        case 4: // below
-                            pos.y += (go.getHeight() / 2) - 0.5f;
-                    }
+                    // get the last free cell in the pin's direction (or the placement cell if no pinning)
+                    PhysicsEngine.SlopeType[] slopeFound = new PhysicsEngine.SlopeType[1];
+                    Pair<Integer> fcid = di.pin == 0 ? new Pair<>(x, y) : lastFreeCellInDirection(blockMap, slopeMap,
+                            slopeFound, x, y,
+                            di.pin == 1 ? -1 : di.pin == 3 ? 1 : 0,
+                            di.pin == 2 ? 1 : di.pin == 4 ? -1 : 0
+                    ); // get the nearest cell not containing a block or slope in the direction of the pin
+                    Pair<Float> pos = Transformation.getCenterOfCell(fcid); // get the center of the cell
 
-                    // apply offset and set final position
+                    // apply offset
                     pos.x += di.xOffset; // apply horizontal offset
                     pos.y += di.yOffset; // apply vertical offset
                     if (di.xRandInterval != 0f) // apply random horizontal offset
                         pos.x += (float) (Math.random() * 2 * di.xRandInterval) - di.xRandInterval;
                     if (di.yRandInterval != 0f) // apply random vertical offset
                         pos.y += (float) (Math.random() * 2 * di.yRandInterval) - di.yRandInterval;
+
+                    // apply pin and slope rotation (if flag set
+                    switch (di.pin) { // switch on the pin and translate the object accordingly
+                        case 1: // left
+                            pos.x += (go.getWidth() / 2) - 0.5f;
+                            if (slopeFound[0] == PhysicsEngine.SlopeType.NegativeBottom) { // on neg bottom slope
+                                pos.x -= (pos.y - (float)fcid.y); // translate x accordingly
+                                if (di.rotateOnSlope) go.setRotDeg(-45f); // rotate if flag set
+                            } else if (slopeFound[0] == PhysicsEngine.SlopeType.PositiveTop) { // on pos top slope
+                                pos.x -= 1 - (pos.y - (float)fcid.y); // translate x accordingly
+                                if (di.rotateOnSlope) go.setRotDeg(45f); // rotate if flag set
+                            }
+                            break;
+                        case 2: // above
+                            pos.y += -(go.getHeight() / 2) + 0.5f;
+                            if (slopeFound[0] == PhysicsEngine.SlopeType.PositiveTop) { // on positive top slope
+                                pos.y += (pos.x - (float)fcid.x); // translate y accordingly
+                                if (di.rotateOnSlope) go.setRotDeg(45f); // rotate if flag set
+                            } else if (slopeFound[0] == PhysicsEngine.SlopeType.NegativeTop) { // on neg top sslope
+                                pos.y += 1 - (pos.x - (float)fcid.x); // translate y accordingly
+                                if (di.rotateOnSlope) go.setRotDeg(-45f); // rotate if flag set
+                            }
+                            break;
+                        case 3: // right
+                            pos.x += -(go.getWidth() / 2) + 0.5f;
+                            if (slopeFound[0] == PhysicsEngine.SlopeType.PositiveBottom) { // on positive bottom slope
+                                pos.x += (pos.y - (float)fcid.y); // translate x accordingly
+                                if (di.rotateOnSlope) go.setRotDeg(45f); // rotate if flag set
+                            } else if (slopeFound[0] == PhysicsEngine.SlopeType.NegativeTop) { // on neg top slope
+                                pos.x += 1 - (pos.y - (float)fcid.y); // translate x accordingly
+                                if (di.rotateOnSlope) go.setRotDeg(-45f); // rotate if flag set
+                            }
+                            break;
+                        case 4: // below
+                            pos.y += (go.getHeight() / 2) - 0.5f;
+                            if (slopeFound[0] == PhysicsEngine.SlopeType.PositiveBottom) { // on positive bottom slope
+                                pos.y -= 1 - (pos.x - (float)fcid.x); // translate y accordingly
+                                if (di.rotateOnSlope) go.setRotDeg(45f); // rotate if flag set
+                            } else if (slopeFound[0] == PhysicsEngine.SlopeType.NegativeBottom) { // on neg bottom slope
+                                pos.y -= (pos.x - (float)fcid.x); // translate y accordingly
+                                if (di.rotateOnSlope) go.setRotDeg(-45f); // rotate if flag set
+                            }
+                    }
+
+                    // set final position
                     go.setPos(pos); // set the updated position for the decor
                     decor.add(go); // add to the decor list
                 }
@@ -162,18 +201,25 @@ public abstract class Decor {
     }
 
     /**
-     * Calculates the last free position (containing no block) in the given direction from the given starting block
+     * Calculates the last free cell (containing no block or slope) in the given direction from the given starting cell
      *
-     * @param blockMap the block map to use for checking
-     * @param x        the starting x
-     * @param y        the starting y
-     * @param dx       the change in x for the direction
-     * @param dy       the change in y for the direction
+     * @param blockMap   the block map to use for checking
+     * @param slopeMap   the slope map to use for checking
+     * @param slopeFound if a slope is found in the given direction, the type of the slope will be placed at index 0 of
+     *                   this array
+     * @param x          the starting x
+     * @param y          the starting y
+     * @param dx         the change in x for the direction
+     * @param dy         the change in y for the direction
      * @return a pair of integers containing the last free position (containing no block) in the given direction. This
      * will not take into account whether the starting position itself is free
      */
-    private static Pair<Integer> lastFreeBlockInDirection(boolean[][] blockMap, int x, int y, int dx, int dy) {
+    private static Pair<Integer> lastFreeCellInDirection(boolean[][] blockMap, PhysicsEngine.SlopeType[][] slopeMap,
+                                                         PhysicsEngine.SlopeType[] slopeFound, int x, int y, int dx,
+                                                         int dy) {
         while (!blockMap[x + dx][y + dy]) { // while there is no block in the given direction
+            slopeFound[0] = slopeMap[x + dx][y + dy]; // record slope in that direction if there is one
+            if (slopeFound[0] != null) break; // if there is one
             // keep going in that direction
             x += dx;
             y += dy;
@@ -205,6 +251,7 @@ public abstract class Decor {
                                                                            The following values can be used: (0) - none,
                                                                            (1) - left, (2) - above, (3) - right,
                                                                            (4) - below */
+        private boolean rotateOnSlope;                                  // whether to rotate when the decor is on slope
         private LightSource light;                                      // a light source if the decor should emit light
         private float lightXOffset;                                     // x offset of the light source if exists
         private float lightYOffset;                                     // y offset of the light source if exists
@@ -238,6 +285,10 @@ public abstract class Decor {
          * follows: right, left, above, below, none. If none, the object will be centered exactly at the position it's
          * character is at in the layout. For any of the other options, it will pin to the nearest block in that
          * direction. For example, if set to below, the object will be on the ground/floor beneath it
+         * <p>
+         * - rotate_on_slope [optional][default: false]: dictates whether the decor will rotate when on a slope. This is
+         * most useful for objects with flat side in the direction of their pin. Note that this rotation will only occur
+         * if the decor is pinned
          * <p>
          * - x_offset [optional][default: 0f]: defines the horizontal offset to use when placing the object (in amount
          * of blocks). Positive values correspond to moving the decor to the right while negative values correspond to
@@ -308,6 +359,7 @@ public abstract class Decor {
                                     .setLowerBound(0.01f),
                             new NodeLoader.LoadItem<>("pin", "none", String.class)
                                     .setAllowedValues(new String[]{"none", "left", "right", "above", "below"}),
+                            new NodeLoader.LoadItem<>("rotate_on_slope", false, Boolean.class),
                             new NodeLoader.LoadItem<>("x_offset", 0f, Float.class),
                             new NodeLoader.LoadItem<>("y_offset", 0f, Float.class),
                             new NodeLoader.LoadItem<>("x_random_interval", 0f, Float.class),
@@ -324,6 +376,7 @@ public abstract class Decor {
             this.bm = Material.BlendMode.valueOf(((String) decorInfo.get("blend_mode")).toUpperCase());
             this.animFrames = (Integer) decorInfo.get("animation_frames"); // save animation frames as member
             this.animTime = (Float) decorInfo.get("animation_time"); // save animation time as member
+            this.rotateOnSlope = (Boolean) decorInfo.get("rotate_on_slope"); // save slope rotation flag as member
             String pin = (String) decorInfo.get("pin"); // get pin info and set pin integer flag based on string value
             if (pin.equals("left")) this.pin = 1; // left -> 1
             else if (pin.equals("above")) this.pin = 2; // above -> 2

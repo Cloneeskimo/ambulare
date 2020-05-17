@@ -19,7 +19,7 @@
  * Constants
  */
 const int MAX_LIGHTS = 32; // the maximum amount of lights the shader will accept
-const float DARKNESS_FACTOR = 7; // how much to divide color by in order to simulate a lack of light
+const float DARKNESS_FACTOR = 9; // how much to divide color by in order to simulate a lack of light
 
 /*
  * A struct that defines properties of a light to use when shading nearby objects

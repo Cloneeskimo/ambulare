@@ -159,7 +159,7 @@ public class Area {
         this.slopeMap = (PhysicsEngine.SlopeType[][])maps[1]; // save slope map
         if (area.get("decor_key") != null) Decor.loadLayoutDecor((Node) (area.get("decor_key")),
                 (Node) (area.get("background_layout")), (Node) (area.get("middleground_layout")),
-                (Node) (area.get("foreground_layout")), this.decor, this.ats, this.blockMap); // load decor
+                (Node) (area.get("foreground_layout")), this.decor, this.ats, this.blockMap, this.slopeMap); // decor
         this.name = (String) (area.get("name")); // save name
         this.lightForeground = (Boolean) (area.get("light_foreground")); // save foreground lighting flag
         this.startingSunRotation = (float) (area.get("starting_sun_rotation")); // save starting sun rotation
@@ -210,8 +210,8 @@ public class Area {
         sp.setUniform("useLights", 1); // enable usage of single lights after backdrop has been rendered
         this.backdrop.render(sp); // render the backdrop
         renderBlocks(this.bm, sp, this.blocks[0], camView); // render the background blocks
-        // render background decor that is within the camera's view
-        for (GameObject o : this.decor[0]) if (camView.contains(o.getX(), o.getY())) o.render(sp);
+        for (GameObject o : this.decor[0]) // render background decor that is within the camera's view or is a light
+            if (camView.contains(o.getX(), o.getY()) || o.getMaterial() instanceof LightSourceMaterial) o.render(sp);
         //for (GameObject o : this.decor[0]) o.render(sp);
         renderBlocks(this.bm, sp, this.blocks[1], camView); // render the middleground blocks
         // render world objects (middleground) from the game world that are within the camera's view

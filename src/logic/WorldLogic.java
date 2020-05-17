@@ -28,7 +28,7 @@ import static org.lwjgl.glfw.GLFW.*;
 public class WorldLogic extends GameLogic {
 
     /**
-     * ROC (UI Element) Tagss
+     * ROC (UI Element) Tags
      */
     private static final int TAG_PLAYER_POS = 0; // player position text
     private static final int TAG_RETURN = 2;     // return button
@@ -79,12 +79,12 @@ public class WorldLogic extends GameLogic {
         Sound playerJumpSound = new Sound(new Utils.Path("/sounds/jump1.ogg", true)); // jump sound
         Sound playerLandSound = new Sound(new Utils.Path("/sounds/land1.ogg", true)); // land sound
         player = new Entity(this.transferData.getChild("name").getValue(), Model.getStdGridRect(1, 2),
-                new LightSourceMaterial(new MSAT(new Utils.Path("/textures/entity/player.png", true),
+                new Material(new MSAT(new Utils.Path("/textures/entity/player.png", true),
                         new MSAT.MSATState[]{
                                 new MSAT.MSATState(2, 0.5f),
                                 new MSAT.MSATState(1, 1f),
                                 new MSAT.MSATState(12, 0.035f)
-                        }), new LightSource(new float[]{1f, 1f, 1f, 1f}, 5f, 1.5f)));
+                        })));
         player.useSounds(playerStepSounds, playerJumpSound, playerLandSound); // give sounds to player
         // lower player bounding width slightly to fit better and appear more aesthetically
         player.setBoundingWidth(0.9f);
