@@ -1,6 +1,5 @@
 package gameobject;
 
-import gameobject.ui.ListObject;
 import graphics.*;
 import utils.FittingBox;
 import utils.Pair;
@@ -312,6 +311,13 @@ public class GameObject {
      */
     public Material getMaterial() {
         return this.material;
+    }
+
+    /**
+     * @return thee game object's model
+     */
+    public Model getModel() {
+        return this.model;
     }
 
     /**

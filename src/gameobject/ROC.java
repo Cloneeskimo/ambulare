@@ -63,7 +63,7 @@ public class ROC {
      */
     public void useGameWorld(Area startingArea) {
         // create game world with the starting area
-        this.gameWorld = new GameWorld(Global.GAME_WINDOW.getHandle(), startingArea);
+        this.gameWorld = new GameWorld(Global.gameWindow.getHandle(), startingArea);
         this.mip.useCam(this.gameWorld.getCam()); // tell the mouse input engine to use game world cam for calculations
     }
 
@@ -96,8 +96,7 @@ public class ROC {
     }
 
     /**
-     * Handles a resize of the window by ensuring the positions of all static objects and updating the fade box and
-     * background sizess
+     * Handles a resize of the window by ensuring the positions of all static objects and updating the fade box size
      */
     public void resized() {
         this.ensureAllPlacements(); // make sure static objects are correctly positioned
@@ -132,7 +131,7 @@ public class ROC {
     }
 
     /**
-     * Renders everything held within the ROC: the background, the game world, the static objects, and the fade box
+     * Renders everything held within the ROC: the game world, the static objects, and the fade box
      */
     public void render() {
         if (this.gameWorld != null) this.gameWorld.render(); // render the world first, underneath the static objects
@@ -143,16 +142,6 @@ public class ROC {
         for (StaticObject so : this.staticObjects.values()) so.o.render(this.sp); // render static objects
         if (this.fadeBox != null) fadeBox.render(this.sp); // render fade box if enabled
         this.sp.unbind(); // unbind shader program
-    }
-
-    /**
-     * Gives the ROC a background to render before anything else
-     *
-     * @param b the background to render before anything else
-     */
-    public void useBackground(GameObject b) {
-        b.setPos(0f, 0f); // set it to the center of the screen
-        b.setScale(2f * (Global.ar > 1f ? Global.ar : 1), 2f / (Global.ar < 1f ? Global.ar : 1)); // set size
     }
 
     /**

@@ -2,7 +2,6 @@ package utils;
 
 import graphics.Font;
 import graphics.Window;
-import org.lwjgl.Version;
 
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_1;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_2;
@@ -23,7 +22,7 @@ public class Global {
     /**
      * Static Data
      */
-    public static final String VERSION = "com107"; // the version of the game
+    public static final String VERSION = "com108"; // the version of the game
     public static final String WINDOW_TITLE = "Ambulare " + VERSION; // the window title
     public static final float TIME_BETWEEN_METRIC_REPORTS = 0.25f; // time between debug metric reports/average calc
     public static final int DEBUG_TOGGLE_KEY = GLFW_KEY_1; // the key to toggle debug reporting in the engine
@@ -31,12 +30,15 @@ public class Global {
     public static final int TARGET_FPS = 60; // the target frames per second when vertical sync is off
     public static final int TARGET_UPS = 60; // the target updates per second regardless of vertical sync
     public static final boolean V_SYNC = true; // whether to enable vertical sync in the Window
-    public static Window GAME_WINDOW; // GLFW window hosting the game
-    public static Font FONT; // font used everywhere throughout the program
+    public static Window gameWindow; // GLFW window hosting the game
+    public static Font font; // font used everywhere throughout the program
     public static float ar = 0f; // the current aspect ratio of the game's window
     public static boolean arAction = false; /* a flag representing how to distort coordinates when rendering depending
         on the game window's aspect ratio. If ar < 1.0f (height > width) then we will make objects shorter to compensate
         and if ar > 1.0f, the opposite is true */
+    public static boolean resetAccumulator; /* when true, the game engine will reset its loop time accumulator. This is
+        particularly useful after operations that will take a lot of time and that time may not need to be accounted
+        for, such as loading before an ROC fade */
     private static boolean polygonMode; // the current polygon mode used by GL (lines or fill)
 
     /**
@@ -46,7 +48,7 @@ public class Global {
         // log game version
         Utils.log("Ambulare Version: " + VERSION, Global.class, "init", false);
         // initialize the global font
-        Global.FONT = new Font(new Utils.Path("/textures/ui/font.png", true),
+        Global.font = new Font(new Utils.Path("/textures/ui/font.png", true),
                 Node.pathContentsToNode(new Utils.Path("/misc/font.node", true)));
         Utils.log("Global font initialized", Global.class, "init", false); // log
     }
@@ -55,7 +57,7 @@ public class Global {
      * Updates the global aspect ratio and aspect ratio variables
      */
     public static void updateAr() {
-        Global.ar = (float) GAME_WINDOW.getFBWidth() / (float) GAME_WINDOW.getFBHeight(); // calculate aspect ratio
+        Global.ar = (float) gameWindow.getFBWidth() / (float) gameWindow.getFBHeight(); // calculate aspect ratio
         Global.arAction = (Global.ar < 1.0f); // calculate the aspect ratio action. See static data for more information
     }
 

@@ -22,9 +22,6 @@ area:
     {
         # gray bricks as the main block
         g: resfrom /stories/mainstory/blocks/gray_brick.node
-        {
-            connect_with_edge: true
-        }
 
         # background gray bricks which are slightly dark
         b: resfrom /stories/mainstory/blocks/gray_brick_background.node
@@ -55,9 +52,9 @@ area:
                 resource_path: /textures/decor/lighting/hanging-lamp.png
             }
             pin: above
-            x_random_interval: 0.35f
+            x_random_interval: 1f
             y_offset: 0.06f
-            y_light_offset: -0.5f
+            y_light_offset: -0.3f
             light_source:
             {
                 intensity: 1.8f
@@ -73,13 +70,13 @@ area:
         01: ggggggggggggggggggggggggggggggggggggggggg    l          l     g      gg
         02: g   l   g     l             l       gggg      wwwwww                 gg
         03: gg                                   ggl     g   www  ww  ww         gg
-        04: gggwwwwwwwww  ww  ww  ww  wwwww      gg          ggg  gg  gg  ggggggggg
-        05: gggggggggggg  gg  gg  gg  ggggg     ggg  g    wwwgg
-        06:           gg  gg  gg  gg     gg    ggggw   g    gg
-        07:                              g    gggggg       ggg
-        08:                              gg     l gg      gg gg
-        09:                              ggg               l  g
-        10:                              gggg wwwwwwwwwgwww  gg
+        04: gggwwwwwwwww  ww  ww  ww  wwwww      gg         wggg  gg  gg  ggggggggg
+        05: gggggggggggg  gg  gg  gg  ggggg     gggw g     wwgg
+        06:           gg  gg  gg  gg     gg    ggggw   g  wwgg
+        07:                              gww  gggggg      wggg
+        08:                              ggww   l gg      gg gg
+        09:                              gggww             l  g
+        10:                              ggggwwwwwwwwwwgwwwwwgg
         11:                              ggggggggggggggggggggg
     }
 }

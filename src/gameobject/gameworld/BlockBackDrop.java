@@ -2,13 +2,10 @@ package gameobject.gameworld;
 
 import gameobject.GameObject;
 import graphics.*;
-import org.lwjgl.system.CallbackI;
-import utils.*;
+import utils.Node;
+import utils.NodeLoader;
 
-import java.util.*;
-
-import static org.lwjgl.opengl.GL11.glViewport;
-import static org.lwjgl.opengl.GL30.*;
+import java.util.Map;
 
 /*
  * BlockBackDrop.java

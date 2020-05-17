@@ -3,31 +3,15 @@ package logic;
 import gameobject.GameObject;
 import gameobject.ROC;
 import gameobject.gameworld.Area;
-import gameobject.gameworld.Block;
 import gameobject.ui.*;
 import graphics.*;
-import org.lwjgl.openal.AL;
-import org.lwjgl.openal.ALC;
-import org.lwjgl.openal.ALCCapabilities;
-import org.lwjgl.opengl.GL32;
-import org.lwjgl.opengl.GLUtil;
 import story.Story;
 import utils.*;
 
-import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import static java.sql.Types.NULL;
 import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.glfw.GLFW.GLFW_RELEASE;
-import static org.lwjgl.openal.ALC10.*;
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL30.*;
-import static org.lwjgl.opengl.GL30.glDeleteFramebuffers;
 
 /**
  * Lays out the logic for the menu of the game. This logic is divided up into a complex number of phases which determine
@@ -64,22 +48,6 @@ import static org.lwjgl.opengl.GL30.glDeleteFramebuffers;
 public class MenuLogic extends GameLogic {
 
     /**
-     * Represents a generic text button list item
-     */
-    private static class ListTextButton extends TextButton implements ListObject.ListItem {
-
-        /**
-         * Constructor
-         *
-         * @param font the font to use for the text button list item
-         * @param text the text to display on the text button lists item
-         */
-        public ListTextButton(Font font, String text) {
-            super(font, text); // call text button's constructor
-        }
-    }
-
-    /**
      * ROC Static Object (UI Element) Tags
      */
     private static final int TAG_TITLE = 0;      // title
@@ -114,7 +82,6 @@ public class MenuLogic extends GameLogic {
     private TexturedButton newGame;    // new game button (main menu)
     private TexturedButton loadGame;   // load game button (main menu)
     private TexturedButton settings;   // settings button (main menu)
-    private TexturedButton exit;       // exit button (main menu)
     private TextInputObject nameInput; // used to gather user input for player name (new game)
     private float maxCamX;             // x beyond which the menu area camera should start scrolling back
     private float minTitleY;           // the minimum y the title should be during the physics simulation before bounce
@@ -188,7 +155,7 @@ public class MenuLogic extends GameLogic {
         this.cam.setVX(0.5f); // make camera slowly scroll to the right
         this.cam.setZoom(0.15f); // zoom out a little
         this.maxCamX = this.roc.getGameWorld().getArea().getBlockMap().length; // don't allow cam past area
-        glfwSetScrollCallback(Global.GAME_WINDOW.getHandle(), (x, y, s) -> {}); // disable mouse scroll wheel zooming
+        glfwSetScrollCallback(Global.gameWindow.getHandle(), (x, y, s) -> {}); // disable mouse scroll wheel zooming
     }
 
     /**
@@ -207,23 +174,24 @@ public class MenuLogic extends GameLogic {
      * these items are created and added to the ROC, the phase which created and added them will never be revisited
      */
     private void createMainMenuUI() {
-        newGame = new TextButton(Global.FONT, "New Game").solidify(); // create new game button
+        newGame = new TextButton(Global.font, "New Game").solidify(); // create new game button
         newGame.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { // when clicked,
             this.phase = 20; // go phase 20 which will transition to the new game sub-menu
         });
-        loadGame = new TextButton(Global.FONT, "Load Game").solidify(); // create load game button
+        loadGame = new TextButton(Global.font, "Load Game").solidify(); // create load game button
         loadGame.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { // when clicked,
             //TODO: Load Game
         });
-        settings = new TextButton(Global.FONT, "Settings").solidify(); // create settings button
+        settings = new TextButton(Global.font, "Settings").solidify(); // create settings button
         loadGame.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { // when clicked,
             //TODO: Settings
         });
-        exit = new TextButton(Global.FONT, "Exit").solidify(); // create exit button
+        // exit button (main menu)
+        TexturedButton exit = new TextButton(Global.font, "Exit").solidify(); // create exit button
         exit.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { // when clicked,
-            Global.GAME_WINDOW.close(); // close the window
+            Global.gameWindow.close(); // close the window
         });
-        TextObject version = new TextObject(Global.FONT, "version: " + Global.VERSION); // create version text
+        TextObject version = new TextObject(Global.font, "version: " + Global.VERSION); // create version text
         version.setScale(0.35f, 0.35f); // make version text small
         this.roc.addStaticObject(version, TAG_VERSION, false, new ROC.PositionSettings(-1f, -1f,
                 true, 0.01f)); // add version text to ROC at bottom left corner
@@ -304,7 +272,7 @@ public class MenuLogic extends GameLogic {
             }
 
             // create a list text button to open the data directory stories folder
-            TexturedButton openStoryFolder = new ListTextButton(Global.FONT, "(open stories folder)").solidify();
+            TexturedButton openStoryFolder = new TextButton(Global.font, "(open stories folder)").solidify();
             openStoryFolder.setScale(0.4f, 0.4f); // scale the button down by a little over half
             openStoryFolder.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { // when clicked
                 // open stories dir in data dir
@@ -318,11 +286,11 @@ public class MenuLogic extends GameLogic {
                     false, 0f)); // add the story list at the center of the screen
 
             // create and add a text object prompting the player to select a story at the top of the window
-            this.roc.addStaticObject(new TextObject(Global.FONT, "Choose a story:"), TAG_PROMPT, false,
+            this.roc.addStaticObject(new TextObject(Global.font, "Choose a story:"), TAG_PROMPT, false,
                     new ROC.PositionSettings(0f, belowWindow(), true, 0.2f));
 
             // create and add a button to return to the main menu
-            TexturedButton returnButton = new TextButton(Global.FONT, "Return").solidify();
+            TexturedButton returnButton = new TextButton(Global.font, "Return").solidify();
             returnButton.setScale(0.8f, 0.8f); // scale return button down slightly
             returnButton.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { // when clicked,
                 this.roc.moveStaticObject(TAG_TITLE, new ROC.PositionSettings(0f, MM_TITLE_POS, false,
@@ -334,7 +302,7 @@ public class MenuLogic extends GameLogic {
                     belowWindow(), false, 0f)); // add return button at bottom
 
             // create and add name input text input object for player name select
-            this.nameInput = new TextInputObject(Global.FONT, "(name)", // default text is (name)
+            this.nameInput = new TextInputObject(Global.font, "(name)", // default text is (name)
                     Global.getThemeColor(Global.ThemeColor.GRAY), // default text will be gray
                     Global.getThemeColor(Global.ThemeColor.GREEN)); // input text will be green
             this.nameInput.setScale(1.5f, 1.5f); // scale name input up a by about 3/2
@@ -354,7 +322,7 @@ public class MenuLogic extends GameLogic {
                     belowWindow(), false, 0f)); // add name input text input object to ROC
 
             // create and add finish button for name input
-            TexturedButton finish = new TextButton(Global.FONT, "Accept").solidify(); // finish button
+            TexturedButton finish = new TextButton(Global.font, "Accept").solidify(); // finish button
             finish.setScale(0.8f, 0.8f); // scale finish button down sslightly
             finish.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { // when clicked,
                 // simulate enter being pressed on the name input because this will automatically check for validity
@@ -491,7 +459,8 @@ public class MenuLogic extends GameLogic {
                 this.initMenuArea(); // create the menu area
                 this.createMainMenuUI(); // create the main menu UI elements
                 this.renderROC = true; // enable roc usage
-                this.roc.fadeIn(new float[]{0f, 0f, 0f, 1f}, TRANS_SPEED * 10); // fade in the ROC (menu area)
+                Global.resetAccumulator = true; // reset the loop accumulator
+                this.roc.fadeIn(new float[]{0f, 0f, 0f, 1f}, TRANS_SPEED * 5); // fade in the ROC (menu area)
                 phase = 5; // advance to phase 5s
                 break;
 
@@ -608,5 +577,14 @@ public class MenuLogic extends GameLogic {
             this.title.render(this.sp); // render the title
             this.sp.unbind(); // unbind the shader program
         }
+    }
+
+    /**
+     * Cleans up the logic's shader program
+     */
+    @Override
+    public void cleanup() {
+        super.cleanup(); // clean up normal game logic
+        this.sp.cleanup(); // clean up shader program
     }
 }

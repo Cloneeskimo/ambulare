@@ -73,9 +73,9 @@ public class TextObject extends GameObject {
     }
 
     /**
-     * @return the wwidth of the text object in pixels, as if it were a solidifed texture
+     * @return the width of the text object in pixels, as if it were a solidified texture
      */
-    protected int getPixelWidth() {
+    public int getPixelWidth() {
         int w = 0; // int to store total width of texture
         for (int i = 0; i < this.text.length(); i++) // for each character in the text object
             w += (font.getCharWidth() - font.getCharCutoff(text.charAt(i)) * 2); // add its width to total width

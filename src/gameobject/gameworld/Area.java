@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 
 import static gameobject.gameworld.Block.renderBlocks;
-import static org.lwjgl.opengl.GL30.glGetIntegeri_v;
 
 /*
  * Area.java

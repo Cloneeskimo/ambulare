@@ -3,7 +3,6 @@ package gameobject.gameworld;
 import graphics.Camera;
 import graphics.ShaderProgram;
 import utils.Global;
-import utils.Pair;
 import utils.PhysicsEngine;
 import utils.Utils;
 
@@ -11,7 +10,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.lwjgl.glfw.GLFW.glfwSetScrollCallback;
-import static org.lwjgl.opengl.GL11.glClearColor;
 
 /*
  * GameWorld.java

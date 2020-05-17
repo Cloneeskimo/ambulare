@@ -2,7 +2,6 @@ package graphics;
 
 import utils.Utils;
 
-import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
 

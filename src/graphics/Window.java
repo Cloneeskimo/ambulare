@@ -3,8 +3,6 @@ package graphics;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GL;
-import utils.Global;
-import utils.Pair;
 import utils.Utils;
 
 import static org.lwjgl.glfw.GLFW.*;

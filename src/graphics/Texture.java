@@ -1,27 +1,16 @@
 package graphics;
 
-import org.apache.commons.io.IOUtils;
-import org.lwjgl.BufferUtils;
-import org.lwjgl.opengl.GL32;
 import org.lwjgl.system.MemoryStack;
 import utils.Global;
 import utils.Utils;
 
-import javax.imageio.ImageIO;
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBuffer;
-import java.awt.image.DataBufferByte;
-import java.awt.image.DataBufferInt;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL13C.glActiveTexture;
 import static org.lwjgl.opengl.GL30.*;
-import static org.lwjgl.stb.STBImage.*;
+import static org.lwjgl.stb.STBImage.stbi_image_free;
+import static org.lwjgl.stb.STBImage.stbi_load_from_memory;
 
 /*
  * Texture.java
@@ -112,7 +101,7 @@ public class Texture {
         glBindFramebuffer(GL_FRAMEBUFFER, 0); // unbind the frame buffer object
         glDeleteFramebuffers(IDs[0]); // delete the frame buffer object
         // reset GL viewport to window's framebuffer size
-        glViewport(0, 0, Global.GAME_WINDOW.getFBWidth(), Global.GAME_WINDOW.getFBHeight());
+        glViewport(0, 0, Global.gameWindow.getFBWidth(), Global.gameWindow.getFBHeight());
         // scale model to original scale
         mod.setXScale(osx);
         mod.setYScale(osy);

@@ -1,11 +1,7 @@
 package graphics;
 
 import utils.Global;
-import utils.Node;
 import utils.Utils;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
 import static org.lwjgl.opengl.GL11.glBindTexture;
@@ -147,7 +143,7 @@ public class Material {
      * Cleans up the material
      */
     public void cleanup() {
-        if (this.isTextured() && this.texture != Global.FONT.getSheet()) this.texture.cleanup();
+        if (this.isTextured() && this.texture != Global.font.getSheet()) this.texture.cleanup();
     }
 
     /**

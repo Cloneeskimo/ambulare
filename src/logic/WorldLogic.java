@@ -1,13 +1,16 @@
 package logic;
 
-import gameobject.GameObject;
 import gameobject.ROC;
-import gameobject.ui.TextButton;
-import gameobject.ui.TextObject;
 import gameobject.gameworld.Area;
 import gameobject.gameworld.Entity;
+import gameobject.ui.EnhancedTextObject;
+import gameobject.ui.TextButton;
+import gameobject.ui.TextObject;
 import gameobject.ui.TexturedButton;
-import graphics.*;
+import graphics.MSAT;
+import graphics.Material;
+import graphics.Model;
+import graphics.Texture;
 import story.Story;
 import utils.*;
 
@@ -53,6 +56,7 @@ public class WorldLogic extends GameLogic {
         this.initStoryAndArea(); // initialize the story and the area
         this.initWorldObjects(); // initialize world objects
         this.initHUDObjects(); // initialize hud objects
+        Global.resetAccumulator = true; // flag that the engine's accumulator should be reset after expensive loading
         this.roc.fadeIn(new float[]{0f, 0f, 0f, 1f}, 1f); // fade in the ROC
     }
 
@@ -101,12 +105,12 @@ public class WorldLogic extends GameLogic {
     private void initHUDObjects() {
 
         // create and add player position text
-        this.roc.addStaticObject(new TextObject(Global.FONT, "(0, 0)"), TAG_PLAYER_POS, false,
+        this.roc.addStaticObject(new TextObject(Global.font, "(0, 0)"), TAG_PLAYER_POS, false,
                 new ROC.PositionSettings(-1f, -1f, true, 0.02f)); // create pos text
         this.roc.getStaticGameObject(TAG_PLAYER_POS).setScale(0.6f, 0.6f); // scale text down
 
         // create and add return button
-        TexturedButton returnButton = new TextButton(Global.FONT, "Return").solidify(); // create return button
+        TexturedButton returnButton = new TextButton(Global.font, "Return").solidify(); // create return button
         returnButton.setScale(0.6f, 0.6f); // scale return button down by about half
         returnButton.giveCallback(MouseInputEngine.MouseInputType.RELEASE, (x, y) -> { // when pressed
             if (GameLogic.logicChange == null) { // if no logic change is currently underway
@@ -118,7 +122,7 @@ public class WorldLogic extends GameLogic {
                 true, 0.02f)); // add return button to ROC
 
         // create and add area name
-        this.roc.addStaticObject(new TextObject(Global.FONT,
+        this.roc.addStaticObject(new TextObject(Global.font,
                         this.roc.getGameWorld().getArea().getName()).solidify(), TAG_AREA,
                 false, new ROC.PositionSettings(0f, 1f, true, 0.1f));
         this.roc.getStaticGameObject(TAG_AREA).setScale(0.8f, 0.8f); // scale area name
@@ -163,8 +167,8 @@ public class WorldLogic extends GameLogic {
                 player.getY() + ")"))
             this.roc.ensurePlacement(TAG_PLAYER_POS); // update placement if changed
         int vx = 0; // calculate player horizontal velocity starting at zero
-        if (Global.GAME_WINDOW.isKeyPressed(GLFW_KEY_D)) vx += 4; // if D is pressed, move player to the right
-        if (Global.GAME_WINDOW.isKeyPressed(GLFW_KEY_A)) vx -= 4; // if A is pressed, move player to the left
+        if (Global.gameWindow.isKeyPressed(GLFW_KEY_D)) vx += 4; // if D is pressed, move player to the right
+        if (Global.gameWindow.isKeyPressed(GLFW_KEY_A)) vx -= 4; // if A is pressed, move player to the left
         player.setVX(vx); // update player's horizontal velocity
         if (vx == 0) player.setIsMoving(false); // if the horizontal velocity is zero, update player's moving flag
         else { // otherwise

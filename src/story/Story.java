@@ -232,11 +232,11 @@ public class Story {
         public StoryListItem(Story story) {
             // call super with a standard square model and with a transparent material
             super(Model.getStdGridRect(1, 1), new Material(new float[]{1f, 1f, 1f, 0f}));
-            this.name = new TextButton(Global.FONT, story.getName()).solidify(); // create name button with story name
+            this.name = new TextButton(Global.font, story.getName()).solidify(); // create name button with story name
             this.name.setScale(0.8f, 0.8f); // scale story name down a little bit
-            this.author = new TextObject(Global.FONT, "author: " + story.getAuthor()).solidify(); // author text
+            this.author = new TextObject(Global.font, "author: " + story.getAuthor()).solidify(); // author text
             this.author.setScale(0.4f, 0.4f); // scale author down by a little over half
-            this.path = new TextObject(Global.FONT, "path: " + story.getFolderPath()).solidify(); // path text
+            this.path = new TextObject(Global.font, "path: " + story.getFolderPath()).solidify(); // path text
             this.path.setScale(0.3f, 0.3f); // scale path down by about one third
             this.position(); // position the text objects in the story list item
         }

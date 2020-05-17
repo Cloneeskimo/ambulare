@@ -3,13 +3,10 @@ package graphics;
 import org.lwjgl.system.MemoryUtil;
 import utils.FittingBox;
 import utils.Pair;
-import utils.PhysicsEngine;
 import utils.Utils;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.glDisableVertexAttribArray;

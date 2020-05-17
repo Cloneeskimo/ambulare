@@ -19,4 +19,7 @@ block info:
 
     # specify for it to slope
     slopes: true
+
+    # gray bricks connect with edges
+    connect_with_edge: true
 }

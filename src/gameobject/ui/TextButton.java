@@ -1,13 +1,11 @@
 package gameobject.ui;
 
-import gameobject.GameObject;
 import graphics.*;
 import utils.Global;
 import utils.MouseInputEngine;
 import utils.Utils;
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL11.glViewport;
 import static org.lwjgl.opengl.GL30.*;
 
 /*
@@ -21,7 +19,7 @@ import static org.lwjgl.opengl.GL30.*;
  * This extends TextObjects by implementing mouse interaction and having three separate colors to denote different
  * levels of mouse interaction - practically simulating a button
  */
-public class TextButton extends TextObject implements MouseInputEngine.MouseInteractive {
+public class TextButton extends TextObject implements MouseInputEngine.MouseInteractive, ListObject.ListItem {
 
     /**
      * Static Data
@@ -119,7 +117,6 @@ public class TextButton extends TextObject implements MouseInputEngine.MouseInte
         // set the texture width/height uniforms
         sp.setUniform("w", w);
         sp.setUniform("h", h);
-        sp.setUniform("y", 0f); // y is always the center in an animation texture
 
         // render
         this.material.setColor(defaultC); // default color first
@@ -142,15 +139,15 @@ public class TextButton extends TextObject implements MouseInputEngine.MouseInte
         glBindFramebuffer(GL_FRAMEBUFFER, 0); // unbind the frame buffer object
         glDeleteFramebuffers(IDs[0]); // delete the frame buffer object
         // reset GL viewport to window's framebuffer size
-        glViewport(0, 0, Global.GAME_WINDOW.getFBWidth(), Global.GAME_WINDOW.getFBHeight());
+        glViewport(0, 0, Global.gameWindow.getFBWidth(), Global.gameWindow.getFBHeight());
 
         // scale model to original scale and return material to original color
         this.model.setXScale(osx);
         this.model.setYScale(osy);
         this.material.setColor(defaultC);
 
-        // create corresponding texture button and return result
-        return new TexturedButton(new Model(
+        // create corresponding texture button, position it, and return the result
+        TexturedButton tb = new TexturedButton(new Model(
                 super.solidify().getMaterial().getTexture()
                         .getModelCoords(font.getCharHeight() / DEFAULT_SIZE),
                         Model.getStdRectTexCoords(),
@@ -159,7 +156,9 @@ public class TextButton extends TextObject implements MouseInputEngine.MouseInte
                         new MSAT.MSATState(1, 1f),
                         new MSAT.MSATState(1, 1f),
                         new MSAT.MSATState(1, 1f)
-        }));
+        })); // create the texture button
+        tb.setPos(this.getX(), this.getY()); // position solidified button at this text button's position
+        return tb; // return the final product
     }
 
     /**

@@ -54,7 +54,7 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
     public Entity(String name, Model model, Material material) {
         super(model, material); // call world object constructor
         this.name = name; // save name as member
-        this.nameplate = new TextObject(Global.FONT, this.name).solidify(); // create nameplate
+        this.nameplate = new TextObject(Global.font, this.name).solidify(); // create nameplate
         this.nameplate.setScale(2.5f, 2.5f); // make nameplate larger
         this.positionNameplate(); // position the nameplate above the entity
         this.getPhysicsProperties().sticky = true; // entities should stick to slopes

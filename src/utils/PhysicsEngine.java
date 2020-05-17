@@ -1,11 +1,9 @@
 package utils;
 
 import gameobject.gameworld.WorldObject;
-import org.lwjgl.system.CallbackI;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 /*

@@ -17,8 +17,12 @@
 /*
  * Uniforms
  */
-uniform float x; // the object's x position used to offset the model coordinatess
-uniform float y; // the object's y position used to offset the model coordinates
+uniform float x;    // the object's x position used to offset the model coordinates
+uniform float y;    // the object's y position used to offset the model coordinates
+uniform float wDiv; /* a value to divide x positions by - especially useful for complex objects whose models cannot
+                       easily be normalized */
+uniform float hDiv; /* a value to divide y positions by - espeically useful for complex objects whose models cannot
+                       easily be normalized */
 
 /*
  * Attributes
@@ -36,7 +40,13 @@ out vec2 normPosCoords; // positional coordinates passed through to fragment sha
  * Main Function
  */
 void main() {
-    gl_Position = vec4(modelCoords.x + x, -modelCoords.y + y, 0, 1); // apply offset to position
-    normPosCoords = (1 + vec2(modelCoords.x + x, -modelCoords.y + y)) / 2; // norm. pos to (0, 1) for fragment shader
+    vec2 posCoords = vec2(modelCoords.x + x, -modelCoords.y - y); // apply offset
+    if (wDiv != 0 && hDiv != 0) { // if width/height division uniforms set
+        // apply width and height division
+        posCoords.x /= wDiv;
+        posCoords.y /= hDiv;
+    }
+    gl_Position = vec4(posCoords, 0, 1); // set final position
+    normPosCoords = (1 + vec2(posCoords.x, posCoords.y)) / 2; // pas normalized pos within (0, 1) for fragment shader
     fTexCoords = texCoords; // pass texture coordinates through to fragment shader
 }

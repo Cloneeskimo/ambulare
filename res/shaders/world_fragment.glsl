@@ -18,20 +18,20 @@
 /*
  * Constants
  */
-const int MAX_LIGHTS = 32; // the maximum amount of lights the shader will accept
-const float DARKNESS_FACTOR = 9; // how much to divide color by in order to simulate a lack of light
+const int MAX_LIGHTS = 32;       // the maximum amount of lights the shader will accept
+const float DARKNESS_FACTOR = 7; // how much to divide color by in order to simulate a lack of light
 
 /*
  * A struct that defines properties of a light to use when shading nearby objects
  */
 struct Light {
-    vec3 glow; /* the glow of the color is multiplied onto objects. Components less than 1f should be avoided as they
-        actually remove color which is somewhat counter-intuitive to the idea of lighting */
-    float reach; // how far the light reaches
+    vec3 glow;       /* the glow of the color is multiplied onto objects. Components less than 1f should be avoided as
+        they actually remove color which is somewhat counter-intuitive to the idea of lighting */
+    float reach;     // how far the light reaches
     float intensity; /* how intense the light is. Should be roughly within the range of 0.2f (extremely dim) and 1.8f
         (extremely bright) */
-    float x; // the world x position of the light
-    float y; // the world y position of the light
+    float x;         // the world x position of the light
+    float y;         // the world y position of the light
 };
 
 /*

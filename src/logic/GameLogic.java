@@ -2,17 +2,14 @@ package logic;
 
 import gameobject.GameObject;
 import gameobject.ROC;
+import gameobject.ui.EnhancedTextObject;
 import gameobject.ui.TextObject;
 import graphics.Material;
 import graphics.Model;
 import graphics.ShaderProgram;
-import graphics.Window;
 import utils.Global;
 import utils.Node;
 import utils.Utils;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /*
  * GameLogic.java
@@ -42,12 +39,12 @@ public abstract class GameLogic {
     /**
      * Members
      */
-    protected ROC roc;                        // holds and renders all objects. See gameobject.ROC
-    protected Node transferData;              /* when a logic is switched to, this will store any transfer data from
-                                                 the logic change. This may be null if no transfer data was given */
-    protected boolean renderROC = true;       /* extending classes can disable ROC rendering if they want to render in
-                                                 some other manner that does not involve an ROC */
-    private DebugInfo debugInfo;              // debugging info text objects to display when the engine gives info
+    protected ROC roc;                          // holds and renders all objects. See gameobject.ROC
+    protected Node transferData;                /* when a logic is switched to, this will store any transfer data from
+                                                   the logic change. This may be null if no transfer data was given */
+    protected boolean renderROC = true;         /* extending classes can disable ROC rendering if they want to render in
+                                                   some other manner that does not involve an ROC */
+    public static EnhancedTextObject debugInfo; // debugging info to display when the engine gives info
 
     /**
      * Gives the game logic transfer data to use when initializing
@@ -75,9 +72,9 @@ public abstract class GameLogic {
      */
     protected void initOthers() {
         // create debug info
-        this.debugInfo = new DebugInfo(0.01f, new Material(new float[]{0f, 0f, 0f, 0.4f}));
-        this.debugInfo.setVisibility(false); // don't make visible until engine reports debugging data
-        this.debugInfo.setScale(0.45f, 0.45f); // make small
+        debugInfo = new EnhancedTextObject(new Material(new float[] {0f, 0f, 0f, 0.5f}),
+                Global.font, " \n \n ", EnhancedTextObject.Line.DEFAULT_PADDING * 2);
+        debugInfo.setVisibility(false); // don't make visible until engine reports debugging data
         this.roc.addStaticObject(debugInfo, TAG_DEBUG_INFO, false, new ROC.PositionSettings(-1f, 1f,
                 true, 0.05f)); // add debug info text to ROC
     }
@@ -144,14 +141,17 @@ public abstract class GameLogic {
     }
 
     /**
-     * This is called by the engine when there is new debugging information. The game logic passes this along to a game
-     * object called DebugInfo which aggregates text objects that display this info in the logic's HUD
+     * This is called by the engine when there is new debugging information. The game logic passes this along to an
+     * enhanced text object
      *
      * @param info the new debugging information, where each index is as outlined in the Engine.updateDebugMetrics()
      */
-    public void reportDebugInfo(String info[]) {
-        if (this.debugInfo != null) {
-            this.debugInfo.updateInfo(info); // pass info to debug info object
+    public void reportDebugInfo(String[] info) {
+        if (debugInfo != null) { // if the debug info enhanced text object is instantiated
+            for (int i = 0; i < info.length; i++) // for each line of info
+                debugInfo.setLineText(i,
+                        (i == 0 ? "FPS: " : i == 1 ? "Update: " : "Render: ")
+                                + info[i]); // update the corresponding line in the enhanced text object
             this.roc.ensurePlacement(TAG_DEBUG_INFO); // ensure its position
         }
     }
@@ -218,172 +218,6 @@ public abstract class GameLogic {
          */
         public float getTransitionTime() {
             return this.transition;
-        }
-    }
-
-    /**
-     * An game object that serves as an aggregation of text objects which display debug information as passed through
-     * from the engine. Like ListObjects, DebugInfos cannot be rotated
-     */
-    public static class DebugInfo extends GameObject {
-
-        /**
-         * Members
-         */
-        private TextObject[] info; // text objects to display debugging information
-        float padding;             // padding between text and around the edges
-
-        /**
-         * Constructor
-         *
-         * @param padding    the amount of padding to place between the text objects and around the edges of the object
-         * @param background the material to render as a background to the debug info text objects
-         */
-        public DebugInfo(float padding, Material background) {
-            super(Model.getStdGridRect(1, 1), background); // call super with square model and background mat.
-            this.info = new TextObject[6]; // create array for info
-            // separate counters from the static text to improve updating the text's efficiency
-            // create FPS objects
-            this.info[0] = new TextObject(Global.FONT, "FPS: ");
-            this.info[1] = new TextObject(Global.FONT, "N/A");
-            // create update time objects
-            this.info[2] = new TextObject(Global.FONT, "Update: ");
-            this.info[3] = new TextObject(Global.FONT, "N/A");
-            // create render time objects
-            this.info[4] = new TextObject(Global.FONT, "Render: ");
-            this.info[5] = new TextObject(Global.FONT, "N/A");
-            this.padding = padding; // save padding as member
-            this.position(); // position everything
-        }
-
-        /**
-         * Updates the debug info object's model and positions all of the contained text objects
-         */
-        private void position() {
-            // calculate width and height
-            float w = 0f;
-            float h = 0f;
-            for (int i = 0; i < this.info.length; i += 2) { // for each debug metric
-                float rowWidth = this.info[i].getWidth() + this.info[i + 1].getWidth(); // get that metric row's width
-                if (rowWidth > w) w = rowWidth; // if its wider than the current max width, record it as new width
-                h += this.info[i].getHeight(); // keep running total of row heights
-            }
-            h += 4 * padding; // account for padding between rows and above/below object
-            w += 2 * padding; // account for padding to left and right of object
-            this.model.setScale(w, h); // scale object to correctly fit all text objects
-            float x = this.getX() - (w / 2f) + padding; // the left-most x of the object, as a starting point for text
-            float y = this.getY() + h / 2f - padding; // the top-most y of the object, to be updated for placement
-            for (int i = 0; i < this.info.length; i += 2) { // for each item
-                float h2 = this.info[i].getHeight() / 2f; // calculate its half-height
-                float w2 = this.info[i].getWidth() / 2f; // calculate its half-width
-                y -= h2; // update y based on half height
-                this.info[i].setPos(x + w2, y); // set the static text object's position
-                // set the actual counter's position next to the static object
-                this.info[i + 1].setPos(this.info[i].getX() + w2 + this.info[i + 1].getWidth() / 2f, y);
-                // update y for the next object
-                y -= (h2 + padding);
-            }
-        }
-
-        /**
-         * Updates the debug info object's text objects based on the given debugging info
-         *
-         * @param info the debugging info, formatted as specified by GameEngine.updateDebugMetrics(). If null, this
-         *             object will make itself invisible since reporting has stopped
-         */
-        public void updateInfo(String[] info) {
-            if (info == null) { // if null
-                this.visible = false; // make self invisible
-                return; // and return
-            }
-            // if this was invisible and actual values were given, make self visible again
-            if (!this.visible) this.visible = true;
-            // update the text objects with the info
-            for (int i = 0; i < info.length; i++) this.info[1 + (i * 2)].setText(info[i]);
-            this.position(); // re-position
-        }
-
-        /**
-         * Renders the background and the text objects
-         *
-         * @param sp the shader program to use to render the game object
-         */
-        @Override
-        public void render(ShaderProgram sp) {
-            super.render(sp); // call super's render to render background
-            if (this.visible) for (TextObject to : this.info) to.render(sp); // render the text objects
-        }
-
-        /**
-         * Updates positional animations by excluding rotation
-         *
-         * @param interval the amount of time, in seconds, to account for
-         */
-        @Override
-        protected void updatePosAnim(float interval) {
-            this.posAnim.update(interval); // update animation
-            this.setX(this.posAnim.getX()); // set x position
-            this.setY(this.posAnim.getY()); // set y position
-            if (this.posAnim.finished()) { // if animation is over
-                this.setX(this.posAnim.getFinalX()); // make sure at the correct ending x
-                this.setY(this.posAnim.getFinalY()); // make sure at the correct ending y
-                this.posAnim = null; // delete the animation
-            }
-        }
-
-        /**
-         * Responds to movement by re-positioning the text objects
-         */
-        @Override
-        protected void onMove() {
-            this.position(); // position text objects
-        }
-
-        /**
-         * Responds to horizontal scaling by horizontally scaling the containing text objects and re-positioning
-         *
-         * @param x the x scaling factor to use
-         */
-        @Override
-        public void setXScale(float x) {
-            for (TextObject to : this.info) to.setXScale(x); // scale containing text objects
-            this.position(); // position text objects
-        }
-
-        /**
-         * Responds to vertical scaling by vertically scaling the containing text objects and re-positioning
-         *
-         * @param y the y scaling factor to use
-         */
-        @Override
-        public void setYScale(float y) {
-            for (TextObject to : this.info) to.setYScale(y); // scale containing text objects
-            this.position(); // position text objects
-        }
-
-        /**
-         * Responds to scaling by scaling the containing text objects and re-positioning
-         *
-         * @param x the x scaling factor to use
-         * @param y the y scaling factor to use
-         */
-        @Override
-        public void setScale(float x, float y) {
-            // scale containing text objects
-            for (TextObject to : this.info) to.setXScale(x);
-            for (TextObject to : this.info) to.setYScale(y);
-            this.position(); // position text objects
-        }
-
-        /**
-         * Responds to attempts to rotate by logging and ignoring the occurrence
-         *
-         * @param r the new rotation value in radians
-         */
-        @Override
-        public void setRotRad(float r) {
-            Utils.log("Attempted to rotate a debug info. Ignoring.", this.getClass(), "setRotRad",
-                    false); // log and ignore the attempt to rotate
         }
     }
 }

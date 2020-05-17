@@ -1,12 +1,8 @@
 package gameobject.gameworld;
 
 import graphics.*;
-import org.lwjgl.opengl.GL32;
-import org.lwjgl.system.CallbackI;
 import utils.*;
 
-import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -689,7 +685,7 @@ public abstract class Block {
     private static void endBlockFormatting(ShaderProgram sp) {
         sp.cleanup(); // cleanup the shader program
         // change GL viewport back to the window's framebuffer size
-        glViewport(0, 0, Global.GAME_WINDOW.getFBWidth(), Global.GAME_WINDOW.getFBHeight());
+        glViewport(0, 0, Global.gameWindow.getFBWidth(), Global.gameWindow.getFBHeight());
     }
 
     /**

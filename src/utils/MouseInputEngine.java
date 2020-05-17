@@ -1,6 +1,5 @@
 package utils;
 
-import gameobject.ui.ListObject;
 import graphics.Camera;
 
 import java.util.ArrayList;
