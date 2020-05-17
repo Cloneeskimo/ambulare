@@ -5,6 +5,7 @@ import org.lwjgl.system.CallbackI;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /*
@@ -250,14 +251,30 @@ public class PhysicsEngine {
          * Update sticky object onSlope value
          */
         if (o.getPhysicsProperties().sticky) { // if the object is sticky
-            float oyb = o.getY(); // get its original y
+            float oyb = o.getY(); // save object's original y
             o.setY(round(oyb - NEXT_TO_PRECISION)); // move it down according to the next to precision
-            Pair<Integer> cell = new Pair<>(); // create a pair to store collision cell
-            int collision = checkBlocksAndSlopes(o.getAABB(), cell, -NEXT_TO_PRECISION); // perform check
-            // if a slope collision occurred
-            o.getPhysicsProperties().onSlope = (collision == RESPOND_AS_BLOCK_IN_Y || collision == RESPOND_AS_SLOPE)
-                    ? slopeMap[cell.x][cell.y]  // set flag based on the type of slope at the position
-                    : null; // if no slope collision occurred, set flag to zero to denote the object is not on a slope
+            List<Pair<Float>> points = getPointsToTest(o.getAABB()); // get the points to test
+            // save an x/y of the cell whose slope is most appropriate
+            int x = -1;
+            int y = -1;
+            float closerX = Float.POSITIVE_INFINITY; // want to consider closest horizontal cell to be one object is on
+            for (Pair<Float> point : points) { // for each point
+                Pair<Integer> cell = Transformation.getGridCell(point); // get the corresponding grid cell
+                if (cell.x >= 0 && cell.x < blockMap.length && cell.y >= 0 && cell.y < blockMap[0].length) {
+                    if (slopeMap[cell.x][cell.y] != null) { // if there is a slope there
+                        float d = Math.abs(((float)cell.x + 0.5f) - o.getX()); // get the horizontal distance to object
+                        if (d < closerX) { // if closer
+                            closerX = d; // save as new closest
+                            // update correct cell position
+                            x = cell.x;
+                            y = cell.y;
+                        }
+                    }
+                }
+            }
+            // if a slope wass found, update the object's onSlope value
+            if (x != -1) o.getPhysicsProperties().onSlope = slopeMap[x][y];
+            else o.getPhysicsProperties().onSlope = null; // otherwise set to null
             o.setY(oyb); // return the object to its original y position
         }
 
@@ -681,21 +698,6 @@ public class PhysicsEngine {
          * Constructs the physics properties at their defaults (see members above)
          */
         public PhysicsProperties() {
-        }
-
-        /**
-         * @return the type of slope the corresponding object is on
-         */
-        public SlopeType onSlope() {
-            return this.onSlope;
-        }
-
-        /**
-         * Updates the type of slope the corresponding object is on
-         * @param onSlope the new type of slopes
-         */
-        public void setOnSlope(SlopeType onSlope) {
-            this.onSlope = onSlope;
         }
     }
 
