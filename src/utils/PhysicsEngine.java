@@ -110,22 +110,26 @@ public class PhysicsEngine {
                     Pair<Integer> newCell = new Pair<>(); // create a pair to hold result of another check
                     // check if move up causes a new collision
                     int newCollision = checkBlocksAndSlopes(aabb, newCell, 0);
-                    if (newCollision != NO_COLLISION) { // if move up caused another collision
-                        // move object back down to resolve with object above
-                        o.setY(round(o.getY() + (newCollision == RESPOND_AS_SLOPE
-                                ? calcPBFromSlope(aabb, newCell, true)
-                                : calcPBFromBlock(aabb, newCell, true))));
-                        // then push back horizontally enough to resolve collision with the slope underneath
-                        o.setX(round(o.getX() + calcPBFromSlope(o.getAABB(), cell, false)));
+                    if (newCollision != NO_COLLISION) { // if there was a new collision
+                        // if the new collision was with another slope, just reset to the original position
+                        if (newCollision == RESPOND_AS_SLOPE) o.setPos(ox, oy);
+                        else { // if the new collision was not with another slope
+                            // move object back down to resolve with object above
+                            o.setY(round(o.getY() + calcPBFromBlock(aabb, newCell, true)));
+                            // then push back horizontally enough to resolve collision with the slope underneath
+                            o.setX(round(o.getX() + calcPBFromSlope(o.getAABB(), cell, false)));
+                        }
+                        // perform a horizontal reaction
                         Pair<Float> rxn = performReaction(o.getVX(), o.getPhysicsProperties());
                         o.setVX(rxn.x);
                         o.setVY(rxn.y * o.getVY());
+                    } else { // otherwise, perform a vertical reaction
+                        Pair<Float> rxn = performReaction(o.getVY(), o.getPhysicsProperties()); // calculate a reaction
+                        // apply the reaction to the object's velocity
+                        o.setVY(bottom ? Math.max(o.getVY(), rxn.x) : rxn.x);
+                        o.setVX(rxn.y * o.getVX());
+                        dy = Math.max(0, dy); // do not check for y collisions this loop
                     }
-                    Pair<Float> rxn = performReaction(o.getVY(), o.getPhysicsProperties()); // calculate a reaction
-                    // apply the reaction to the object's velocity
-                    o.setVY(bottom ? Math.max(o.getVY(), rxn.x) : rxn.x);
-                    o.setVX(rxn.y * o.getVX());
-                    dy = Math.max(0, dy); // do not check for y collisions this loop
                 } else if (collision == RESPOND_AS_BLOCK) {
 
                     /*
@@ -259,7 +263,9 @@ public class PhysicsEngine {
             for (Pair<Float> point : points) { // for each point
                 Pair<Integer> cell = Transformation.getGridCell(point); // get the corresponding grid cell
                 if (cell.x >= 0 && cell.x < blockMap.length && cell.y >= 0 && cell.y < blockMap[0].length) {
-                    if (slopeMap[cell.x][cell.y] != null) { // if there is a slope there
+                    if (slopeMap[cell.x][cell.y] != null && (
+                        slopeMap[cell.x][cell.y] == SlopeType.NegativeBottom ||
+                        slopeMap[cell.x][cell.y] == SlopeType.PositiveBottom)) { // if there is a bottom slope there
                         float d = Math.abs(((float)cell.x + 0.5f) - o.getX()); // get the horizontal distance to object
                         if (d < closerX) { // if closer
                             closerX = d; // save as new closest
