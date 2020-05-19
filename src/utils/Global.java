@@ -31,7 +31,7 @@ public class Global {
     /**
      * Static Data
      */
-    public static final String VERSION = "com110"; // the version of the game
+    public static final String VERSION = "com111"; // the version of the game
     public static final String WINDOW_TITLE = "Ambulare " + VERSION; // the window title
     public static final int POLYGON_MODE_TOGGLE_KEY = GLFW_KEY_2; // the key to toggle between fill/line polygon modes
     public static final int DEBUG_TOGGLE_KEY = GLFW_KEY_1;  // key to toggle debug reporting

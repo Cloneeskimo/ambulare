@@ -147,7 +147,7 @@ public class MenuLogic extends GameLogic {
     private void initMenuArea() {
         // tell the ROC to use a game world with the menu area
         this.roc.useGameWorld(new Area(Node.pathContentsToNode(new Utils.Path("/misc/menu_area.node",
-                true))));
+                true))), null);
         this.cam = this.roc.getGameWorld().getCam(); // save camera handle to make sure it stays within bounds
         // place camera at a random x within the area and at the vertical center of the area
         this.cam.setPos((float) Math.random() * (float) this.roc.getGameWorld().getArea().getBlockMap().length,

@@ -52,8 +52,9 @@ public class WorldLogic extends GameLogic {
             Utils.handleException(new Exception("world logic initiated without transfer data. Transfer data is needed" +
                     "to create an area for the game world"), this.getClass(), "initOthers", true); // crash
         }
+        this.initPlayer(); // initialize player
         this.initStoryAndArea(); // initialize the story and the area
-        this.initWorldObjects(); // initialize world objects
+        player.setPos(Transformation.getCenterOfCell(this.story.getStartingPos())); // move to story's starting position
         this.initHUDObjects(); // initialize hud objects
         Global.resetAccumulator = true; // flag that the engine's accumulator should be reset after expensive loading
         this.roc.fadeIn(new float[]{0f, 0f, 0f, 1f}, 1f); // fade in the ROC
@@ -65,13 +66,14 @@ public class WorldLogic extends GameLogic {
     private void initStoryAndArea() {
         this.story = new Story(transferData.getChild("story")); // create story from transfer data node
         Node startingArea = Node.pathContentsToNode(this.story.getStartingAreaPath()); // get starting area node
-        this.roc.useGameWorld(new Area(startingArea)); // create game world with area
+        this.roc.useGameWorld(new Area(startingArea), this.player); // create game world with area
+        this.roc.getGameWorld().useStory(this.story); // give the story to the game world
     }
 
     /**
-     * Initializes the world logic's world objects
+     * Initializes the player
      */
-    private void initWorldObjects() {
+    private void initPlayer() {
         // create player entity
         Sound[] playerStepSounds = new Sound[]{ // create player step sounds
                 new Sound(new Utils.Path("/sounds/step1.ogg", true)),
@@ -92,10 +94,7 @@ public class WorldLogic extends GameLogic {
         // lower player bounding width slightly to fit better and appear more aesthetically
         player.setBoundingWidth(0.9f);
         player.setBoundingHeight(0.9f);
-        player.setPos(Transformation.getCenterOfCell(this.story.getStartingPos())); // move to story's starting position
         player.getPhysicsProperties().rigid = true; // make player rigid
-        this.roc.addToWorld(player); // add player to world
-        this.roc.getGameWorld().getCam().follow(player); // make camera follow player
     }
 
     /**
@@ -134,6 +133,7 @@ public class WorldLogic extends GameLogic {
     @Override
     public void keyboardInput(int key, int action) {
         if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) this.player.attemptJump(); // space -> jump
+        this.roc.getGameWorld().keyboardInput(key, action); // give keyboard input to game world
     }
 
     /**

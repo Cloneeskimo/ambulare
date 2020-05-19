@@ -1,6 +1,7 @@
 package gameobject;
 
 import gameobject.gameworld.Area;
+import gameobject.gameworld.Entity;
 import gameobject.gameworld.GameWorld;
 import gameobject.gameworld.WorldObject;
 import graphics.*;
@@ -34,17 +35,18 @@ public class ROC {
     /**
      * Members
      */
-    private Map<Integer, StaticObject> staticObjects; /* a mapping from tags to game objects that will not used the
-                                          camera when rendered. Instead, they are bound to positioning settings that
-                                          determine where in the window they should be rendered at all times. In other
-                                          words, these are HUD items. See ROC.PositionSettings for more info */
-    private List<AnimatedTexture> ats; // list of animated textures to update
-    private GameWorld gameWorld;       // the game world to render underneath the static objects
-    private GameObject fadeBox;        // fade box used for fading the entire screen for smooth transitions
-    private MouseInputEngine mip;      // mouse input engine to handle mouse input
-    private ShaderProgram sp;          // the shader program to use to render static objects
-    private float fadeTime;            // amount of time the fade box fade should take
-    private float fadeTimeLeft;        // amount of time left for the fade box fade if one is occurring
+    private final Map<Integer, StaticObject> staticObjects; /* a mapping from tags to game objects that will not used
+                                                the camera when rendered. Instead, they are bound to positioning
+                                                settings that determine where in the window they should be rendered at
+                                                all times. In other words, these are HUD items. See ROC.PositionSettings
+                                                for more info */
+    private final List<AnimatedTexture> ats; // list of animated textures to update
+    private final MouseInputEngine mip;      // mouse input engine to handle mouse input
+    private GameWorld gameWorld;             // the game world to render underneath the static objects
+    private GameObject fadeBox;              // fade box used for fading the entire screen for smooth transitions
+    private ShaderProgram sp;                // the shader program to use to render static objects
+    private float fadeTime;                  // amount of time the fade box fade should take
+    private float fadeTimeLeft;              // amount of time left for the fade box fade if one is occurring
 
     /**
      * Constructor
@@ -60,11 +62,15 @@ public class ROC {
      * Instantiates the ROC's game world using the given starting area
      *
      * @param startingArea the area to give the game world to start with
+     * @param player the player to give to the game wworld
      */
-    public void useGameWorld(Area startingArea) {
-        // create game world with the starting area
-        this.gameWorld = new GameWorld(Global.gameWindow.getHandle(), startingArea);
+    public void useGameWorld(Area startingArea, Entity player) {
+        this.gameWorld = new GameWorld(this.mip, player, startingArea); // create world
         this.mip.useCam(this.gameWorld.getCam()); // tell the mouse input engine to use game world cam for calculations
+        if (player != null) { // if the player isn't null
+            this.mip.add(player, true); // add player to mouse input engine
+            this.ats.add((AnimatedTexture)player.getMaterial().getTexture()); // add animated texture
+        }
     }
 
     /**
@@ -128,6 +134,7 @@ public class ROC {
                 if (fadeTimeLeft >= 1f) this.fadeBox = null; // delete after an additional second of waiting
             }
         }
+        Global.debugInfo.setField("ROC animated textures", Integer.toString(this.ats.size()));
     }
 
     /**

@@ -237,10 +237,10 @@ public class Utils {
      */
     public static List<String> pathContentsToStringList(Path path) {
         List<String> file = new ArrayList<>(); // create empty ArrayList
-        // create buffered reader from path stream
-        BufferedReader in = new BufferedReader(new InputStreamReader(path.getStream()));
-        String line; // maintain a variable holding each line
         try {
+            // create buffered reader from path stream
+            BufferedReader in = new BufferedReader(new InputStreamReader(path.getStream()));
+            String line; // maintain a variable holding each line
             while ((line = in.readLine()) != null) file.add(line); // read each line until eof
         } catch (Exception e) { // if an exception occurs
             Utils.handleException(new Exception("Encountered a problem while reading contents of file at path: " +

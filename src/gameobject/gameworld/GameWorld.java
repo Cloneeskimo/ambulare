@@ -1,15 +1,16 @@
 package gameobject.gameworld;
 
+import graphics.AnimatedTexture;
 import graphics.Camera;
 import graphics.ShaderProgram;
-import utils.Global;
-import utils.PhysicsEngine;
-import utils.Utils;
+import story.Story;
+import utils.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
-import static org.lwjgl.glfw.GLFW.glfwSetScrollCallback;
+import static org.lwjgl.glfw.GLFW.*;
 
 /*
  * GameWorld.java
@@ -25,9 +26,17 @@ import static org.lwjgl.glfw.GLFW.glfwSetScrollCallback;
 public class GameWorld {
 
     /**
+     * Static Data
+     */
+    private static final int ENTER_GATE_KEY = GLFW_KEY_E; // key to enter a gate
+
+    /**
      * Members
      */
     private List<WorldObject> objects; // the world objects in the game world
+    private MouseInputEngine mip;      // a reference to the ROC's mouse input engine
+    private Story story;               // a reference to the current story
+    private Entity player;             // the player
     private DayNightCycle dnc;         // the world's day/night cycle
     private ShaderProgram sp;          // the shader program used to render the game world
     private Camera cam;                // the camera used to see the game world
@@ -36,23 +45,28 @@ public class GameWorld {
     /**
      * Constructor
      *
-     * @param windowHandle the handle of the GLFW window
+     * @param mip the mouse input engine to use for mouse input
+     * @param player the player to place into the game world
      * @param startingArea the the starting of the game world
      */
-    public GameWorld(long windowHandle, Area startingArea) {
+    public GameWorld(MouseInputEngine mip, Entity player, Area startingArea) {
         this.objects = new ArrayList<>(); // create empty objects list
         this.initSP(); // initialize shader program
-        this.cam = new Camera(); // create the camera
         this.area = startingArea; // save the starting area as a member
-        this.area.useCam(this.cam); // give area a reference to the camera
+        this.area.useCam(this.cam = new Camera()); // give area a reference to the camera
+        this.area.useMouseInputEngine(this.mip = mip);
         float ssr = area.getStartingSunRotation(); // get the starting sun rotation from the area
         this.dnc = new DayNightCycle(ssr < 0 ? 0f : ssr, area.getSunSpeed()); // initialize day/night cycle
         PhysicsEngine.giveBlockMap(this.area.getBlockMap()); // give the area's block map to the physics engine
         PhysicsEngine.giveSlopeMap(this.area.getSlopeMap()); // give the area's slope map to the physics engine
         // register GLFW window scroll callback for camera zoom
-        glfwSetScrollCallback(windowHandle, (w, x, y) -> { // when the user scrolls
+        glfwSetScrollCallback(Global.gameWindow.getHandle(), (w, x, y) -> { // when the user scrolls
             this.cam.aestheticZoom(y > 0 ? 1.1f : (1f / 1.1f)); // zoom on camera
         });
+        if ((this.player = player) != null) { // if the player isn't null
+            this.objects.add(player); // add it to world objects
+            this.cam.follow(this.player); // and tell the camera to follow it
+        }
     }
 
     /**
@@ -76,7 +90,50 @@ public class GameWorld {
         sp.registerUniform("sunPresence"); // register sun presence uniform
         sp.registerUniform("useDNC"); // register day/night cycle usage uniform
         sp.registerUniform("useLights"); // register light usage uniform
+        sp.registerUniform("flicker"); // register flicker uniform
         sp.registerLightArrayUniform(); // register light array uniform
+    }
+
+    /**
+     * Tells the game world which story it is a part of. If this isn't called, various story-related functions will not
+     * work properly
+     * @param story the story that the game world is a part of
+     */
+    public void useStory(Story story) {
+        this.story = story; // save story as member
+        this.area.useStoryPath(story.getFolderPath()); // tell the area the path to the story's folder
+    }
+
+    /**
+     * Switches the current area of focus in the game world
+     * @param path the path to the new area's node-file
+     * @param startingPos the position to place the player at in the new area, if player is not null
+     */
+    public void switchAreas(Utils.Path path, Pair<Integer> startingPos) {
+        this.area.cleanup(); // cleanup old area
+        this.area = new Area(Node.pathContentsToNode(path)); // create new area with given path
+        this.area.useCam(this.cam); // give camera to the area
+        this.area.useMouseInputEngine(this.mip); // give mouse input engine to area
+        float ssr = area.getStartingSunRotation(); // get the starting sun rotation from the area
+        this.dnc = new DayNightCycle(ssr < 0 ? this.dnc.sunAngle : ssr, area.getSunSpeed()); // update day/night cycle
+        PhysicsEngine.giveBlockMap(this.area.getBlockMap()); // give the area's block map to the physics engine
+        PhysicsEngine.giveSlopeMap(this.area.getSlopeMap()); // give the area's slope map to the physics engine
+        if (this.player != null) // if the game world has a player
+            this.player.setPos((float)startingPos.x + 0.5f, (float)startingPos.y + 0.5f); // move to new pos
+        if (this.story != null) this.area.useStoryPath(this.story.getFolderPath()); // give new area the story path
+    }
+
+    /**
+     * Responds to keyboard input by checking if the enter gate key was released. If so, asks the area to check if the
+     * player is nearby a gate, and changes areas if so
+     * @param key the keyboard key in question
+     * @param action the action performed on the keyboard key in question
+     */
+    public void keyboardInput(int key, int action) {
+        if (key == ENTER_GATE_KEY && action == GLFW_RELEASE) { // if gate entering key pressed
+            Area.Gate g = this.area.enterGate(player.getX(), player.getY()); // ask area to try to enter a gate
+            if (g != null) this.switchAreas(g.getPath(), g.getStartingPos()); // if a gate was found, switch areas
+        }
     }
 
     /**
@@ -115,19 +172,6 @@ public class GameWorld {
     public void addObject(WorldObject wo) {
         wo.setCollidables(this.objects); // give it the game world's collidables to use
         this.objects.add(wo); // add it to the list
-    }
-
-    /**
-     * Grabs the world object at the given index
-     *
-     * @param i the index to look for
-     * @return the object at index i
-     */
-    public WorldObject getWorldObject(int i) {
-        if (i < 0 || i >= this.objects.size()) // if the given index is invalid
-            Utils.handleException(new Exception("Unable to get world object at index: " + i + "; out of bounds"),
-                    this.getClass(), "getWorldObject", true); // crash
-        return this.objects.get(i); // otherwise return the corresponding world object
     }
 
     /**

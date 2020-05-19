@@ -47,6 +47,7 @@ uniform int useLights;            // flag specifying if individual lights should
 uniform float sunPresence;        // how present the sun currently is as a from 0 (not present) to 1 (fully present)
 uniform Light lights[MAX_LIGHTS]; /* the list of lights to consider. To denote that there is no light at index, simply
                                      don't set the uniform */
+uniform float flicker;
 
 /*
  * In/Out Variables
@@ -94,12 +95,13 @@ vec4 applyDayNight(vec4 color) {
 vec4 applyLights(vec4 color, vec3 baseColor) {
     for (int i = 0; i < MAX_LIGHTS; i++) { // go through each light
         if (lights[i].reach > 0) { // if that light exists
+            float actualReach = lights[i].reach * (flicker > 0 ? flicker : 1); // apply flicker to light reach
             float d = distance(worldPos, vec2(lights[i].x, lights[i].y)); // get the distance to the light
-            if (d <= lights[i].reach) { // if it is within reach of the light
+            if (d <= actualReach) { // if it is within reach of the light
                 // make the base color brighter depending on how present the sun is and how intense the light is
                 vec3 c = baseColor * ((1 * sunPresence) + (lights[i].intensity * (1 - sunPresence)));
                 c = c * lights[i].glow; // apply the light's glow
-                float dist = d / lights[i].reach; // calculate the normalized distance to the light based on reach
+                float dist = d / actualReach; // calculate the normalized distance to the light based on reach
                 vec3 finalColor = (dist) * color.xyz + (1 - dist) * c; // apply normalized distance
                 color = vec4(finalColor, color.w); // update the color
             }

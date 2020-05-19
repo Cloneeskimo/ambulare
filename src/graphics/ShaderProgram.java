@@ -1,8 +1,11 @@
 package graphics;
 
+import utils.Global;
 import utils.Utils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.lwjgl.opengl.GL20.*;
@@ -34,6 +37,7 @@ public class ShaderProgram {
      */
     private final Map<String, Integer> uniforms; // map of uniform names to locations
     private final int progID;                    // program id of the shader program
+    private float flicker;
     private int vShaderID;                       // program id of the vertex shader
     private int fShaderID;                       // program id of the fragment shader
     private int lightNo;                         // how many light uniforms have been set since the last unbind/bind
@@ -200,11 +204,21 @@ public class ShaderProgram {
         }
     }
 
+    private float getFlicker(int i) {
+        this.flicker += (float)Math.random() * 0.05f - 0.025f;
+        if (this.flicker > 1.3f) this.flicker = 1.3f;
+        else if (this.flicker < 0.7f) this.flicker = 0.7f;
+        Global.debugInfo.setField("flicker", Float.toString(this.flicker));
+        return this.flicker;
+    }
+
     /**
      * Binds the shader program
      */
     public void bind() {
         glUseProgram(this.progID);
+        Integer i = this.uniforms.get("flicker"); // get flicker uniform
+        if (i != null) glUniform1f(i, getFlicker(this.lightNo)); // if registered,
     }
 
     /**

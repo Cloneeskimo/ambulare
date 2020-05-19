@@ -125,6 +125,7 @@ public abstract class Block {
         if (foreground != null) // if there is a foreground
             loadLayoutLayerBlocks(mm, blocks[2], foreground, k, ats, bmw, bmh, sp, m); // load foreground
         for (BlockInfo bi : k.values()) bi.cleanup(); // cleanup block info overlay textures
+        m.cleanup();
         endBlockFormatting(sp); // end block formatting
 
         // log block loading metrics
@@ -206,6 +207,7 @@ public abstract class Block {
                             // if the texture is animated, add it to the animated textures list
                             if (formatted instanceof AnimatedTexture) ats.add((AnimatedTexture) formatted);
                             m = new Material(formatted); // create a new material using the formatted texture
+                            base.cleanup();
                         }
                         mm.put(mmKey, m); // save in material map
                     }
@@ -802,7 +804,7 @@ public abstract class Block {
                     // set the position of the block in the shader program
                     sp.setUniform("x", Transformation.getCenterOfCellComponent(b.x));
                     sp.setUniform("y", Transformation.getCenterOfCellComponent(b.y));
-                    glDrawElements(GL_TRIANGLES, this.idx, GL_UNSIGNED_INT, 0); // draw block model at that position
+                    glDrawElements(GL_TRIANGLES, this.idx, GL_UNSIGNED_INT, 0); // draw model at that position
                     renderCount++; // iterate render count
                 }
             }

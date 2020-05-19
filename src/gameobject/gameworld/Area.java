@@ -1,6 +1,7 @@
 package gameobject.gameworld;
 
 import gameobject.GameObject;
+import gameobject.ui.TextObject;
 import graphics.*;
 import utils.*;
 
@@ -46,6 +47,12 @@ import static gameobject.gameworld.Block.renderBlocks;
 public class Area {
 
     /**
+     * Static Data
+     */
+    private static final float GATE_ENTER_DIST_THRESHOLD = 3f; /* the maximum distance a player should be away from a
+                                                                  gate to enter it when the gate enter key is pressed */
+
+    /**
      * Members
      */
     private final Map<Material, List<Pair<Integer>>>[] blocks;  /* an array of lists of block positions grouped by
@@ -55,17 +62,18 @@ public class Area {
         middleground blocks, and blocks[2] represents the foreground blocks */
     private final List<GameObject>[] decor;                     /* two lists of decor in the area where decor[0] is
                                                                    background decor and decor[1] is foreground decor */
+    private final List<Gate> gates;                             // a list of gates to other areas
     private final List<AnimatedTexture> ats;                    // a list of animated textures to update
     private final boolean[][] blockMap;                         // block map of the middleground for collision
     private final PhysicsEngine.SlopeType[][] slopeMap;         // slope map of the middleground for collision
     private final Block.BlockModel bm = new Block.BlockModel(); // all blocks use same 1x1 square model
-    private BackDrop backdrop;                                  // the backdrop rendered behind the world
-    private String name;                                        // the name of the area
-    private float startingSunRotation;                           /* the rotation to set the sun to when the area is
+    private final String name;                                  // the name of the area
+    private final float startingSunRotation;                    /* the rotation to set the sun to when the area is
                                                                    entered. If -1, the sun's rotation will not be
                                                                    changed */
-    private float sunSpeed;                                     // the sun's speed while in this area
-    private boolean lightForeground;                            // whether to apply lights to objects in the foreground
+    private final float sunSpeed;                               // the sun's speed while in this area
+    private final boolean lightForeground;                      // whether to apply lights to objects in the foreground
+    private BackDrop backdrop;                                  // the backdrop rendered behind the world
 
     /**
      * Constructs the area by compiling information from a given node. Most of the loading process is actually done in
@@ -150,15 +158,17 @@ public class Area {
          */
         this.blocks = new Map[]{new HashMap<>(), new HashMap<>(), new HashMap<>()}; // block pos for each layout layer
         this.decor = new List[]{new ArrayList<>(), new ArrayList<>()}; // decor list for background and foreground
+        this.gates = new ArrayList<>(); // initialize gates array list
         this.ats = new ArrayList<>(); // create new list to animated textures to update
         Object[] maps = Block.loadLayoutBlocks((Node) (area.get("block_key")),
                 (Node) (area.get("background_layout")), (Node) (area.get("middleground_layout")),
                 (Node) (area.get("foreground_layout")), this.blocks, this.ats); // load block layout
         this.blockMap = (boolean[][])maps[0]; // save block map
         this.slopeMap = (PhysicsEngine.SlopeType[][])maps[1]; // save slope map
+        // load decor using decor key and Decor class
         if (area.get("decor_key") != null) Decor.loadLayoutDecor((Node) (area.get("decor_key")),
                 (Node) (area.get("background_layout")), (Node) (area.get("middleground_layout")),
-                (Node) (area.get("foreground_layout")), this.decor, this.ats, this.blockMap, this.slopeMap); // decor
+                (Node) (area.get("foreground_layout")), this.decor, this.gates, this.ats, this.blockMap, this.slopeMap);
         this.name = (String) (area.get("name")); // save name
         this.lightForeground = (Boolean) (area.get("light_foreground")); // save foreground lighting flag
         this.startingSunRotation = (float) (area.get("starting_sun_rotation")); // save starting sun rotation
@@ -171,6 +181,23 @@ public class Area {
         Utils.log("Finished loading area '" + this.name + "' in " + String.format("%.2f",
                 (Timer.getTimeMilliseconds() - time)) + "ms", this.getClass(), "Area",
                 false); // log time it took to load area
+        Global.debugInfo.setField("area animated textures", Integer.toString(this.ats.size()));
+    }
+
+    /**
+     * Tells the area which mouse input engine to add any mouse interaction items to
+     * @param mip the mouse input engine to use
+     */
+    public void useMouseInputEngine(MouseInputEngine mip) {
+        for (Gate g : this.gates) mip.add(g, true); // add gates to the mip
+    }
+
+    /**
+     * Tells the area the path to the story folder
+     * @param storyPath the path to the story folder
+     */
+    public void useStoryPath(Utils.Path storyPath) {
+        for (Gate g : this.gates) g.initLabels(storyPath); // give to the gates
     }
 
     /**
@@ -180,7 +207,7 @@ public class Area {
      */
     public void useCam(Camera cam) {
         // if the area has a material backdrop, give it a reference to the camera to use for scrolling
-        if (this.backdrop instanceof MaterialBackDrop) ((MaterialBackDrop) this.backdrop).useCam(cam);
+        if (this.backdrop instanceof MaterialBackDrop) this.backdrop.useCam(cam);
     }
 
     /**
@@ -192,6 +219,23 @@ public class Area {
         for (AnimatedTexture at : this.ats) at.update(interval); // update animated textures
         for (GameObject o : this.decor[0]) o.update(interval); // update background decor
         for (GameObject o : this.decor[1]) o.update(interval); // update foreground decor
+    }
+
+    /**
+     * This method should be called when the key to enter a gate has been pressed. Using the given player position, this
+     * method will check if the player is close enough to a gate to enter it
+     * @param playerX the x position of the player
+     * @param playerY the y position of the player
+     * @return the entered gate if the player was close enough to one to enter, or null otherwise
+     */
+    public Gate enterGate(float playerX, float playerY) {
+        for (Gate g : this.gates) { // for each gate
+            // calculate the distance
+            float dx = g.getX() - playerX;
+            float dy = g.getY() - playerY;
+            if (Math.sqrt(dx * dx + dy * dy) <= GATE_ENTER_DIST_THRESHOLD) return g; // return gate if close enough
+        }
+        return null; // no gates close enough -> no transition
     }
 
     /**
@@ -290,6 +334,142 @@ public class Area {
         for (Map<Material, List<Pair<Integer>>> bs : this.blocks) for (Material m : bs.keySet()) m.cleanup();
         this.bm.cleanup(); // cleanup the block model
         this.backdrop.cleanup(); // cleanup the backdrop
+        AnimatedTexture.texCoords = new HashMap<>(); // reset animated texture texture coordinate VBOs
+    }
+
+    /**
+     * Represents a physical gate between areas
+     */
+    public static class Gate extends GameObject implements MouseInputEngine.MouseInteractive {
+
+        /**
+         * Members
+         */
+        // an array of mouse callbacks as specified by
+        private Pair<Integer> pos;       // the position to start the player at in the new area
+        private String fPath;            // the path to the new area's node-file, relative to the story folder
+        private Utils.Path path;         // the path to the new area's node-file
+        private TextObject label;        // a label to show when the gate is hovered
+        private TextObject instructions; // a label showing instructions on how to enter the gate
+
+        /**
+         * Constructs the gate
+         * @param model the model to use for the gate
+         * @param material the material to use for the gate
+         * @param fPath the path to the gate's area, relative to the story folder
+         * @param pos the position to start the player at in the new area when the gate is entered
+         */
+        public Gate(Model model, Material material, String fPath, Pair<Integer> pos) {
+            super(model, material); // call super on game object
+            this.fPath = fPath; // save new area's node-file path, relative to the story folder, as member
+            this.pos = pos; // save starting position as member
+        }
+
+        /**
+         * Initializes the labels above the gate to show the player when moused over
+         * @param storyFolderPath the path to the story folder to use to retrieve the new area's name
+         */
+        public void initLabels(Utils.Path storyFolderPath) {
+            this.path = storyFolderPath.add(this.fPath); // get and save new area's noe-file's path
+            if (!this.path.exists()) // if the path doesn't exist
+                Utils.handleException(new Exception(NodeLoader.getMessage("Gate", null,
+                        "Invalid path to linked to area node-file: " + this.path, false)),
+                        this.getClass(), "initLabel", true); // crash
+            else { // if the path does exist
+                this.instructions = new TextObject(Global.font, "<press e to enter>"); // create instructions text
+                this.instructions.setScale(1.5f, 1.5f); // scale instructions text slightly
+                this.instructions.setVisibility(false); // make instructions text invisible to start
+                Node areaData = Node.pathContentsToNode(this.path); // get the new area's data
+                Node nameNode = areaData.getChild("name"); // get the name of the new area
+                if (nameNode != null) { // if there is a name
+                    this.label = new TextObject(Global.font, "to: " + nameNode.getValue()); // create label text
+                    this.label.setScale(3f, 3f); // scale label text up
+                    this.label.setVisibility(false); // make label text invisible to start
+                }
+                this.positionText(); // position the text objects
+            }
+        }
+
+        /**
+         * Repositions the text above the gate
+         */
+        private void positionText() {
+            if (this.instructions != null) // if there are instructions
+                this.instructions.setPos(this.getX(), this.getY() + this.getHeight() / 2 +
+                        instructions.getHeight() / 2 + 0.07f); // place them directly above the gate
+            if (this.label != null) // if there is a label
+                this.label.setPos(this.instructions.getX(), instructions.getY() + instructions.getHeight() / 2 +
+                        label.getHeight() / 2 + 0.05f); // place it directly above the instructions
+        }
+
+        /**
+         * Reacts to gate movement by position the text above the ate
+         */
+        @Override
+        protected void onMove() {
+            super.onMove(); // call super's onMove
+            this.positionText(); // position text above gate
+        }
+
+        /**
+         * Renders the gate and its text objects
+         * @param sp the shader program to use to render the game object
+         */
+        @Override
+        public void render(ShaderProgram sp) {
+            super.render(sp); // render gate
+            if (this.instructions != null) this.instructions.render(sp); // render instructions text
+            if (this.label != null) this.label.render(sp); // render label
+        }
+
+        /**
+         * Gates do not take callbacks
+         */
+        @Override
+        public void giveCallback(MouseInputEngine.MouseInputType type, MouseInputEngine.MouseCallback mc) {}
+
+        /**
+         * Responds to mouse interaction by determining visibility for the text objects
+         * @param type the type of mouse input that occurred
+         * @param x    the x position of the mouse in world coordinate or camera-view coordinates, depending on the mouse
+         *             input engine's camera usage flag for this particular implementing object
+         * @param y    the y position of the mouse in world coordinate or camera-view coordinates, depending on the mouse
+         */
+        @Override
+        public void mouseInteraction(MouseInputEngine.MouseInputType type, float x, float y) {
+            if (type == MouseInputEngine.MouseInputType.HOVER) { // if hovered
+                if (this.instructions != null) this.instructions.setVisibility(true); // make instructions visible
+                if (this.label != null) this.label.setVisibility(true); // make label visible
+            }
+            else if (type == MouseInputEngine.MouseInputType.DONE_HOVERING) { // if done hovering
+                if (this.instructions != null) this.instructions.setVisibility(false); // make instructions invisible
+                this.label.setVisibility(false); // make label invisible
+            }
+        }
+
+        /**
+         * @return the path of the new area through the gate
+         */
+        public Utils.Path getPath() {
+            return this.path;
+        }
+
+        /**
+         * @return the position to start the player at in the new are
+         */
+        public Pair<Integer> getStartingPos() {
+            return this.pos;
+        }
+
+        /**
+         * Cleans up the gate and its text objects
+         */
+        @Override
+        public void cleanup() {
+            super.cleanup(); // clean up gate
+            if (this.instructions != null) this.instructions.cleanup(); // clean up instructions text
+            if (this.label != null) this.label.cleanup(); // clean up label
+        }
     }
 
     /**

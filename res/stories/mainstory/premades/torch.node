@@ -1,0 +1,15 @@
+decor:
+{
+    texture_paths:
+    {
+        resource_path: /textures/decor/lighting/torch.png
+    }
+    animation_frames: 10
+    animation_time: 0.04f
+    y_light_offset: 0.2f
+    light_source:
+    {
+        glow: 1.4f 1.1f 1f 1f
+        reach: 5f
+    }
+}

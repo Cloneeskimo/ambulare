@@ -13,53 +13,30 @@ area:
     # specify the backdrop materials
     backdrop: block_backdrop
     {
-        border_background_block: resfrom /stories/mainstory/blocks/gray_brick.node
-        blockmap_background_block: resfrom /stories/mainstory/blocks/gray_brick_background.node
+        border_background_block: resfrom /stories/mainstory/premades/gray_brick.node
+        blockmap_background_block: resfrom /stories/mainstory/premades/gray_brick_background.node
     }
 
     # provide a key mapping from characters in the layout to blocks
     block_key:
     {
         # gray bricks as the main block
-        g: resfrom /stories/mainstory/blocks/gray_brick.node
+        g: resfrom /stories/mainstory/premades/gray_brick.node
 
         # background gray bricks which are slightly dark
-        b: resfrom /stories/mainstory/blocks/gray_brick_background.node
+        b: resfrom /stories/mainstory/premades/gray_brick_background.node
     }
 
     # provides a key mapping characters in the layout to decor
     decor_key:
     {
         # weeds
-        w:
-        {
-            texture_paths:
-            {
-                resource_path: /textures/decor/foliage/weeds.png
-                resource_path: /textures/decor/foliage/weeds2.png
-            }
-            pin: below
-            x_random_interval: 0.35f
-            y_offset: -0.06f
-            rotate_on_slope: true
-        }
+        w: resfrom /stories/mainstory/premades/weeds.node
 
-        # hanging lamps
-        l:
+        # torch
+        t: resfrom /stories/mainstory/premades/torch.node
         {
-            texture_paths:
-            {
-                resource_path: /textures/decor/lighting/hanging-lamp.png
-            }
-            pin: above
-            x_random_interval: 1f
-            y_offset: 0.06f
-            y_light_offset: -0.3f
-            light_source:
-            {
-                intensity: 1.8f
-                reach: 4f
-            }
+            x_offset: 0.5f
         }
     }
 
@@ -67,16 +44,16 @@ area:
     middleground_layout:
     {
         00: ggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg
-        01: ggggggggggggggggggggggggggggggggggggggggg    l          l     g      gg
-        02: g   l   g     l             l       gggg      wwwwww                 gg
-        03: gg                                   ggl     g   www  ww  ww         gg
-        04: gggwwwwwwwww  ww  ww  ww  wwwww      gg         wggg  gg  gg  ggggggggg
+        01: ggggggggggggggggggggggggggggggggggggggggg       t             g      gg
+        02: g   t   g                           gggg         www    t        t   gg
+        03: gg            t   t   t          t   gg      g   www  ww  ww         gg
+        04: gggwwwwwwwww  ww  ww  ww  wwwww      gg   t     wggg  gg  gg  ggggggggg
         05: gggggggggggg  gg  gg  gg  ggggg     gggw g     wwgg
         06:           gg  gg  gg  gg     gg    ggggw   g  wwgg
-        07:                              gww  gggggg      wggg
-        08:                              ggww   l gg      gg gg
-        09:                              gggww             l  g
-        10:                              ggggwwwwwwwwwwgwwwwwgg
+        07:                              gww  gggggg     ggggg
+        08:                              ggww     gg        gg
+        09:                              gggww  t      gg t  g
+        10:                              ggggwwwwwwwwwwggwwwgg
         11:                              ggggggggggggggggggggg
     }
 }

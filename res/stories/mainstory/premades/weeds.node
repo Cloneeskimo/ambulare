@@ -1,0 +1,12 @@
+decor:
+{
+        texture_paths:
+        {
+            resource_path: /textures/decor/foliage/weeds.png
+            resource_path: /textures/decor/foliage/weeds2.png
+        }
+        pin: below
+        x_random_interval: 0.35f
+        y_offset: -0.06f
+        rotate_on_slope: true
+    }
