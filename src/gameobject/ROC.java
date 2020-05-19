@@ -65,7 +65,7 @@ public class ROC {
      * @param player the player to give to the game wworld
      */
     public void useGameWorld(Area startingArea, Entity player) {
-        this.gameWorld = new GameWorld(this.mip, player, startingArea); // create world
+        this.gameWorld = new GameWorld(this.mip, player, startingArea, this); // create world
         this.mip.useCam(this.gameWorld.getCam()); // tell the mouse input engine to use game world cam for calculations
         if (player != null) { // if the player isn't null
             this.mip.add(player, true); // add player to mouse input engine

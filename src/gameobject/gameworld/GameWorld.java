@@ -1,5 +1,6 @@
 package gameobject.gameworld;
 
+import gameobject.ROC;
 import graphics.AnimatedTexture;
 import graphics.Camera;
 import graphics.ShaderProgram;
@@ -28,19 +29,24 @@ public class GameWorld {
     /**
      * Static Data
      */
-    private static final int ENTER_GATE_KEY = GLFW_KEY_E; // key to enter a gate
+    public static final float AREA_CHANGE_TRANSITION = 3f; // time between area change transitions
+    private static final int ENTER_GATE_KEY = GLFW_KEY_E;    // key to enter a gate
 
     /**
      * Members
      */
-    private List<WorldObject> objects; // the world objects in the game world
-    private MouseInputEngine mip;      // a reference to the ROC's mouse input engine
-    private Story story;               // a reference to the current story
-    private Entity player;             // the player
-    private DayNightCycle dnc;         // the world's day/night cycle
-    private ShaderProgram sp;          // the shader program used to render the game world
-    private Camera cam;                // the camera used to see the game world
-    private Area area;                 // the area currently in use in the game world
+    private List<WorldObject> objects;          // the world objects in the game world
+    private ROC roc;                            // reference to the ROC for fading
+    private MouseInputEngine mip;               // a reference to the ROC's mouse input engine
+    private Global.Callback areaChangeCallback; // invoked when the area changes
+    private Story story;                        // a reference to the current story
+    private Entity player;                      // the player
+    private DayNightCycle dnc;                  // the world's day/night cycle
+    private ShaderProgram sp;                   // the shader program used to render the game world
+    private Camera cam;                         // the camera used to see the game world
+    private Area area;                          // the area currently in use in the game world
+    private Area.Gate enteredGate;              // when switching areas, this stores the gate entered
+    private float timer;                        // timer kept for area changes
 
     /**
      * Constructor
@@ -49,7 +55,7 @@ public class GameWorld {
      * @param player the player to place into the game world
      * @param startingArea the the starting of the game world
      */
-    public GameWorld(MouseInputEngine mip, Entity player, Area startingArea) {
+    public GameWorld(MouseInputEngine mip, Entity player, Area startingArea, ROC roc) {
         this.objects = new ArrayList<>(); // create empty objects list
         this.initSP(); // initialize shader program
         this.area = startingArea; // save the starting area as a member
@@ -67,6 +73,7 @@ public class GameWorld {
             this.objects.add(player); // add it to world objects
             this.cam.follow(this.player); // and tell the camera to follow it
         }
+        this.roc = roc; // save reference to ROC
     }
 
     /**
@@ -121,6 +128,8 @@ public class GameWorld {
         if (this.player != null) // if the game world has a player
             this.player.setPos((float)startingPos.x + 0.5f, (float)startingPos.y + 0.5f); // move to new pos
         if (this.story != null) this.area.useStoryPath(this.story.getFolderPath()); // give new area the story path
+        this.enteredGate = null; // reset entered gate reference
+        this.timer = 0f; // reset time
     }
 
     /**
@@ -131,8 +140,8 @@ public class GameWorld {
      */
     public void keyboardInput(int key, int action) {
         if (key == ENTER_GATE_KEY && action == GLFW_RELEASE) { // if gate entering key pressed
-            Area.Gate g = this.area.enterGate(player.getX(), player.getY()); // ask area to try to enter a gate
-            if (g != null) this.switchAreas(g.getPath(), g.getStartingPos()); // if a gate was found, switch areas
+            this.enteredGate = this.area.enterGate(player.getX(), player.getY()); // ask area to try to enter a gate
+            this.roc.fadeOut(new float[]{0f, 0f, 0f, 0f}, AREA_CHANGE_TRANSITION); // fade out the ROC
         }
     }
 
@@ -146,6 +155,15 @@ public class GameWorld {
         for (WorldObject po : this.objects) po.update(interval); // update the world objects
         this.cam.update(interval); // update camera
         this.area.update(interval); // update the area
+        if (this.enteredGate != null) { // if in the middle of an area change
+            this.timer += interval; // keep track of time
+            if (this.timer >= AREA_CHANGE_TRANSITION) { // if enough time has passed
+                this.switchAreas(this.enteredGate.getPath(), this.enteredGate.getStartingPos()); // switch areas
+                Global.resetAccumulator = true; // reset accumulator
+                this.roc.fadeIn(new float[]{0f, 0f, 0f, 1f}, AREA_CHANGE_TRANSITION); // fade in the ROC
+                if (this.areaChangeCallback != null) this.areaChangeCallback.invoke(); // invoke area change callback
+            }
+        }
     }
 
     /**
@@ -172,6 +190,14 @@ public class GameWorld {
     public void addObject(WorldObject wo) {
         wo.setCollidables(this.objects); // give it the game world's collidables to use
         this.objects.add(wo); // add it to the list
+    }
+
+    /**
+     * Specifies a callback to invoke whenever the area of focus in the game world changes
+     * @param cb the callback
+     */
+    public void useAreaChangeCallback(Global.Callback cb) {
+        this.areaChangeCallback = cb; // save callback as member
     }
 
     /**

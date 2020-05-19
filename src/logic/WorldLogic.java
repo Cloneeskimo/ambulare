@@ -68,6 +68,9 @@ public class WorldLogic extends GameLogic {
         Node startingArea = Node.pathContentsToNode(this.story.getStartingAreaPath()); // get starting area node
         this.roc.useGameWorld(new Area(startingArea), this.player); // create game world with area
         this.roc.getGameWorld().useStory(this.story); // give the story to the game world
+        this.roc.getGameWorld().useAreaChangeCallback(() -> { // when the area changes, update the area name text
+            ((TextObject)this.roc.getStaticGameObject(TAG_AREA)).setText(this.roc.getGameWorld().getArea().getName());
+        });
     }
 
     /**
@@ -115,9 +118,8 @@ public class WorldLogic extends GameLogic {
                 true, 0.02f)); // add return button to ROC
 
         // create and add area name
-        this.roc.addStaticObject(new TextObject(Global.font,
-                        this.roc.getGameWorld().getArea().getName()).solidify(), TAG_AREA,
-                false, new ROC.PositionSettings(0f, 1f, true, 0.1f));
+        this.roc.addStaticObject(new TextObject(Global.font, this.roc.getGameWorld().getArea().getName()), TAG_AREA,
+                false, new ROC.PositionSettings(1f, 1f, true, 0.04f));
         this.roc.getStaticGameObject(TAG_AREA).setScale(0.8f, 0.8f); // scale area name
 
         // ensure all hud items are placed correctly

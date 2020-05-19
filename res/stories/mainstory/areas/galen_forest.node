@@ -1,7 +1,7 @@
 area:
 {
     # specify the name of the area
-    name: Menu Area
+    name: Galen Forest
 
     # specify that lights should be applied to foreground objects
     light_foreground: true
@@ -50,20 +50,6 @@ area:
             y_offset: -0.05f
         }
     }
-
-    # specify the layout of the background
-    background_layout:
-    {
-        0:
-        1:
-        2:                            dddddddd
-        3:                            dddddddd
-        4:                            dddddddd
-        5:                            dddddddd
-        6:
-        7:
-    }
-
     # specify the layout of the middleground
     middleground_layout:
     {
@@ -75,16 +61,5 @@ area:
         5:   dddddddddddddddddd  dddddddddddddddddddd     dddd
         6:       ddddddd           ddddddddddddddddd
         7:                              dddddd
-    }
-
-    # specify the layout of the background
-    foreground_layout:
-    {
-        0:  o            o          gggg  o
-        1: ggg           ggg
-        2:    ggg      og   g
-        3:          o gG     g     o              o          o
-        4:       GgggG        g  gggg            gggg     gggg
-        5:                           G        GgG
     }
 }

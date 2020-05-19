@@ -30,14 +30,16 @@ public class ShaderProgram {
     private static final int MAX_LIGHTS = 32;                /* the largest number of lights that can be rendered per
                                                                 binding of one shader program*/
     private static final String LIGHT_ARRAY_NAME = "lights"; /* the name to assume light array uniforms to be in shader
-                                                                program source codee*/
+                                                                program source code */
+    private static final float MIN_FLICKER = -0.2f;          // the minimum allowed flicker of a light
+    private static final float MAX_FLICKER = 0.2f;           // the maximum allowed flicker of a light
 
     /**
      * Members
      */
     private final Map<String, Integer> uniforms; // map of uniform names to locations
+    private float[] flickers;                    // an array of flicker values for each light
     private final int progID;                    // program id of the shader program
-    private float flicker;
     private int vShaderID;                       // program id of the vertex shader
     private int fShaderID;                       // program id of the fragment shader
     private int lightNo;                         // how many light uniforms have been set since the last unbind/bind
@@ -118,7 +120,8 @@ public class ShaderProgram {
     }
 
     /**
-     * Registers a light array uniform with the length MAX_LENGTH and with the name LIGHT_ARRAY_NAME
+     * Registers a light array uniform with the length MAX_LENGTH and with the name LIGHT_ARRAY_NAME. This will also
+     * register the corresponding flicker array uniform
      */
     public void registerLightArrayUniform() {
         for (int i = 0; i < MAX_LIGHTS; i++) {
@@ -127,7 +130,9 @@ public class ShaderProgram {
             this.registerUniform(LIGHT_ARRAY_NAME + "[" + i + "].intensity");
             this.registerUniform(LIGHT_ARRAY_NAME + "[" + i + "].x");
             this.registerUniform(LIGHT_ARRAY_NAME + "[" + i + "].y");
+            this.registerUniform("flicker[" + i + "]");
         }
+        this.flickers = new float[MAX_LIGHTS]; // create flicker values array
     }
 
     /**
@@ -191,6 +196,7 @@ public class ShaderProgram {
                     this.getClass(), "setLightUniform", true);
         try {
             String name = "lights[" + this.lightNo + "]"; // get the proper name for the light in the lights array
+            this.flicker(light, this.lightNo); // apply flicker
             this.lightNo++; // iterate the lights array iterator
             float[] glow = light.getGlow(); // get the light's glow
             glUniform3f(this.uniforms.get(name + ".glow"), glow[0], glow[1], glow[2]); // set the light's glow
@@ -204,21 +210,24 @@ public class ShaderProgram {
         }
     }
 
-    private float getFlicker(int i) {
-        this.flicker += (float)Math.random() * 0.05f - 0.025f;
-        if (this.flicker > 1.3f) this.flicker = 1.3f;
-        else if (this.flicker < 0.7f) this.flicker = 0.7f;
-        Global.debugInfo.setField("flicker", Float.toString(this.flicker));
-        return this.flicker;
+    /**
+     * Applies flicker to a light source uniform
+     * @param ls the light source defining the flicker
+     * @param i the index of the light in the lights array
+     */
+    private void flicker(LightSource ls, int i) {
+        // generate a random change in flicker according to the light source's flicker speed
+        float dFlicker = ((float)Math.random() * ls.getFlickerSpeed() * 2f) - ls.getFlickerSpeed();
+        // apply change in flicker to the light's flicker, bounded by min/max constants
+        this.flickers[i] = Math.max(MIN_FLICKER, Math.min(MAX_FLICKER, this.flickers[i] + dFlicker));
+        this.setUniform("flicker[" + i + "]", this.flickers[i]); // set the uniform
     }
 
     /**
      * Binds the shader program
      */
     public void bind() {
-        glUseProgram(this.progID);
-        Integer i = this.uniforms.get("flicker"); // get flicker uniform
-        if (i != null) glUniform1f(i, getFlicker(this.lightNo)); // if registered,
+        glUseProgram(this.progID); // tell OpenGL to use the program
     }
 
     /**

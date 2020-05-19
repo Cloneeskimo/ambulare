@@ -37,17 +37,17 @@ struct Light {
 /*
  * Uniforms
  */
-uniform sampler2D texSampler;     // texture sampler - bound to the material's texture
-uniform vec4 color;               // color - bound to the material's color
-uniform int isTextured;           // flag representing whether the material is textured or not
-uniform int blend;                /* defines how to blend a material's color and texture if there are both. 0 - just use
-                                     the texture; 1 - multiply color and texture; 2 - average color and texture */
-uniform int useDNC;               // flag specifying if the day/night cycle lighting should be applied
-uniform int useLights;            // flag specifying if individual lights should be applied
-uniform float sunPresence;        // how present the sun currently is as a from 0 (not present) to 1 (fully present)
-uniform Light lights[MAX_LIGHTS]; /* the list of lights to consider. To denote that there is no light at index, simply
-                                     don't set the uniform */
-uniform float flicker;
+uniform sampler2D texSampler;      // texture sampler - bound to the material's texture
+uniform vec4 color;                // color - bound to the material's color
+uniform int isTextured;            // flag representing whether the material is textured or not
+uniform int blend;                 /* defines how to blend a material's color and texture if there are both. 0 - just
+                                      use texture; 1 - multiply color and texture; 2 - average color and texture */
+uniform int useDNC;                // flag specifying if the day/night cycle lighting should be applied
+uniform int useLights;             // flag specifying if individual lights should be applied
+uniform float sunPresence;         // how present the sun currently is as a from 0 (not present) to 1 (fully present)
+uniform float flicker[MAX_LIGHTS]; // flicker values for lights which are multiplied with reach to create flicker
+uniform Light lights[MAX_LIGHTS];  /* the list of lights to consider. To denote that there is no light at index simply
+                                      don't set the uniform */
 
 /*
  * In/Out Variables
@@ -95,7 +95,7 @@ vec4 applyDayNight(vec4 color) {
 vec4 applyLights(vec4 color, vec3 baseColor) {
     for (int i = 0; i < MAX_LIGHTS; i++) { // go through each light
         if (lights[i].reach > 0) { // if that light exists
-            float actualReach = lights[i].reach * (flicker > 0 ? flicker : 1); // apply flicker to light reach
+            float actualReach = lights[i].reach * (1 + flicker[i]); // apply flicker to light reach
             float d = distance(worldPos, vec2(lights[i].x, lights[i].y)); // get the distance to the light
             if (d <= actualReach) { // if it is within reach of the light
                 // make the base color brighter depending on how present the sun is and how intense the light is
