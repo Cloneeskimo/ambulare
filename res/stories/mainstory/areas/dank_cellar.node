@@ -46,7 +46,7 @@ area:
             {
                 resource_path: /textures/decor/gate.png
             }
-            gate: areas/galen_forest.node 4 7
+            gate: /areas/galen_forest.node 4 7
         }
     }
 

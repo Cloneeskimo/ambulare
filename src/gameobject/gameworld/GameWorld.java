@@ -130,6 +130,8 @@ public class GameWorld {
         if (this.story != null) this.area.useStoryPath(this.story.getFolderPath()); // give new area the story path
         this.enteredGate = null; // reset entered gate reference
         this.timer = 0f; // reset time
+        this.sp.cleanup(); // cleanup SP to remove old area's lights
+        this.initSP(); // re-initialize
     }
 
     /**
