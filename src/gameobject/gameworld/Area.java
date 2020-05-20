@@ -1,6 +1,7 @@
 package gameobject.gameworld;
 
 import gameobject.GameObject;
+import gameobject.ui.EnhancedTextObject;
 import gameobject.ui.TextObject;
 import graphics.*;
 import utils.*;
@@ -11,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 
 import static gameobject.gameworld.Block.renderBlocks;
+import static gameobject.ui.EnhancedTextObject.Line.DEFAULT_PADDING;
+import static gameobject.ui.EnhancedTextObject.Line.DEFAULT_SCALE;
 
 /*
  * Area.java
@@ -279,6 +282,10 @@ public class Area {
         }
         Global.debugInfo.setField("decor", Integer.toString(decorRendered)); // show decor render count in debug
         Global.debugInfo.setField("blocks", Integer.toString(blocksRendered)); // show block render count in debug
+        // reset lighting flags to false to render post-renders
+        sp.setUniform("useLights", 0); // turn off individual light usage
+        sp.setUniform("useDNC", 0); // turn off day/night cycle usage
+        sp.renderPostRenders(); // render post-renders
     }
 
     /**
@@ -340,7 +347,7 @@ public class Area {
     /**
      * Represents a physical gate between areas
      */
-    public static class Gate extends GameObject implements MouseInputEngine.MouseInteractive {
+    public static class Gate extends GameObject implements MouseInputEngine.MouseInteractive{
 
         /**
          * Members
@@ -349,8 +356,7 @@ public class Area {
         private Pair<Integer> pos;       // the position to start the player at in the new area
         private String fPath;            // the path to the new area's node-file, relative to the story folder
         private Utils.Path path;         // the path to the new area's node-file
-        private TextObject label;        // a label to show when the gate is hovered
-        private TextObject instructions; // a label showing instructions on how to enter the gate
+        private GameObject label;        // a label above the gate
 
         /**
          * Constructs the gate
@@ -370,36 +376,39 @@ public class Area {
          * @param storyFolderPath the path to the story folder to use to retrieve the new area's name
          */
         public void initLabels(Utils.Path storyFolderPath) {
+            List<EnhancedTextObject.Line> lines = new ArrayList<>(); // create list for lines of ETO
+            lines.add(new EnhancedTextObject.Line("to: ???", null, EnhancedTextObject.Line.Alignment.CENTER,
+                    DEFAULT_SCALE, DEFAULT_PADDING)); // first line of ETO, twice as big as second
+            lines.add(new EnhancedTextObject.Line("<press e to enter>", null,
+                    EnhancedTextObject.Line.Alignment.CENTER, DEFAULT_SCALE / 2, DEFAULT_PADDING)); // second line
+            EnhancedTextObject label = new EnhancedTextObject(new Material(new float[] {0f, 0f, 0f, 0.55f}),
+                    Global.font, lines, DEFAULT_PADDING * 3f); // createe ETO
             this.path = storyFolderPath.add(this.fPath); // get and save new area's noe-file's path
             if (!this.path.exists()) // if the path doesn't exist
                 Utils.handleException(new Exception(NodeLoader.getMessage("Gate", null,
                         "Invalid path to linked to area node-file: " + this.path, false)),
                         this.getClass(), "initLabel", true); // crash
             else { // if the path does exist
-                this.instructions = new TextObject(Global.font, "<press e to enter>"); // create instructions text
-                this.instructions.setScale(1.5f, 1.5f); // scale instructions text slightly
-                this.instructions.setVisibility(false); // make instructions text invisible to start
                 Node areaData = Node.pathContentsToNode(this.path); // get the new area's data
                 Node nameNode = areaData.getChild("name"); // get the name of the new area
-                if (nameNode != null) { // if there is a name
-                    this.label = new TextObject(Global.font, "to: " + nameNode.getValue()); // create label text
-                    this.label.setScale(3f, 3f); // scale label text up
-                    this.label.setVisibility(false); // make label text invisible to start
-                }
-                this.positionText(); // position the text objects
+                // if the name node exists, update the label to contain the name
+                if (nameNode != null) label.setLineText(0, "to: " + nameNode.getValue());
             }
+            label.alignAll(EnhancedTextObject.Line.Alignment.CENTER); // align text to center
+            this.label = label.solidify(); // solidify enhanced text object
+            this.label.setScale(5f, 5f); // scale up
+            this.label.setVisibility(false); // invisible by default
+            label.cleanup(); // cleanup old label
+            this.positionText(); // position the text objects
         }
 
         /**
          * Repositions the text above the gate
          */
         private void positionText() {
-            if (this.instructions != null) // if there are instructions
-                this.instructions.setPos(this.getX(), this.getY() + this.getHeight() / 2 +
-                        instructions.getHeight() / 2 + 0.07f); // place them directly above the gate
-            if (this.label != null) // if there is a label
-                this.label.setPos(this.instructions.getX(), instructions.getY() + instructions.getHeight() / 2 +
-                        label.getHeight() / 2 + 0.05f); // place it directly above the instructions
+            if (this.label != null) // reposition if the label exists
+                this.label.setPos(this.getX(), // x aligns with gate
+                        this.getY() + this.getHeight() / 2 + this.label.getHeight() / 2 + 0.010f); // above gate
         }
 
         /**
@@ -418,8 +427,7 @@ public class Area {
         @Override
         public void render(ShaderProgram sp) {
             super.render(sp); // render gate
-            if (this.instructions != null) this.instructions.render(sp); // render instructions text
-            if (this.label != null) this.label.render(sp); // render label
+            if (this.label != null) sp.addToPostRender(this.label); // render label in post-render
         }
 
         /**
@@ -437,14 +445,10 @@ public class Area {
          */
         @Override
         public void mouseInteraction(MouseInputEngine.MouseInputType type, float x, float y) {
-            if (type == MouseInputEngine.MouseInputType.HOVER) { // if hovered
-                if (this.instructions != null) this.instructions.setVisibility(true); // make instructions visible
+            if (type == MouseInputEngine.MouseInputType.HOVER) // if hovered
                 if (this.label != null) this.label.setVisibility(true); // make label visible
-            }
-            else if (type == MouseInputEngine.MouseInputType.DONE_HOVERING) { // if done hovering
-                if (this.instructions != null) this.instructions.setVisibility(false); // make instructions invisible
+            if (type == MouseInputEngine.MouseInputType.DONE_HOVERING) // if done hovering
                 this.label.setVisibility(false); // make label invisible
-            }
         }
 
         /**
@@ -467,7 +471,6 @@ public class Area {
         @Override
         public void cleanup() {
             super.cleanup(); // clean up gate
-            if (this.instructions != null) this.instructions.cleanup(); // clean up instructions text
             if (this.label != null) this.label.cleanup(); // clean up label
         }
     }

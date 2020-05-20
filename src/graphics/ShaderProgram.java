@@ -1,5 +1,6 @@
 package graphics;
 
+import gameobject.GameObject;
 import utils.Global;
 import utils.Utils;
 
@@ -38,6 +39,9 @@ public class ShaderProgram {
      * Members
      */
     private final Map<String, Integer> uniforms; // map of uniform names to locations
+    private List<GameObject> postRenders;        /* a list of items that objects can add to in their render methods in
+                                                    order to specify certain game objects that should be rendered after
+                                                    rendering everything else */
     private float[] flickers;                    // an array of flicker values for each light
     private final int progID;                    // program id of the shader program
     private int vShaderID;                       // program id of the vertex shader
@@ -55,7 +59,7 @@ public class ShaderProgram {
         this.uniforms = new HashMap<>(); // initialize uniform map
         if (this.progID == 0) Utils.handleException(new Exception("Unable to create GLSL program"),
                 this.getClass(), "ShaderProgram", true); // throw exception if cannot create program
-        this.processShaders(vShaderPath, fShaderPath); // process shaders
+        this.processShaders(vShaderPath, fShaderPath); // process shader program
     }
 
     /**
@@ -224,10 +228,28 @@ public class ShaderProgram {
     }
 
     /**
+     * Will render any objects that have been added to the post-renders list during the course of rendering. See members
+     * for more info on post-renders
+     */
+    public void renderPostRenders() {
+        for (GameObject go : this.postRenders) go.render(this); // render each post-render
+    }
+
+    /**
+     * Adds an object to the list of objects to be rendered after normal rendering has occurred, when renderPostRenders()
+     * is called. See members for more info on post renders
+     * @param go the game object to add to the post renders list
+     */
+    public void addToPostRender(GameObject go) {
+        this.postRenders.add(go); // add to post renders list
+    }
+
+    /**
      * Binds the shader program
      */
     public void bind() {
         glUseProgram(this.progID); // tell OpenGL to use the program
+        this.postRenders = new ArrayList<>(); // create a new list for post-renders
     }
 
     /**
@@ -236,6 +258,7 @@ public class ShaderProgram {
     public void unbind() {
         glUseProgram(0); // unbind program
         this.lightNo = 0; // reset lights array iterator
+        this.postRenders = null; // delete old post-renders list
     }
 
     /**

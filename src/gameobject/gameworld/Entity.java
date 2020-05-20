@@ -1,12 +1,15 @@
 package gameobject.gameworld;
 
 import gameobject.GameObject;
+import gameobject.ui.EnhancedTextObject;
 import gameobject.ui.TextObject;
 import graphics.*;
 import utils.Global;
 import utils.MouseInputEngine;
 import utils.PhysicsEngine;
 import utils.Sound;
+
+import static gameobject.ui.EnhancedTextObject.Line.DEFAULT_PADDING;
 
 /*
  * Entity.java
@@ -54,9 +57,10 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
     public Entity(String name, Model model, Material material) {
         super(model, material); // call world object constructor
         this.name = name; // save name as member
-        this.nameplate = new TextObject(Global.font, this.name).solidify(); // create nameplate
-        this.nameplate.setScale(2.5f, 2.5f); // make nameplate larger
-        this.positionNameplate(); // position the nameplate above the entity
+        this.nameplate = new EnhancedTextObject(new Material(new float[] {0f, 0f, 0f, 0.55f}),
+                Global.font, this.name, DEFAULT_PADDING * 3f).solidify(); // create nameplate
+        this.nameplate.setScale(5f, 5f); // scale up
+        this.nameplate.setVisibility(false); // start out as invisible to begin with
         this.getPhysicsProperties().sticky = true; // entities should stick to slopes
     }
 
@@ -156,7 +160,7 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
      */
     @Override
     protected void onMove() {
-        this.positionNameplate(); // reposition the nameplate
+        if (this.nameplate.visible()) this.positionNameplate(); // reposition the nameplate if visible
     }
 
     /**
@@ -167,7 +171,7 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
     @Override
     public void render(ShaderProgram sp) {
         super.render(sp); // render the entity
-        this.nameplate.render(sp); // render the nameplate
+        sp.addToPostRender(this.nameplate); // render nameplate after everything else
     }
 
     /**
@@ -204,12 +208,10 @@ public class Entity extends WorldObject implements MouseInputEngine.MouseInterac
     @Override
     public void mouseInteraction(MouseInputEngine.MouseInputType type, float x, float y) {
         if (type == MouseInputEngine.MouseInputType.HOVER) { // if entity is being hovered
-            this.nameplate.setScale(3f, 3f); // scale up slightly
-            this.positionNameplate(); // reposition nameplate
-        } else if (type == MouseInputEngine.MouseInputType.DONE_HOVERING) { // if entity is done being hovered
-            this.nameplate.setScale(2.5f, 2.5f); // scale back to normal
-            this.positionNameplate(); // reposition nameplate
-        }
+            this.nameplate.setVisibility(true); // make nameplate visible
+            this.positionNameplate(); // and position it
+        } else if (type == MouseInputEngine.MouseInputType.DONE_HOVERING) // if entity is done being hovered
+            this.nameplate.setVisibility(false); // make nameplate invisible
         MouseInputEngine.MouseInteractive.invokeCallback(type, this.mcs, x, y); // invoke necessary callbacks
     }
 

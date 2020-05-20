@@ -39,6 +39,9 @@ area:
             x_offset: 0.5f
         }
 
+        # no-offset torch
+        T: resfrom /stories/mainstory/premades/torch.node
+
         # gate to galen forest
         h:
         {
@@ -47,6 +50,7 @@ area:
                 resource_path: /textures/decor/gate.png
             }
             gate: /areas/galen_forest.node 4 7
+            pin: below
         }
     }
 
@@ -54,7 +58,7 @@ area:
     middleground_layout:
     {
         00: ggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg
-        01: ggggggggggggggggggggggggggggggggggggggggg       t             g  t t gg
+        01: ggggggggggggggggggggggggggggggggggggggggg       t             g  T T gg
         02: g   t   g                           gggg         www    t            gg
         03: gg            t   t   t          t   gg      g   www  ww  ww      h  gg
         04: gggwwwwwwwww  ww  ww  ww  wwwww      gg   t     wggg  gg  gg  ggggggggg

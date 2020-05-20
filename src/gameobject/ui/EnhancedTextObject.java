@@ -8,6 +8,7 @@ import utils.Utils;
 import java.util.ArrayList;
 import java.util.List;
 
+import static gameobject.ui.TextObject.DEFAULT_SIZE;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL30.*;
 
@@ -113,9 +114,10 @@ public class EnhancedTextObject extends GameObject {
         for (int i = 0; i < this.lines.size(); i++) { // for each sum
             // if it is longer than the current recorded width, record it as the new width
             w = Math.max(w, this.tos.get(i).getWidth() + (this.borderPadding * 2f));
-            // add its height and appropriate padding to the total height
-            h += this.tos.get(i).getHeight() + (i == 0 || i == this.lines.size() - 1 ? 1f : 2f) *
-                    this.lines.get(i).padding;
+            float pads = 2; // normally, a padding above and below would be needed
+            if (i == 0) pads --; // if first element, one less padding needed
+            if (i == this.lines.size() - 1) pads--; // if last element, one less padding needed
+            h += this.tos.get(i).getHeight() + pads * this.lines.get(i).padding; // add height, padding to total height
         }
         this.model.setScale(w, h); // scale the object to fit all lines and padding
         float y = this.getY() + (this.getHeight() / 2) - borderPadding; // start from the top of the object
@@ -162,7 +164,9 @@ public class EnhancedTextObject extends GameObject {
      * Solidifies the enhanced text object into a single-quad modeled game object. For enhanced text objects whose text
      * won't change often, this is imperative as it results in much more efficient rendering. Note that the resulting
      * game object will not be able to have its text changed
-     * @return a game object representing the enhanced text object without changeable text
+     * @return a game object representing the enhanced text object without changeable text. Note that, regardless of the
+     * scaling of this enhanced text object, the returned game object will be the same size but will restart at a scale
+     * of 1f
      */
     public GameObject solidify() {
         // create the aggregation shader program
@@ -181,18 +185,22 @@ public class EnhancedTextObject extends GameObject {
         sp.registerUniform("wDiv");
         sp.registerUniform("hDiv");
 
-        // figure out a resolution to use to size the resulting texture
-        float resolution = 0;
+        // figure out a horizontal resolution to use to size the resulting texture
+        float resolutionX = 0;
         for (TextObject to : this.tos) { // for each text object
-            float r = ((float) to.getPixelWidth() * to.getModel().getXScale())
-                    / this.getWidth(); // get its resolution relative to the pixel width of the text object
-            if (r > resolution) resolution = r; // use the greatest resolution
+            float rX = (float) to.getPixelWidth(); // get its resolution relative to the pixel width of the text object
+            if (rX > resolutionX) resolutionX = rX; // if greater than current greatest, update
         }
-
-        // figure out texture width/height based off of resolution
-        int w = (int)(this.getWidth() * resolution);
-        int h =  (int)(this.getHeight() * resolution);
-        int[] IDs = Utils.createFBOWithTextureAttachment(w, h); // create FBO w/ texture attached
+        // add border to resolution
+        float bpfactor = 2 * this.borderPadding / (this.getWidth() - 2 * this.borderPadding);
+        resolutionX += bpfactor * resolutionX;
+        float resolutionY = (this.getHeight() / this.getWidth()) * resolutionX;
+        // use the item's aspect ratio to figure out the vertical resolution from the horizontal resolution
+        // convert to integers rounded up to not lose any resolution
+        int w = (int)resolutionX;
+        int h = (int)resolutionY;
+        // create FBO w/ texture attached, large enough to support our resolution
+        int[] IDs = Utils.createFBOWithTextureAttachment(w, h);
 
         // pre-render
         glBindFramebuffer(GL_FRAMEBUFFER, IDs[0]); // bind the frame buffer object
@@ -208,7 +216,11 @@ public class EnhancedTextObject extends GameObject {
         sp.setUniform("hDiv", this.model.getHeight() / 2f);
 
         // render
+        float x = this.getX();
+        float y = this.getY();
+        this.setPos(0, 0);
         this.render(sp); // render the enhanced text object
+        this.setPos(x, y);
 
         // post-render
         sp.unbind(); // unbind shader program
@@ -220,8 +232,8 @@ public class EnhancedTextObject extends GameObject {
         glViewport(0, 0, Global.gameWindow.getFBWidth(), Global.gameWindow.getFBHeight());
 
         // create and return game object
-        Model m = Model.getStdGridRect(1, 1); // create the model
-        m.setScale(this.model.getXScale(), this.model.getYScale()); // scale it appropriately
+        Model m = new Model(t.getModelCoords(resolutionY / this.getHeight()),
+                Model.getStdRectTexCoords(), Model.getStdRectIdx()); // create the model
         return new GameObject(this.getX(), this.getY(), m, new Material(t)); // create and return game object
     }
 
@@ -240,6 +252,15 @@ public class EnhancedTextObject extends GameObject {
             this.setY(this.posAnim.getFinalY()); // make sure at the correct ending y
             this.posAnim = null; // delete the animation
         }
+    }
+
+    /**
+     * Sets the alignment for all lines
+     * @param alignment the alignment to set all lines to. See Line class below for more info
+     */
+    public void alignAll(Line.Alignment alignment) {
+        for (Line line : this.lines) line.alignment = alignment; // update alignments
+        this.position(); // reposition everything
     }
 
     /**
@@ -374,18 +395,18 @@ public class EnhancedTextObject extends GameObject {
         /**
          * Static Data
          */
-        private static final Alignment DEFAULT_ALIGNMENT = Alignment.LEFT; // default alignment value
-        private static final float DEFAULT_SCALE = 0.5f;                   // default scale value
-        public static final float DEFAULT_PADDING = 0.005f;                 // default padding value
+        public static final Alignment DEFAULT_ALIGNMENT = Alignment.LEFT; // default alignment value
+        public static final float DEFAULT_SCALE = 0.5f;                   // default scale value
+        public static final float DEFAULT_PADDING = 0.005f;                // default padding value
 
         /**
          * Members
          */
-        private final float[] color;       // the line's color
-        private final Alignment alignment; // how the text should be aligned
-        private final float scale;         // how the text should scale
-        private final float padding;       // how much padding should be above/below the line
-        private String text;               // the text the line should contain
+        private final float[] color; // the line's color
+        private final float scale;   // how the text should scale
+        private final float padding; // how much padding should be above/below the line
+        private Alignment alignment; // how the text should be aligneds
+        private String text;         // the text the line should contain
 
         /**
          * Constructs the line with completely custom settings

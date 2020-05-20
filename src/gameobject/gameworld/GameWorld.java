@@ -29,7 +29,7 @@ public class GameWorld {
     /**
      * Static Data
      */
-    public static final float AREA_CHANGE_TRANSITION = 3f; // time between area change transitions
+    public static final float AREA_CHANGE_TRANSITION = 2f; // time between area change transitions
     private static final int ENTER_GATE_KEY = GLFW_KEY_E;    // key to enter a gate
 
     /**
@@ -275,7 +275,8 @@ public class GameWorld {
             this.sunAngle += sunSpeed * interval; // update the sun's angle
             if (this.sunAngle >= 360f) this.sunAngle = 0f; // reset angle to 0 degrees if a full rotation has occurred
             float newSunPresence = calcSunPresence(this.sunAngle); // calculate the sun presence based on the new angle
-            if (newSunPresence != this.sunPresence) this.sunPresence = newSunPresence; // save sun presence if new
+            if (newSunPresence != this.sunPresence) this.sunPresence = newSunPresence; // update member if new
+            Global.debugInfo.setField("sun presence", Float.toString(this.sunPresence)); // add to debug info
         }
 
         /**

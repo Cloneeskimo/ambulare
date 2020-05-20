@@ -363,7 +363,7 @@ public class MenuLogic extends GameLogic {
             toTransfer.addChild(new Story(Node.pathContentsToNode(new Utils.Path(
                     "/stories/mainstory/story_info.node",
                     true)), new Utils.Path("/stories/mainstory/", true)).toNode());
-            toTransfer.addChild("name", "DEV"); // use dev_test name
+            toTransfer.addChild("name", "Development"); // use dev_test name
             GameLogic.logicChange = new LogicChange(new WorldLogic(), 0f); // change to world logic
             GameLogic.logicChange.useTransferData(toTransfer); // using our transfer data
         }

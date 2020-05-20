@@ -81,7 +81,7 @@ vec4 applyDarknessFactor(vec4 c) {
  * @param color the color to apply lighting to
  */
 vec4 applyDayNight(vec4 color) {
-    vec3 c = color.xyz * (1 + 3 * sunPresence); // apply brightness from sun
+    vec3 c = color.xyz * (1 + (DARKNESS_FACTOR - 1) * sunPresence); // apply brightness from sun
     vec3 sunlight = vec3(1.3, 1.3, 1); // use a orange-ish red color for sunlight
     vec3 moonlight = vec3(1, 1, 1.3); // use a blue-ish gray color for moonlight
     // apply sunlight and/or moonlight depending on sun position and return final color
@@ -115,8 +115,9 @@ vec4 applyLights(vec4 color, vec3 baseColor) {
  */
 void main() {
     vec4 base = getBaseColor(); // get base color based on material
-    vec4 lightless = applyDarknessFactor(base); // apply darkness factor to the color
-    vec4 c = (useDNC == 1) ? applyDayNight(lightless) : lightless; // apply day/night cycle coloring
-    c = (useLights == 1) ? applyLights(c, base.xyz) : c; // apply lighting if lighting flag is true
+    vec4 c = (useDNC == 1 || useLights == 1) // if any form of lighting is enabled
+        ? applyDarknessFactor(base) : base; // apply darkness factor to the color, otherwise use base color
+    c = (useDNC == 1) ? applyDayNight(c) : c; // apply day/night cycle coloring if enabled
+    c = (useLights == 1) ? applyLights(c, base.xyz) : c; // apply individual lights' lightings if enabled
     fragColor = c; // set final color
 }
