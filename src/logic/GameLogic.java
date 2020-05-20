@@ -93,9 +93,11 @@ public abstract class GameLogic {
      * Extending classes can certainly override this method to change how they react to mouse input. If super is not
      * called, or the ROC is not manually notified, it may not work as intended
      *
-     * @param x      the normalized and de-aspected x position of the mouse if hover event, 0 otherwise
-     * @param y      the normalized and de-aspected y position of the mouse if hover event, 0 otherwise
-     * @param action the nature of the mouse input (GLFW_PRESS, GLFW_RELEASE, or GLFW_HOVERED)
+     * @param x      the normalized and de-aspected x position of the mouse if hover event, the horizontal scroll factor
+     *               if scrolling event, or 0 otherwise
+     * @param y      the normalized and de-aspected y position of the mouse if hover event, the vertical scroll factor
+     *               if scrolling event, or 0 otherwise
+     * @param action the nature of the mouse input (GLFW_PRESS, GLFW_RELEASE, GLFW_HOVERED, or SCROLL)
      */
     public void mouseInput(float x, float y, int action) {
         this.roc.mouseInput(x, y, action); // notify ROC of input

@@ -141,6 +141,9 @@ public class WorldLogic extends GameLogic {
     /**
      * Reacts to mouse input
      *
+     * @param x      the x of the mouse in window coordinates, or the horizontal scroll factor if scrolling input
+     * @param y      the y of the mouse in window coordinates, or the vertical scroll factor if scrolling input
+     * @param action the action of the mouse (GLFW_HOVER, GLFW_PRESS, GLFW_RELEASE, or SCROLL)
      * @param x      the normalized and de-aspected x position of the mouse if hover event, 0 otherwise
      * @param y      the normalized and de-aspected y position of the mouse if hover event, 0 otherwise
      * @param action the nature of the mouse input (GLFW_PRESS, GLFW_RELEASE, or GLFW_HOVERED)

@@ -4,6 +4,7 @@ import gameobject.gameworld.Area;
 import gameobject.gameworld.Entity;
 import gameobject.gameworld.GameWorld;
 import gameobject.gameworld.WorldObject;
+import gameobject.ui.ListObject;
 import graphics.*;
 import utils.*;
 
@@ -11,6 +12,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static utils.Settings.SCROLL;
 
 /*
  * ROC.java
@@ -40,6 +43,7 @@ public class ROC {
                                                 settings that determine where in the window they should be rendered at
                                                 all times. In other words, these are HUD items. See ROC.PositionSettings
                                                 for more info */
+    private final List<ListObject> lists;    // a list of list objects to notify about scrolling
     private final List<AnimatedTexture> ats; // list of animated textures to update
     private final MouseInputEngine mip;      // mouse input engine to handle mouse input
     private GameWorld gameWorld;             // the game world to render underneath the static objects
@@ -53,6 +57,7 @@ public class ROC {
      */
     public ROC() {
         this.staticObjects = new HashMap<>(); // initialize static objects to an empty hash map
+        this.lists = new ArrayList<>(); // initialize list object list to an empty list
         this.ats = new ArrayList<>(); // initialize animated textures to an empty list
         this.mip = new MouseInputEngine(); // initialize mouse input engine
         this.initSP(); // create and initialize shader program
@@ -88,17 +93,26 @@ public class ROC {
         sp.registerUniform("color"); // register color uniform
         sp.registerUniform("blend"); // register blend uniform
         sp.registerUniform("texSampler"); // register texture sampler uniform
+        sp.registerUniform("minY"); // register minimum y uniform
+        sp.registerUniform("maxY"); // register maximum y uniform
+        sp.registerUniform("boundY"); // register y bounding flag uniform
     }
 
     /**
      * Delegates mouse input to the mouse input engine
      *
-     * @param x      the normalized and de-aspected x position of the mouse if hover event, 0 otherwise
-     * @param y      the normalized and de-aspected y position of the mouse if hover event, 0 otherwise
-     * @param action the nature of the mouse input (GLFW_PRESS, GLFW_RELEASE, or GLFW_HOVERED)s
+     * @param x      the normalized and de-aspected x position of the mouse if hover event, the horizontal scroll factor
+     *               if scrolling event, or 0 otherwise
+     * @param y      the normalized and de-aspected y position of the mouse if hover event, the vertical scroll factor
+     *               if scrolling event, or 0 otherwise
+     * @param action the nature of the mouse input (GLFW_PRESS, GLFW_RELEASE, GLFW_HOVERED, or SCROLL)
      */
     public void mouseInput(float x, float y, int action) {
         this.mip.mouseInput(x, y, action); // delegate to mouse input engine
+        if (action == SCROLL) { // if the event was a scroll event
+            if (this.gameWorld != null) this.gameWorld.scrollInput(x, y); // tell game world if it exists
+            for (ListObject lo : this.lists) lo.scrollInput(x, y); // tell list objectss
+        }
     }
 
     /**
@@ -268,6 +282,7 @@ public class ROC {
             AnimatedTexture at = (AnimatedTexture) t; // cast it to an animated texture
             if (!this.ats.contains(at)) this.ats.add(at); // add it to animated textures list if not there already
         }
+        if (o instanceof ListObject) this.lists.add((ListObject)o); // if list object, add to list of list objectss
     }
 
     /**

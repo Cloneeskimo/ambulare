@@ -47,6 +47,7 @@ public class GameWorld {
     private Area area;                          // the area currently in use in the game world
     private Area.Gate enteredGate;              // when switching areas, this stores the gate entered
     private float timer;                        // timer kept for area changes
+    private boolean zoomOnScroll = true;        // whether scrolling should be reacted to by zooming the camera
 
     /**
      * Constructor
@@ -65,15 +66,21 @@ public class GameWorld {
         this.dnc = new DayNightCycle(ssr < 0 ? 0f : ssr, area.getSunSpeed()); // initialize day/night cycle
         PhysicsEngine.giveBlockMap(this.area.getBlockMap()); // give the area's block map to the physics engine
         PhysicsEngine.giveSlopeMap(this.area.getSlopeMap()); // give the area's slope map to the physics engine
-        // register GLFW window scroll callback for camera zoom
-        glfwSetScrollCallback(Global.gameWindow.getHandle(), (w, x, y) -> { // when the user scrolls
-            this.cam.aestheticZoom(y > 0 ? 1.1f : (1f / 1.1f)); // zoom on camera
-        });
         if ((this.player = player) != null) { // if the player isn't null
             this.objects.add(player); // add it to world objects
             this.cam.follow(this.player); // and tell the camera to follow it
         }
         this.roc = roc; // save reference to ROC
+    }
+
+    /**
+     * Should be called when scrolling mouse input is received. If the flag to zoom on scroll is set (true by default),
+     * the game world's camera will be zoomed aesthetically to react to the scroll
+     * @param x the horizontal scroll factor
+     * @param y the vertical scroll factor
+     */
+    public void scrollInput(float x, float y) {
+        if (this.zoomOnScroll) this.cam.aestheticZoom(y > 0 ? 1.1f : (1f / 1.1f)); // zoom on camera
     }
 
     /**
@@ -200,6 +207,14 @@ public class GameWorld {
      */
     public void useAreaChangeCallback(Global.Callback cb) {
         this.areaChangeCallback = cb; // save callback as member
+    }
+
+    /**
+     * Tells the game world whether it should respond to mouse scrolling by zooming the camera
+     * @param zoomOnScroll whether to respond to mouse scrolling by zooming the camera
+     */
+    public void setZoomOnScroll(boolean zoomOnScroll) {
+        this.zoomOnScroll = zoomOnScroll; // update flag
     }
 
     /**

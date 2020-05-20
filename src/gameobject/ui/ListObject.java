@@ -4,11 +4,14 @@ import gameobject.GameObject;
 import graphics.Material;
 import graphics.Model;
 import graphics.ShaderProgram;
+import utils.Global;
 import utils.MouseInputEngine;
 import utils.Pair;
 import utils.Utils;
 
 import java.util.List;
+
+import static org.lwjgl.glfw.GLFW.glfwSetScrollCallback;
 
 /*
  * ListObject.java
@@ -18,9 +21,11 @@ import java.util.List;
  */
 
 /**
- * Simulates a list by containing multiple list items stacked on top of each other. The list will fit to the items
- * it contains and will make sure the items stay correctly positioned. See ListObject.ListItem for information on what
- * constitutes a list item. List objects do not support rotation and any calls to rotate them will be ignored and logged
+ * Simulates a list by containing multiple list items stacked on top of each other. The list will fit to the items it
+ * contains and will make sure the items stay correctly positioned. If the height to fit all items becomes greater than
+ * the list object's maximum height, it will use a scroll functionality. See ListObject.ListItem for information on what
+ * constitutes a list item. List objects do not support rotation and any calls to rotate them will be ignored and
+ * logged.
  */
 public class ListObject extends GameObject implements MouseInputEngine.MouseInteractive {
 
@@ -29,29 +34,59 @@ public class ListObject extends GameObject implements MouseInputEngine.MouseInte
      */
     private final MouseInputEngine.MouseCallback[] mcs = new MouseInputEngine.MouseCallback[4]; /* array of mouse
         callbacks as specified by the mouse interactive interface */
-    private List<ListItem> items; // list of items in the list. See ListObject.ListItem for more details on list items
-    private float padding;        // the amount of padding to put in between list items and around the edge of list
-    private ListItem hovered;     /* the last list item within the last that was hovered. This is used to properly
-                                     tell list items when they are done being hovered */
+    private final List<ListItem> items; // list of items in the list. See ListObject.ListItem for more info on list item
+    private final float padding;        // the amount of padding to put in between list items and around the edge of list
+    private ListItem hovered;           /* the last list item within the last that was hovered. This is used to properly
+                                           tell list items when they are done being hovered */
+    private final float maxHeight;      // the maximum height the list object may be before items are scrolled
+    private float cumHeight;            // the cumulative height of all list items and padding (even those not shown)
+    private float scroll;               // a scroll offset to apply to all items
 
     /**
      * Constructor
      *
      * @param items      the items to place in the list
      * @param padding    the amount of padding to place between items and around the edge of the list
+     * @param maxHeight  the maximum height the list object may be, after which it will beging to scroll its items
      * @param background the material to render as the list's background
      */
-    public ListObject(List<ListItem> items, float padding, Material background) {
+    public ListObject(List<ListItem> items, float padding, float maxHeight, Material background) {
         super(Model.getStdGridRect(1, 1), background); // call super constructor with square model and background
         this.items = items; // save items as member
         this.padding = padding; // save padding as member
-        this.position(); // position the list and the list items correctly
+        this.maxHeight = maxHeight; // save max height asss member
+        this.position(true); // position the list and the list items correctly
+    }
+
+    /**
+     * Responds to scroll input by scrolling the items in the list, if applicable
+     * @param x the horizontal scroll factor
+     * @param y the vertical scroll factor
+     */
+    public void scrollInput(float x, float y) {
+        if (this.cumHeight <= this.maxHeight) return; // if the list object isn't large enough to scroll, return
+        float oldScroll = this.scroll; // save old scroll value
+        this.scroll = Math.min(Math.max(this.scroll + (y / 10), getMinScroll()), 0); // determine new scroll value
+        for (ListItem li : this.items) { // for each list item
+            li.setPos(this.getX(), li.getY() + this.scroll - oldScroll); // apply difference in scrolls
+            // make visible or invisible depending on if its within view of the list object
+            li.setVisibility(Math.abs(li.getY() - this.getY()) < (this.maxHeight / 2) + li.getHeight() / 2);
+        }
+    }
+
+    /**
+     * @return the minimum scroll for the list object given the cumulative and maximum heights
+     */
+    private float getMinScroll() {
+        if (this.cumHeight <= this.maxHeight) return 0f; // if the list object isn't large enough to scroll, return
+        else return -(this.cumHeight - this.maxHeight); // otherwise return the negative different in cum./max heights
     }
 
     /**
      * Positions the items within the list correctly and makes sure the list itself is of the appropriate size
      */
-    private void position() {
+    private void position(boolean resetScroll) {
+
         // start with a width and height of 0
         float w = 0f;
         float h = 0f;
@@ -61,12 +96,16 @@ public class ListObject extends GameObject implements MouseInputEngine.MouseInte
         }
         w += this.padding * 2; // the width of the list is the widest item's width plus two padding
         h += this.padding * (1 + this.items.size()); // height is the cum. height and padding btwn items and above/below
-        this.model.setScale(w, h); // scale the list to fit correctly
+        this.cumHeight = h;
+        if (resetScroll) this.scroll = this.getMinScroll();
+        this.model.setScale(w, Math.min(maxHeight, h)); // scale the list to fit correctly
         float y = this.getY() - (this.getHeight() / 2) + padding; // start from the bottom of the object
         for (int i = this.items.size() - 1; i >= 0; i--) { // and go through each list item (in reverse order)
-            float ih2 = this.items.get(i).getHeight() / 2; // calculate the item's half width
+            ListItem li = this.items.get(i); // get the current list item
+            float ih2 = li.getHeight() / 2; // calculate the item's half width
             y += ih2; // iterate y by the current item's half-width
-            this.items.get(i).setPos(this.getX(), y); // then place the item there
+            li.setPos(this.getX(), y + this.scroll); // then place the item there
+            li.setVisibility(Math.abs(li.getY() - this.getY()) < (this.maxHeight / 2) + li.getHeight() / 2);
             y += ih2; // iterate y again by the current item's half-width
             y += padding; // add padding before next item
         }
@@ -90,7 +129,12 @@ public class ListObject extends GameObject implements MouseInputEngine.MouseInte
     @Override
     public void render(ShaderProgram sp) {
         super.render(sp); // render the list background first
-        if (this.visible) for (ListItem li : this.items) li.render(sp); // then render each list item
+        // set bounds on y to only render the parts of clipped list objects that are within the list
+        sp.setUniform("maxY", this.getY() + this.getHeight() / 2);
+        sp.setUniform("minY", this.getY() - this.getHeight() / 2);
+        sp.setUniform("boundY", 1); // tell shader to use the Y bounds
+        if (this.visible) for (ListItem li : this.items) li.render(sp); // render list objects
+        sp.setUniform("boundY", 0); // tell shader to not use the Y bounds for anything else
     }
 
     /**
@@ -98,7 +142,7 @@ public class ListObject extends GameObject implements MouseInputEngine.MouseInte
      */
     @Override
     protected void onMove() {
-        this.position(); // reposition list and list items
+        this.position(false); // reposition list and list items
     }
 
     /**
@@ -113,7 +157,7 @@ public class ListObject extends GameObject implements MouseInputEngine.MouseInte
                 ((GameObject) li).setXScale(x); // scale it by the given x factor
             }
         }
-        this.position(); // and reposition the list
+        this.position(false); // and reposition the list
     }
 
     /**
@@ -128,7 +172,7 @@ public class ListObject extends GameObject implements MouseInputEngine.MouseInte
                 ((GameObject) li).setYScale(y); // scale it by the given y factor
             }
         }
-        this.position(); // and reposition the list
+        this.position(false); // and reposition the list
     }
 
     /**
@@ -145,7 +189,7 @@ public class ListObject extends GameObject implements MouseInputEngine.MouseInte
                 ((GameObject) li).setYScale(y); // scale it by the given y factor
             }
         }
-        this.position(); // and reposition the list
+        this.position(false); // and reposition the list
     }
 
     /**
@@ -211,7 +255,7 @@ public class ListObject extends GameObject implements MouseInputEngine.MouseInte
                 // if the new item is not the same as the old item, tell the old item it is no longer being hovered
                 if (item != hovered) hovered.mouseInteraction(MouseInputEngine.MouseInputType.DONE_HOVERING, x, y);
             }
-            item.mouseInteraction(type, x, y); // delegate mouse interaction to the item itself
+            if (item.visible()) item.mouseInteraction(type, x, y); // delegate mouse interaction to the item itself
             this.hovered = item; // update the currently hovered item
             // if nothing was being hovered but there is a reference to a hovered item, tell it hovering has stopped
         } else if (this.hovered != null) hovered.mouseInteraction(MouseInputEngine.MouseInputType.DONE_HOVERING, x, y);
@@ -248,10 +292,27 @@ public class ListObject extends GameObject implements MouseInputEngine.MouseInte
         void setPos(float x, float y);
 
         /**
+         * Should update the item's visibility
+         * @param visible whether the item is visible or not
+         */
+        void setVisibility(boolean visible);
+
+        /**
+         * Should return whether or not the list item is visible
+         * @return whether the list item is visible
+         */
+        boolean visible();
+
+        /**
          * Should render the list item using the given shader program
          *
          * @param sp the shader program to use for rendering
          */
         void render(ShaderProgram sp);
+
+        /**
+         * @return the y position of the item
+         */
+        float getY();
     }
 }

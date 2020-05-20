@@ -64,10 +64,22 @@ public class Pair<T> {
 
     /**
      * Converts the pair into a string
+     * @return the pair turned into a sstring
      */
     @Override
     public String toString() {
         return "(" + this.x + ", " + this.y + ")";
+    }
+
+    /**
+     * Converts the pair into a string with the given digits to display after the decimal place
+     * @param digits the amount of digits to display after the decimal place
+     * @return the pair turned into a string displaying the given amount of decimal places
+     */
+    public String toString(int digits) {
+        String s = Integer.toString(digits); // convert decimal place count into string
+        // format and return final product
+        return "(" + String.format("%." + s + "f", this.x) + ", " + String.format("%." + s + "f", this.y) + ")";
     }
 
     /**

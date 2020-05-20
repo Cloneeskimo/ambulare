@@ -148,8 +148,6 @@ public class Node {
      */
     public Node getChild(String name) {
         for (Node child : this.children) if (child.getName().equals(name)) return child; // look for matching name
-        Utils.log("Couldn't find child with name '" + name + "', returning null", this.getClass(),
-                "getChild", false); // log failure but don't throw exception
         return null; // return null if can't find
     }
 
@@ -211,13 +209,14 @@ public class Node {
     }
 
     /**
-     * Converts a resource node-file to a node (if the node-file is properly formatted)
+     * Converts a resource node-file to a node (if the node-file is properly formatted) at the given path
      *
      * @param path the path to the node-file
-     * @return the created node
+     * @return the created node, or null if the path doesn't exist
      */
     public static Node pathContentsToNode(Utils.Path path) {
         List<String> data = Utils.pathContentsToStringList(path); // read resource
+        if (data == null) return null; // if path doesn't exist, return null
         trimData(data); // trim away comments and empty lines
         Node node = new Node(); // create root node
         parseNode(node, data, 0, 0); // parse read data from node-file into root node

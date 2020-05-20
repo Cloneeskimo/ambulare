@@ -276,9 +276,11 @@ public class Story {
          */
         @Override
         public void render(ShaderProgram sp) {
-            this.name.render(sp); // render the name of the story
-            this.author.render(sp); // render the author of the story
-            this.path.render(sp); // render the path of the story
+            if (this.visible) { // only render if visible
+                this.name.render(sp); // render the name of the story
+                this.author.render(sp); // render the author of the story
+                this.path.render(sp); // render the path of the story
+            }
         }
 
         /**

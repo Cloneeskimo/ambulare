@@ -26,12 +26,12 @@ import static org.lwjgl.opengl.GL11.*;
 /**
  * A class to hold various global static settings
  */
-public class Global {
+public abstract class Global {
 
     /**
      * Static Data
      */
-    public static final String VERSION = "com114"; // the version of the game
+    public static final String VERSION = "com115"; // the version of the game
     public static final String WINDOW_TITLE = "Ambulare " + VERSION; // the window title
     public static final int POLYGON_MODE_TOGGLE_KEY = GLFW_KEY_2; // the key to toggle between fill/line polygon modes
     public static final int DEBUG_TOGGLE_KEY = GLFW_KEY_1;  // key to toggle debug reporting

@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.lwjgl.glfw.GLFW.*;
+import static utils.Settings.SCROLL;
 
 /**
  * Lays out the logic for the menu of the game. This logic is divided up into a complex number of phases which determine
@@ -148,6 +149,7 @@ public class MenuLogic extends GameLogic {
         // tell the ROC to use a game world with the menu area
         this.roc.useGameWorld(new Area(Node.pathContentsToNode(new Utils.Path("/misc/menu_area.node",
                 true))), null);
+        this.roc.getGameWorld().setZoomOnScroll(false); // disable zooming when the mouse scrollss
         this.cam = this.roc.getGameWorld().getCam(); // save camera handle to make sure it stays within bounds
         // place camera at a random x within the area and at the vertical center of the area
         this.cam.setPos((float) Math.random() * (float) this.roc.getGameWorld().getArea().getBlockMap().length,
@@ -155,7 +157,6 @@ public class MenuLogic extends GameLogic {
         this.cam.setVX(0.5f); // make camera slowly scroll to the right
         this.cam.setZoom(0.15f); // zoom out a little
         this.maxCamX = this.roc.getGameWorld().getArea().getBlockMap().length; // don't allow cam past area
-        glfwSetScrollCallback(Global.gameWindow.getHandle(), (x, y, s) -> {}); // disable mouse scroll wheel zooming
     }
 
     /**
@@ -271,6 +272,10 @@ public class MenuLogic extends GameLogic {
                 listItems.add(sli); // add the formatted story list item to the list items list
             }
 
+            for (int i = 0; i < 8; i++) {
+                listItems.add(new TextButton(Global.font, "text object (" + i + ")"));
+            }
+
             // create a list text button to open the data directory stories folder
             TexturedButton openStoryFolder = new TextButton(Global.font, "(open stories folder)").solidify();
             openStoryFolder.setScale(0.4f, 0.4f); // scale the button down by a little over half
@@ -281,7 +286,8 @@ public class MenuLogic extends GameLogic {
             listItems.add(openStoryFolder); // add open story folder button to the list items list
 
             // create and add a list object containing the list items with a opaque black background
-            ListObject lo = new ListObject(listItems, 0.05f, new Material(new float[]{0f, 0f, 0f, 0.4f}));
+            ListObject lo = new ListObject(listItems, 0.05f, 1f,
+                    new Material(new float[]{0f, 0f, 0f, 0.4f})); // create list object containing list items
             this.roc.addStaticObject(lo, TAG_STORY_LIST, false, new ROC.PositionSettings(0f, belowWindow(),
                     false, 0f)); // add the story list at the center of the screen
 

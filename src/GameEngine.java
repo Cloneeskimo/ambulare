@@ -4,6 +4,7 @@ import utils.*;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
+import static utils.Settings.SCROLL;
 
 /*
  * GameEngine.java
@@ -39,14 +40,11 @@ public class GameEngine {
      * @param logic the starting logic to follow
      */
     public GameEngine(GameLogic logic) {
-        int w = -1, h = -1; // if there is no saved window data, use -1 to denote default width and height
-        Node wd = Node.pathContentsToNode(new Utils.Path("/wd.node", false)); // try to load window data
-        if (wd.hasChildren()) { // if window data was found
-            w = Integer.parseInt(wd.getChild("width").getValue()); // use saved width of window
-            h = Integer.parseInt(wd.getChild("height").getValue()); // ues saved height of window
-        }
-        // create window with determined size
-        Global.gameWindow = new Window(Global.WINDOW_TITLE, w, h, Global.V_SYNC);
+        Settings.load(); // load settings
+        Global.gameWindow = new Window(Global.WINDOW_TITLE, // create window using the global window title
+                (Integer)Settings.getSetting(Settings.Setting.STARTING_WINDOW_WIDTH), // use correct starting width
+                (Integer)Settings.getSetting(Settings.Setting.STARTING_WINDOW_HEIGHT), // use correct starting height
+                (Boolean)Settings.getSetting(Settings.Setting.V_SYNC)); // use correct v-sync option
         this.timer = new Timer(); // initialize timer
         this.logic = logic; // save starting logic as member
     }
@@ -85,6 +83,10 @@ public class GameEngine {
         glfwSetMouseButtonCallback(Global.gameWindow.getHandle(), (w, b, a, i) -> {
             // mouse button events don't have mouse positions, so just send zero and hope mouseInput checks the action
             this.mouseInput(0f, 0f, a);
+        });
+        glfwSetScrollCallback(Global.gameWindow.getHandle(), (w, x, y) -> {
+            // pass along scroll factor and SCROLL flag as action to mouse input
+            this.mouseInput((float) x, (float) y, SCROLL);
         });
         glfwSetKeyCallback(Global.gameWindow.getHandle(), (w, k, s, a, m) -> {
             this.keyboardInput(k, a); // pass keyboard input to the keyboardInput() function
@@ -218,15 +220,15 @@ public class GameEngine {
     /**
      * Phase 1 of loop: responding to input (this is called asynchronously though)
      * Occurs when mouse events occur in the GLFW window (movement, pressing, and releasing). It will call the logic's
-     * mouse input method and allow it to handle the input accordingly. If a hovering event, it will convert the mouse
+     * mouse input method and allow it to handle the input accordingly. If a hover event, it will convert the mouse
      * position to projected normalized coordinates
      *
-     * @param x      the x of the mouse in window coordinates
-     * @param y      the y of the mouse in window coordinates
-     * @param action the action of the mouse (GLFW_HOVER, GLFW_PRESS, or GLFW_RELEASE)
+     * @param x      the x of the mouse in window coordinates, or the horizontal scroll factor if scrolling input
+     * @param y      the y of the mouse in window coordinates, or the vertical scroll factor if scrolling input
+     * @param action the action of the mouse (GLFW_HOVERED, GLFW_PRESS, GLFW_RELEASE, or SCROLL)
      */
     private void mouseInput(float x, float y, int action) {
-        if (action == GLFW_HOVERED) { // if hover,
+        if (action == GLFW_HOVERED) { // if hover event
             Pair<Float> pos = new Pair<>(x, y); // bundle into coordinate object
             // normalize mouse position
             Transformation.normalize(pos, Global.gameWindow.getWidth(), Global.gameWindow.getHeight());
@@ -305,10 +307,7 @@ public class GameEngine {
      * Cleans up the engine after the loop ends
      */
     private void cleanup() {
-        Node wd = new Node("window data"); // create a node to hold window data
-        wd.addChild("width", Integer.toString(Global.gameWindow.getWidth())); // add window width
-        wd.addChild("height", Integer.toString(Global.gameWindow.getHeight())); // add window height
-        Node.nodeToFile(wd, new Utils.Path("/wd.node", false)); // and save node
+        Settings.save(); // save settings
         this.logic.cleanup(); // tell logic to cleanup
         Global.cleanup(); // cleanup global members
         SoundManager.cleanup(); // cleanup the sound manager

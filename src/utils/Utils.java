@@ -87,7 +87,7 @@ public class Utils {
         }
 
         /**
-         * @return the input stream corresponding to the path
+         * @return the input stream corresponding to the path, or null if the path doesn't exist
          */
         public InputStream getStream() {
             // if relative to the data directory, return null
@@ -96,9 +96,9 @@ public class Utils {
                 return Class.forName(Utils.class.getName()).getResourceAsStream(this.path);
             } catch (Exception e) { // if an exception occurs
                 Utils.handleException(new Exception("Unable to get path '" + this.path + "' input stream for reason: "
-                        + e.getMessage()), this.getClass(), "getStream()", true); // crash
+                        + e.getMessage()), this.getClass(), "getStream()", false); // log
             }
-            return null;
+            return null; // return null
         }
 
         /**
@@ -233,7 +233,7 @@ public class Utils {
      * Converts the contents of a file at the given path to a string list
      *
      * @param path the path
-     * @return the file contents converted to a string list
+     * @return the file contents converted to a string list, or null if the path doesn't exist
      */
     public static List<String> pathContentsToStringList(Path path) {
         List<String> file = new ArrayList<>(); // create empty ArrayList
@@ -244,7 +244,8 @@ public class Utils {
             while ((line = in.readLine()) != null) file.add(line); // read each line until eof
         } catch (Exception e) { // if an exception occurs
             Utils.handleException(new Exception("Encountered a problem while reading contents of file at path: " +
-                    path + ": " + e.getMessage()), Utils.class, "pathContentsToStringList", true); // crash
+                    path + ": " + e.getMessage()), Utils.class, "pathContentsToStringList", false); // log
+            return null; // return null
         }
         return file; // return resulting list of stings
     }
@@ -254,7 +255,7 @@ public class Utils {
      *
      * @param path       the path
      * @param bufferSize the initial size of the buffer (will be increased if necessary)
-     * @return the file contents converted to a byte buffer
+     * @return the file contents converted to a byte buffer, or null if the path doesn't exist
      */
     public static ByteBuffer pathContentsToByteBuffer(Path path, int bufferSize) {
         InputStream is = path.getStream(); // get stream
@@ -269,7 +270,8 @@ public class Utils {
             }
         } catch (Exception e) { // if an exception occurs
             Utils.handleException(new Exception("Unable to read from readable byte channel from file at path: '" +
-                    path + "' for reason: " + e.getMessage()), Utils.class, "fileToByteBuffer", true); // crash
+                    path + "' for reason: " + e.getMessage()), Utils.class, "fileToByteBuffer", false); // log
+            return null; // return null
         }
         buffer.flip(); // flip the result
         return buffer; // and return the final buffer

@@ -19,8 +19,8 @@
  */
 uniform int arAction; // aspect ratio action flag where 0 denotes multiplying y and 1 denotes dividing x
 uniform float ar;     // the aspect ratio of the window
-uniform float x;      // the object's x position used to offset the model coordinatess
-uniform float y;      // the object's y position used to offset the model coordinates
+uniform float x;      // the object's x position used to offset the model coordinates
+uniform float y;      // the object's y position used to offset the model coordinates]
 
 /*
  * Attributes
@@ -31,7 +31,8 @@ layout (location = 1) in vec2 texCoords;   // texture coordinate data in VBO at 
 /*
  * In/Out Variables
  */
-out vec2 fTexCoords; // texture coordinates to be passed through to fragment shaders
+out vec2 fTexCoords; // texture coordinates to be passed through to fragment shader
+out vec2 posCoords;  // position coordinates to be passed through to fragment shader
 
 /*
  * Applies aspect ratio properties to a point, converting world coordinates or camera-view coordinates into aspect
@@ -49,7 +50,7 @@ vec2 aspect(vec2 coords) {
  */
 void main() {
     vec2 pos = vec2(modelCoords.x + x, modelCoords.y + y); // convert model coordinates to world coordinates
-    pos = aspect(pos); // convert world coordinates to aspect coordinates
+    posCoords = pos = aspect(pos); // convert world coordinates to aspect coordinates, pass through to fragment shaders
     gl_Position = vec4(pos, 0.0, 1.0); // pass through aspect coordinates as a vec4
     fTexCoords = texCoords; // pass through texture coordinates to fragment shader
 }

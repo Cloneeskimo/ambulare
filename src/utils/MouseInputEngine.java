@@ -57,16 +57,21 @@ public class MouseInputEngine {
      * Reacts to mouse input by processing it and notifying relevant objects of clicks, releases, and hovering within
      * their fitting boxes
      *
-     * @param x      the normalized and projected x position of the mouse if hover event, 0 otherwise
-     * @param y      the normalized and projected y position of the mouse if hover event, 0 otherwise
-     * @param action the nature of the mouse input (GLFW_PRESS, GLFW_RELEASE, or GLFW_HOVERED)s
+     * @param x      the normalized and de-aspected x position of the mouse if hover event, the horizontal scroll factor
+     *               if scrolling event, or 0 otherwise
+     * @param y      the normalized and de-aspected y position of the mouse if hover event, the vertical scroll factor
+     *               if scrolling event, or 0 otherwise
+     * @param action the nature of the mouse input (GLFW_PRESS, GLFW_RELEASE, GLFW_HOVERED, or SCROLL)
      */
     public void mouseInput(float x, float y, int action) {
-        if (action == GLFW_HOVERED) { // if hover
+        if (action == GLFW_HOVERED) { // if hovers
             this.mousePos = new Pair<>(x, y); // update mouse position
+            Global.debugInfo.setField("mouse pos", mousePos.toString(2)); // update mouse pos in debug info
             this.camMousePos = new Pair<>(x, y); // save a separate pair for camera-view coordinates
-            // transform mouse position into camera-view pos if there is a camera
-            if (cam != null) Transformation.useCam(this.camMousePos, cam);
+            if (cam != null) { // if there is a camera
+                Transformation.useCam(this.camMousePos, cam); // transform camera-view position using it
+                Global.debugInfo.setField("cam mouse pos", camMousePos.toString(2)); // update in debug info
+            }
             for (int i = 0; i < this.mis.size(); i++) { // for each that can be interacted with by a mouse
                 // if it uses a camera, use the mouse position in camera-view coordinates. Otherwise, use norm pos
                 Pair<Float> pos = this.useCam.get(i) ? this.camMousePos : this.mousePos;
@@ -83,15 +88,15 @@ public class MouseInputEngine {
                     }
                 }
             }
-        } else { // if press or release
+        } else if (action == GLFW_PRESS || action == GLFW_RELEASE){ // if press or release
             this.pressed = (action == GLFW_PRESS); // keep track of if mouse is pressed or not
             for (int i = 0; i < this.mis.size(); i++) { // go through each object able to be interacted with
                 if (this.hoverStates.get(i)) { // if the object is being hovered
                     Pair<Float> pos = this.useCam.get(i) ? this.camMousePos : this.mousePos;
                     // tell object it was clicked upon if the event was a click eve t
                     if (action == GLFW_PRESS) this.mis.get(i).mouseInteraction(MouseInputType.PRESS, pos.x, pos.y);
-                    else if (action == GLFW_RELEASE) this.mis.get(i).mouseInteraction(MouseInputType.RELEASE,
-                            pos.x, pos.y); // tell object it was released upon if the event was a release event
+                    // tell object it was released upon if the event was a release event
+                    else this.mis.get(i).mouseInteraction(MouseInputType.RELEASE, pos.x, pos.y);
                 }
             }
         }
