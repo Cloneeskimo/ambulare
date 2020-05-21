@@ -31,7 +31,7 @@ public abstract class Global {
     /**
      * Static Data
      */
-    public static final String VERSION = "com116`"; // the version of the game
+    public static final String VERSION = "com117"; // the version of the game
     public static final String WINDOW_TITLE = "Ambulare " + VERSION; // the window title
     public static final int POLYGON_MODE_TOGGLE_KEY = GLFW_KEY_2; // the key to toggle between fill/line polygon modes
     public static final int DEBUG_TOGGLE_KEY = GLFW_KEY_1;  // key to toggle debug reporting
@@ -99,7 +99,7 @@ public abstract class Global {
         float[] c = null;
         switch (tc) { // switch on the theme color
             case GRAY: // gray
-                c = new float[]{0.522f, 0.522f, 0.522f, 1f};
+                c = new float[]{0.7f, 0.7f, 0.7f, 1f};
                 break;
             case WHITE: // white
                 c = new float[]{0.97f, 0.97f, 0.97f, 1f};

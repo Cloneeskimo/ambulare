@@ -24,8 +24,8 @@ public class TextButton extends TextObject implements MouseInputEngine.MouseInte
     /**
      * Static Data
      */
-    private static final float[] DEFAULT_NORMAL_COLOR = Global.getThemeColor(Global.ThemeColor.GRAY); // default normal
-    private static final float[] DEFAULT_HOVER_COLOR = Global.getThemeColor(Global.ThemeColor.WHITE); // default hover
+    private static final float[] DEFAULT_NORMAL_COLOR = Global.getThemeColor(Global.ThemeColor.WHITE); // default normal
+    private static final float[] DEFAULT_HOVER_COLOR = Global.getThemeColor(Global.ThemeColor.GRAY); // default hover
     private static final float[] DEFAULT_PRESS_COLOR = Global.getThemeColor(Global.ThemeColor.GREEN); // default press
 
     /**
@@ -150,13 +150,13 @@ public class TextButton extends TextObject implements MouseInputEngine.MouseInte
         TexturedButton tb = new TexturedButton(new Model(
                 super.solidify().getMaterial().getTexture()
                         .getModelCoords(font.getCharHeight() / DEFAULT_SIZE),
-                        Model.getStdRectTexCoords(),
-                        Model.getStdRectIdx()),
-                        new MSAT(t.getID(), w, h, new MSAT.MSATState[] {
+                Model.getStdRectTexCoords(),
+                Model.getStdRectIdx()),
+                new MSAT(t.getID(), w, h, new MSAT.MSATState[]{
                         new MSAT.MSATState(1, 1f),
                         new MSAT.MSATState(1, 1f),
                         new MSAT.MSATState(1, 1f)
-        })); // create the texture button
+                })); // create the texture button
         tb.setPos(this.getX(), this.getY()); // position solidified button at this text button's position
         return tb; // return the final product
     }

@@ -8,6 +8,11 @@ import graphics.*;
 import story.Story;
 import utils.*;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -146,10 +151,21 @@ public class MenuLogic extends GameLogic {
      * Creates the menu area and tells the ROC to use a game world with the menu area
      */
     private void initMenuArea() {
-        // tell the ROC to use a game world with the menu area
-        this.roc.useGameWorld(new Area(Node.pathContentsToNode(new Utils.Path("/misc/menu_area.node",
-                true))), null);
-        this.roc.getGameWorld().setZoomOnScroll(false); // disable zooming when the mouse scrollss
+        // get path to main story areas
+        Utils.Path mainStoryAreas = new Utils.Path("/stories/mainstory/areas/", true);
+        InputStream is = mainStoryAreas.getStream(); // get the path's input streaem
+        BufferedReader br = new BufferedReader(new InputStreamReader(is)); // create a buffered reader
+        List<Utils.Path> areaNodeFiles = new ArrayList<>(); // create an empty list to store all the area's node-files
+        try {
+            String areaNodeFile; // create a string to store an area node-file
+            // put all area node-files in the main story areas folder into the list
+            while ((areaNodeFile = br.readLine()) != null) areaNodeFiles.add(mainStoryAreas.add(areaNodeFile));
+        } catch (Exception e) { // if exception
+            Utils.handleException(e, this.getClass(), "initMenuArea", true); // handle exception
+        }
+        this.roc.useGameWorld(new Area(Node.pathContentsToNode(areaNodeFiles.get((int) (Math.random() *
+                areaNodeFiles.size())))), null); // tell ROC to use game world with random area
+        this.roc.getGameWorld().setZoomOnScroll(false); // disable zooming when the mouse scrolls
         this.cam = this.roc.getGameWorld().getCam(); // save camera handle to make sure it stays within bounds
         // place camera at a random x within the area and at the vertical center of the area
         this.cam.setPos((float) Math.random() * (float) this.roc.getGameWorld().getArea().getBlockMap().length,
