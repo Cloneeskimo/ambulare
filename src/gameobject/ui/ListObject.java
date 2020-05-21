@@ -35,7 +35,8 @@ public class ListObject extends GameObject implements MouseInputEngine.MouseInte
     private final MouseInputEngine.MouseCallback[] mcs = new MouseInputEngine.MouseCallback[4]; /* array of mouse
         callbacks as specified by the mouse interactive interface */
     private final List<ListItem> items; // list of items in the list. See ListObject.ListItem for more info on list item
-    private final float padding;        // the amount of padding to put in between list items and around the edge of list
+    private GameObject scrollBar;       // a game object to hold the scroll bar if the list object scrolls
+    private final float padding;        // the amount of padding to put in between list items and around edges of list
     private ListItem hovered;           /* the last list item within the last that was hovered. This is used to properly
                                            tell list items when they are done being hovered */
     private final float maxHeight;      // the maximum height the list object may be before items are scrolled
@@ -54,7 +55,8 @@ public class ListObject extends GameObject implements MouseInputEngine.MouseInte
         super(Model.getStdGridRect(1, 1), background); // call super constructor with square model and background
         this.items = items; // save items as member
         this.padding = padding; // save padding as member
-        this.maxHeight = maxHeight; // save max height asss member
+        this.maxHeight = maxHeight; // save max height as member
+        this.scrollBar = new GameObject(Model.getStdGridRect(1, 1), background); // create scroll bar
         this.position(true); // position the list and the list items correctly
     }
 
@@ -72,6 +74,7 @@ public class ListObject extends GameObject implements MouseInputEngine.MouseInte
             // make visible or invisible depending on if its within view of the list object
             li.setVisibility(Math.abs(li.getY() - this.getY()) < (this.maxHeight / 2) + li.getHeight() / 2);
         }
+        this.scrollBar.setY(this.getScrollBarY());
     }
 
     /**
@@ -87,6 +90,9 @@ public class ListObject extends GameObject implements MouseInputEngine.MouseInte
      */
     private void position(boolean resetScroll) {
 
+        /*
+         * Calculate Width/Height of Background
+         */
         // start with a width and height of 0
         float w = 0f;
         float h = 0f;
@@ -99,6 +105,10 @@ public class ListObject extends GameObject implements MouseInputEngine.MouseInte
         this.cumHeight = h;
         if (resetScroll) this.scroll = this.getMinScroll();
         this.model.setScale(w, Math.min(maxHeight, h)); // scale the list to fit correctly
+
+        /*
+         * Position ListItems
+         */
         float y = this.getY() - (this.getHeight() / 2) + padding; // start from the bottom of the object
         for (int i = this.items.size() - 1; i >= 0; i--) { // and go through each list item (in reverse order)
             ListItem li = this.items.get(i); // get the current list item
@@ -109,6 +119,21 @@ public class ListObject extends GameObject implements MouseInputEngine.MouseInte
             y += ih2; // iterate y again by the current item's half-width
             y += padding; // add padding before next item
         }
+
+        /*
+         * Position Scroll Bar
+         */
+        if (this.cumHeight > this.maxHeight) { // if the scroll bar should even show up
+            this.scrollBar.setScale(0.02f, this.maxHeight / (this.cumHeight / this.maxHeight));
+            scrollBar.setPos(this.getX() + this.getWidth() / 2 + this.padding / 2 + this.scrollBar.getWidth() / 2,
+                    getScrollBarY());
+        } else this.scrollBar.setVisibility(false);
+    }
+
+    private float getScrollBarY() {
+        float minY = this.getY() - this.getHeight() / 2 + this.scrollBar.getHeight() / 2;
+        float maxY = this.getY() + this.getHeight() / 2 - this.scrollBar.getHeight() / 2;
+        return minY + ((maxY - minY) * (this.scroll / this.getMinScroll()));
     }
 
     /**
@@ -129,6 +154,7 @@ public class ListObject extends GameObject implements MouseInputEngine.MouseInte
     @Override
     public void render(ShaderProgram sp) {
         super.render(sp); // render the list background first
+        this.scrollBar.render(sp); // render scrollbar
         // set bounds on y to only render the parts of clipped list objects that are within the list
         sp.setUniform("maxY", this.getY() + this.getHeight() / 2);
         sp.setUniform("minY", this.getY() - this.getHeight() / 2);
@@ -314,5 +340,15 @@ public class ListObject extends GameObject implements MouseInputEngine.MouseInte
          * @return the y position of the item
          */
         float getY();
+    }
+
+    /**
+     * Cleans up the list background, the scroll bar, and the list items
+     */
+    @Override
+    public void cleanup() {
+        super.cleanup(); // cleanup background
+        for (ListItem li : this.items) if (li instanceof GameObject) ((GameObject)li).cleanup(); // cleanup list items
+        if (this.scrollBar != null) this.scrollBar.cleanup(); // cleanup scroll bar
     }
 }

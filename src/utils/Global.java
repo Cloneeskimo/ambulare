@@ -31,13 +31,12 @@ public abstract class Global {
     /**
      * Static Data
      */
-    public static final String VERSION = "com115"; // the version of the game
+    public static final String VERSION = "com116`"; // the version of the game
     public static final String WINDOW_TITLE = "Ambulare " + VERSION; // the window title
     public static final int POLYGON_MODE_TOGGLE_KEY = GLFW_KEY_2; // the key to toggle between fill/line polygon modes
     public static final int DEBUG_TOGGLE_KEY = GLFW_KEY_1;  // key to toggle debug reporting
     public static final int TARGET_FPS = 60; // the target frames per second when vertical sync is off
     public static final int TARGET_UPS = 60; // the target updates per second regardless of vertical sync
-    public static final boolean V_SYNC = true; // whether to enable vertical sync in the Window
     public static DebugInfo debugInfo; // an extended enhanced text object to display debug info
     public static Window gameWindow; // GLFW window hosting the game
     public static Font font; // font used everywhere throughout the program

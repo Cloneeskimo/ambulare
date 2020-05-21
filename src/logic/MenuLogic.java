@@ -272,10 +272,6 @@ public class MenuLogic extends GameLogic {
                 listItems.add(sli); // add the formatted story list item to the list items list
             }
 
-            for (int i = 0; i < 8; i++) {
-                listItems.add(new TextButton(Global.font, "text object (" + i + ")"));
-            }
-
             // create a list text button to open the data directory stories folder
             TexturedButton openStoryFolder = new TextButton(Global.font, "(open stories folder)").solidify();
             openStoryFolder.setScale(0.4f, 0.4f); // scale the button down by a little over half
