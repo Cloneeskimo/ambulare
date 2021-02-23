@@ -5,6 +5,8 @@
 
 Ambulare is a side-scrolling fantasy RPG. It runs in the Java Virtual Machine, and is built using the Light-Weight Java Game Library (LWJGL).
 
+Short demo video on YouTube: https://www.youtube.com/watch?v=E_hlNzPRkv4&feature=youtu.be&ab_channel=JacobOaks
+
 ### Building
 
 I use Maven to build the project and IntelliJ to develop it. The pom.xml file with all the necessary libraries listed is included in the repository. Simply import this repo into IntelliJ and make sure the natives in the pom.xml properties matches your system, and it should work right off the bat.
