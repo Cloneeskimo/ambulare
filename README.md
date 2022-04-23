@@ -3,7 +3,7 @@
 
 ### Demo
 
-https://www.youtube.com/watch?v=E_hlNzPRkv4
+https://www.youtube.com/watch?v=Rdb81y6TjHc
 
 ### Overview
 
@@ -24,4 +24,4 @@ If you experience screen tearing on MacOS despite V-Sync being enabled, run the 
 ```
 defaults write -g NSRequiresAquaSystemAppearance -bool No
 ```
-I have no idea how but this will magically fix it. I promise.
+I have no idea why but this will magically fix it. I promise.
