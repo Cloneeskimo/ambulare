@@ -3,7 +3,7 @@
 
 ### Demo
 
-https://www.youtube.com/watch?v=2CYq9vNzst4
+[![Demo Link](http://img.youtube.com/vi/2CYq9vNzst4/0.jpg)](http://www.youtube.com/watch?v=2CYq9vNzst4 "Ambulare Demo (com118)")
 
 ### Overview
 
