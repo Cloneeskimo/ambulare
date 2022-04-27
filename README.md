@@ -7,7 +7,7 @@ https://www.youtube.com/watch?v=Rdb81y6TjHc
 
 ### Overview
 
-Ambulare is a side-scrolling fantasy RPG. It runs in the Java Virtual Machine, and is built using the Light-Weight Java Game Library (LWJGL).
+Ambulare is a side-scroller game engine. It runs in the Java Virtual Machine, and is built using the Light-Weight Java Game Library (LWJGL).
 
 ### Building
 
