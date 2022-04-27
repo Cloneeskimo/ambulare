@@ -3,11 +3,15 @@
 
 ### Demo
 
-https://www.youtube.com/watch?v=Rdb81y6TjHc
+https://www.youtube.com/watch?v=2CYq9vNzst4
 
 ### Overview
 
-Ambulare is a side-scroller game engine. It runs in the Java Virtual Machine, and is built using the Light-Weight Java Game Library (LWJGL).
+Ambulare is a fun little side-scrolling engine that I built from scratch on top of LWJGL. The demo above shows off most of the capabilities, including a custom physics engine, a sound system, lighting systems, animations, and menus. All of the textures and sounds are homemade as well.
+
+One capability not shown in the demo above is the custom readable serialization format I created in order to allow the idea of "stories". A story consists of multiple interconnected levels, such as Dank Cellar and Galen Forest shown in the demo above. By understanding the simple serialization format read in by the program, entire stories consisting of custom levels, blocks, textures, backgrounds, foliage, etc. can be created without touching any code at all.
+
+In an alternate universe where I had unlimited time I would extend this project by adding many more levels, implementing enemies and combat, inventory and equipment systems, game saving/loading, and some sort of journal/quest system - all of which would be fully customizable for any aspiring custom story creator. I would also extend the soundscape to include homemade music and ambient noises.
 
 ### Building
 
@@ -24,4 +28,3 @@ If you experience screen tearing on MacOS despite V-Sync being enabled, run the 
 ```
 defaults write -g NSRequiresAquaSystemAppearance -bool No
 ```
-I have no idea why but this will magically fix it. I promise.
