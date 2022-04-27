@@ -63,14 +63,25 @@ area:
         7:                              dddddd
     }
 
-    # specify the layout of the background
+    # specify the layout of the foreground
     foreground_layout:
     {
         0:  o            o          gggg  o
-        1: ggg           ggg
-        2:    ggg      og   g
+        1: ggg           ggg            gggggg
+        2:    Ggg      og   g
         3:          o gG     g     o              o          o
         4:       GgggG        g  gggg            gggg     gggg
         5:                           G        GgG
+    }
+
+    # specify the layout of the background
+    background_layout:
+    {
+        0:
+        1:
+        2:                            dddddddd
+        3:                            dddddddd
+        4:                            dddddddd
+        5:                            dddddddd
     }
 }

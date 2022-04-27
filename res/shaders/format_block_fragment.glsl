@@ -153,9 +153,8 @@ void main() {
             if (rotations[i] > -1) { // if there is actually an overlay at index i
                 vec2 overlayTexCoords = applyFrames(texCoordsF); // convert the tex coords into frame-relative ones
                 overlayTexCoords = applyRotation(overlayTexCoords, i); // apply rotation to it
-                vec4 c2 = texture(overlays[i], overlayTexCoords); // get the color of the overlay at the tex coords
-                vec3 mix = color.xyz * (1 - c2.a) + c2.xyz * (c2.a); // mix it with the current texture
-                color = vec4(mix, color.a); // update the currenet color
+                vec4 c2 = texture(overlays[i+1], overlayTexCoords); // get the color of the overlay at the tex coords
+                color = vec4(c2.xyz * (c2.a) + color.xyz * (1 - c2.a), color.a);
             }
         }
         fragColor = color; // after all overlays have been applied, use the current color as the final one
