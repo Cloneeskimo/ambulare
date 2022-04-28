@@ -1,5 +1,7 @@
 
-![Ambulare](https://github.com/JacobOaks/ambulare/blob/master/res/textures/ui/title.png?raw=true)
+<p align="center">
+  <img src="https://github.com/JacobOaks/ambulare/blob/master/res/textures/ui/title.png?raw=true" alt="Ambulare Title"/>
+</p>
 
 ### Demo
 
