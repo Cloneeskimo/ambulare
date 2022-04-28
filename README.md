@@ -17,7 +17,7 @@ In an alternate universe where I had unlimited time I would extend this project 
 
 ### Building
 
-I use Maven to build the project and IntelliJ to develop it. The pom.xml file with all the necessary libraries listed is included in the repository. Simply import this repo into IntelliJ and make sure the natives in the pom.xml properties matches your system, and it should work right off the bat.
+I developed this with Java 1.8.0_231 installed. The project use Maven to track dependency versions and to build. The pom.xml file with all the necessary libraries listed is included in the repository. Simply import this repo into something like IntelliJ and make sure the natives in the pom.xml properties matches your system, and it should work.
 
 If you're running on MacOS, use the following JVM argument or you will probably crash:
 ```
